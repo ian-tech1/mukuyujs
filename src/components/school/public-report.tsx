@@ -5,18 +5,25 @@ import { SchoolLogo } from "@/components/school/logo";
 import { getPublicReport } from "@/lib/school/api";
 import { QrParentFeedback } from "@/components/school/qr-parent-feedback";
 
+type PublicReportData = Extract<Awaited<ReturnType<typeof getPublicReport>>, { profile: unknown }>;
+
 export function PublicReport({ code }: { code: string }) {
-  const [state, setState] = useState<"loading" | "missing" | "ready">("loading");
+  const [state, setState] = useState<"loading" | "missing" | "blocked" | "ready">("loading");
   const [yearId, setYearId] = useState("");
   const [termId, setTermId] = useState("");
   const [options, setOptions] = useState<{ years: Array<{ id: string; name: string }>; terms: Array<{ id: string; name: string }> } | null>(null);
-  const [data, setData] = useState<Awaited<ReturnType<typeof getPublicReport>>>(null);
+  const [data, setData] = useState<PublicReportData | null>(null);
 
   useEffect(() => {
     let live = true;
     getPublicReport({ data: { code, yearId: yearId || undefined, termId: termId || undefined } })
       .then((result) => {
         if (!live) return;
+        if (result && "status" in result && result.status === "disabled") {
+          setData(null);
+          setState("blocked");
+          return;
+        }
         setData(result);
         if (result) { setOptions({ years: result.reportPeriods?.years || [], terms: result.reportPeriods?.terms || [] }); }
         setState(result ? "ready" : "missing");
@@ -36,13 +43,13 @@ export function PublicReport({ code }: { code: string }) {
       </main>
     );
   }
-  if (state === "missing" || !data) {
+  if (state === "missing" || state === "blocked" || !data) {
     return (
       <main className="grid min-h-screen place-items-center bg-paper px-6 text-center">
         <div>
           <SchoolLogo className="mx-auto size-20" />
-          <h1 className="mt-4 font-serif text-3xl text-navy">Report not found</h1>
-          <p className="mt-2 text-sm text-muted">That code is not on the Mukuyu Junior School roll.</p>
+          <h1 className="mt-4 font-serif text-3xl text-navy">{state === "blocked" ? "Report access is unavailable" : "Report not found"}</h1>
+          <p className="mt-2 text-sm text-muted">{state === "blocked" ? "Public report viewing has been turned off by the school. Please contact the school office for help." : "That code is not on the Mukuyu Junior School roll."}</p>
           <Link to="/" search={{ c: undefined }} className="mt-4 inline-block text-sm font-semibold text-info">Back to sign in</Link>
         </div>
       </main>

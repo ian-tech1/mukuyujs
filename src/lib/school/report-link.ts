@@ -1,5 +1,5 @@
 export function reportLink(base: string, code: string, origin = "") {
-  const root = base.trim() || origin.trim();
+  const root = origin.trim() || base.trim();
   const normalizedCode = code.trim();
   if (!root) return `/?c=${encodeURIComponent(normalizedCode)}`;
   try {

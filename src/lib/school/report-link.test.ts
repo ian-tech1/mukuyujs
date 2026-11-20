@@ -11,6 +11,13 @@ test("report links use the portal root, not a configured subpath or stale query"
   assert.equal(url.searchParams.has("view"), false);
 });
 
+test("live report links prefer the reachable app origin over a stale configured host", () => {
+  const url = new URL(reportLink("https://old-school.example.test", "ab12cd34", "https://mukuyujs.vercel.app"));
+  assert.equal(url.origin, "https://mukuyujs.vercel.app");
+  assert.equal(url.pathname, "/");
+  assert.equal(url.searchParams.get("c"), "ab12cd34");
+});
+
 test("report codes are URL-encoded and the current origin is used when no base is configured", () => {
   const url = new URL(reportLink("", "code with spaces", "https://school.example.test/app"));
   assert.equal(url.origin, "https://school.example.test");

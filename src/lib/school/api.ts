@@ -1541,7 +1541,7 @@ export const getPublicReport = createServerFn({ method: "GET" })
     if (!code) return null;
     const sql = await getSql();
     const roleAccess = await readRoleAccess(sql);
-    if (!canActorAccess(roleAccess, "qr_guest", "reports", "view")) return null;
+    if (!canActorAccess(roleAccess, "qr_guest", "reports", "view")) return { status: "disabled" as const };
     const numericValue = Number(code);
     const numericRoll = /^\d+$/.test(code) && Number.isSafeInteger(numericValue) && numericValue <= 2_147_483_647 ? numericValue : null;
     const learnerRows = await sql<Learner>`
