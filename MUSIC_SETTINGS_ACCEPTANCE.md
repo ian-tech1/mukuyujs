@@ -1,0 +1,27 @@
+# Music Studio Update Acceptance Notes
+
+- Existing Super Admin-only access remains enforced by the server.
+- Existing direct HTTPS audio and uploaded-audio sources remain supported.
+- YouTube, Spotify, SoundCloud, Apple Music, Mixcloud, Deezer, and TIDAL share links are resolved to supported in-page embeds; sources must not trigger a top-level redirect.
+- Multiple supported source types can coexist in a playlist; the dock selects the provider player or native audio element for the active track.
+- A track may include an optional fallback URL; native audio stream errors retry with bounded delay/count and then attempt the fallback, while embedded provider fallbacks are switched manually because their errors are cross-origin.
+- Music playlist JSON import and export preserve title, genre, source, fallback, playlist genre, and normalized playback settings.
+- Settings offers a preview/player for the currently configured source.
+- Uploads retain the existing 500 KB maximum and accept audio MIME types; playback remains subject to browser codec support.
+- Existing ten advanced music options continue to work; new controls include provider embeds, volume memory, preload policy, retry count, and retry delay.
+- The configured default volume and optional per-device volume apply to native audio without writing device preferences back to school-wide settings; provider embeds use their own controls.
+- Invalid protocols and credential-bearing URLs are rejected; provider embeds only use HTTPS iframe URLs created by the resolver.
+- No school records or database schema are modified.
+- The portal music dock is available to active signed-in teacher, administrator, student, and parent accounts; anonymous welcome-page visitors still do not receive the configured playlist.
+- The dock’s Live radio button searches the free Radio Browser directory without an API key, discovers API hosts dynamically with HTTPS fallback hosts, and searches Kenya by default with country/worldwide options.
+- Radio results are filtered to checked HTTPS streams and non-HLS stations; a selection plays in the portal audio element and records a station click. Browser autoplay, stream availability, codec support, and regional restrictions can still prevent playback.
+- Music Studio has an optional Spotify catalog search restricted server-side to the Super Admin; results are limited to ten tracks in the Kenya market and can be added as official Spotify share links to the existing playlist.
+- Spotify Client ID and Client Secret are read only from server-side deployment secrets named `SPOTIFY_CLIENT_ID` and `SPOTIFY_CLIENT_SECRET`; missing credentials produce a setup message, and no credential or OAuth token is returned to the browser or stored in school settings.
+- Selected catalog tracks use the existing official Spotify in-page Embed path. Users may need to press Play and Spotify/account/device availability rules still apply; catalog credentials do not unlock universal or autoplay full-track streaming.
+- Music Studio offers Super Admin-only Jamendo, YouTube, and SoundCloud catalog searches; each returns at most ten sanitized results and missing credentials show a setup message.
+- `JAMENDO_CLIENT_ID`, `YOUTUBE_API_KEY`, `SOUNDCLOUD_CLIENT_ID`, and `SOUNDCLOUD_CLIENT_SECRET` are server-only settings; provider credentials and tokens are not returned to the browser or stored in the ZIP or school settings.
+- YouTube results are filtered to embeddable videos; YouTube and SoundCloud selections continue through their official in-page player, and known share URLs remain manually addable without catalog-search keys.
+- Jamendo selection uses the provider's HTTPS audio URL and preserves creator credit, Jamendo track-page link, and Creative Commons license name/URL across playlist text, JSON, server save, and player display.
+- Jamendo use is marked non-commercial per its API terms; the Super Admin must review each track's CC license and confirm the school's intended use complies before adding it.
+- The dock's Play/Pause action calls `play()`/`pause()` for native direct audio, Jamendo audio, and live radio. Choosing a radio station requests immediate playback from the tap; if browser autoplay policy blocks it, the native audio Play control remains available.
+- Cross-origin YouTube, SoundCloud, and Spotify embeds retain their own Play controls; the application does not claim to bypass provider account, region, DRM, codec, or browser autoplay restrictions.

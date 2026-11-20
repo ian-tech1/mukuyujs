@@ -1,0 +1,13 @@
+{
+  "installCommand": "npm ci --no-audit --no-fund",
+  "buildCommand": "npm run build",
+  "env": {
+    "VITE_AUTH_ENABLED": "true"
+  },
+  "crons": [
+    {
+      "path": "/api/cron-backup",
+      "schedule": "0 2 * * *"
+    }
+  ]
+}

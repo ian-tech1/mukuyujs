@@ -1,0 +1,39 @@
+MUKUYU SCHOOL PORTAL — DEPLOYMENT AND RESEND SETUP
+=================================================
+
+The portal already contains server-side Resend integration for temporary-password emails. Do not paste the PHP onboarding example into this project: it is a React/TypeScript server app, not a PHP app.
+
+IMPORTANT SECURITY
+- Do NOT put the real Resend API key in source files, this ZIP, frontend code, screenshots, or GitHub.
+- Enter secrets only in your hosting provider's private Environment Variables settings.
+- Never share your database connection string or SESSION_SECRET in chat.
+- Back up your database before the first production deployment. Deploying code is not a substitute for a database backup.
+
+RECOMMENDED DEPLOYMENT TARGET: VERCEL
+This project includes vercel.json, but you still need a Vercel account/project and a persistent PostgreSQL database (for example, Neon). The ZIP alone cannot create those accounts or provision a production database.
+
+1. Upload the ZIP to a private GitHub repository or import/deploy the project using a deployment method that supports this Vite/TanStack Start app. Keep the repository private.
+2. In Vercel, open the project -> Settings -> Environment Variables. Add the variables below for Production (and Preview if you want preview deployments to send email).
+
+REQUIRED VARIABLES
+- DATABASE_URL = your PostgreSQL/Neon connection string. Use the production database connection string supplied by your database provider. Keep it private.
+- SESSION_SECRET = a cryptographically random secret of at least 32 random bytes. Generate one securely on your own device or with your hosting provider's secret generator. Do not use a sample or publish it.
+- CRON_SECRET = a separate, high-entropy secret used to authenticate the scheduled backup endpoint. Configure the same value for the deployment's cron Authorization header as `Bearer <CRON_SECRET>`.
+- RESEND_API_KEY = your Resend API key. Prefer a key with Sending Access only.
+- EMAIL_FROM = a sender on a domain you own and have verified in Resend, for example: Mukuyu School <no-reply@your-verified-domain.example>
+  Replace the example address with a real sender on your verified domain. Do not use the .example address literally.
+
+SCHEDULED PORTAL BACKUPS
+- `vercel.json` calls `/api/cron-backup` daily at 02:00 UTC. The endpoint saves a daily internal portal snapshot on every authorized, successful run, whether email is enabled or not.
+- The Super Admin's daily / weekly / monthly setting controls when a JSON attachment is emailed; weekly is Monday UTC and monthly is the first UTC day of the month. Weekly/monthly schedules still get a daily internal snapshot.
+- Vercel's scheduled request must include `Authorization: Bearer <CRON_SECRET>` using the same secret configured above. Confirm the deployment's Cron job is active and review its invocation result; HTTP success alone does not mean email was sent (`emailSent` reports delivery attempt status).
+- The ZIP's source and cron declaration confirm the delivery path, but local build tests do not prove that a real deployment has valid secrets, domain verification, cron authorization or inbox delivery. After deployment, verify a due run and check Resend logs and the recipient inbox; this project does not send a test email from the settings page.
+
+3. In Resend -> Domains, add a domain you own and follow the DNS instructions from Resend at your domain registrar. You cannot verify a domain you do not control. The onboarding sender onboarding@resend.dev is for limited testing; production email requires an appropriate verified sender/domain.
+4. Make sure Vercel has the correct DATABASE_URL and secrets configured before deploying. Redeploy after changing environment variables.
+5. Run the project's database migration command in the deployment environment as required by your hosting workflow. The package's build script includes db:migrate; confirm the production database is backed up and migrations complete successfully before using the portal.
+6. After deployment, test sign-in and password-reset emails for each role. Confirm emails arrive, check Resend logs, and test that existing student records and marks remain present.
+7. Configure automatic database backups / point-in-time recovery with your database provider and download the portal's own backups regularly.
+
+CURRENT LIMITATION
+This ZIP has not been fully validated with a successful production build in this environment. Hosting, database provisioning, environment variables, DNS verification, and production smoke tests still need to be completed. Do not treat it as production-ready until those checks pass.
