@@ -1,0 +1,133 @@
+/* Mukuyu visual refresh — 52 small, composable treatments; no application/data behavior. */
+
+/* 01 · Add a softly layered paper canvas instead of a flat page fill. */
+html, body { background-color: #f4f0e6; background-image: radial-gradient(ellipse at 8% 4%, rgba(120, 205, 218, .09), transparent 34%), radial-gradient(ellipse at 94% 92%, rgba(207, 166, 87, .1), transparent 36%), linear-gradient(145deg, rgba(255,255,255,.14), transparent 46%); }
+/* 02 · Fine-grain dot texture gives large quiet surfaces a tactile finish. */
+body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none; opacity: .12; background-image: radial-gradient(rgba(14,42,74,.24) .55px, transparent .55px); background-size: 17px 17px; mask-image: linear-gradient(135deg, #000, transparent 74%); }
+/* 03 · Selection uses the school ink/sky pairing. */
+::selection { color: #0e2a4a; background: rgba(120, 205, 218, .42); }
+/* 04 · Give the public welcome shell a subtle chromatic edge. */
+.welcome-shell { box-shadow: inset 0 0 0 1px rgba(255,255,255,.18), inset 0 1px 0 rgba(255,255,255,.2); }
+/* 05 · A soft aurora veil enriches the left welcome stage. */
+.welcome-hero { background-image: radial-gradient(ellipse at 14% 84%, rgba(131, 215, 204, .14), transparent 42%), radial-gradient(ellipse at 82% 8%, rgba(251, 205, 122, .12), transparent 34%), linear-gradient(var(--welcome-angle, 125deg), var(--welcome-overlay, rgba(139,213,255,.12)), transparent 66%), linear-gradient(var(--welcome-angle, 125deg), var(--welcome-start, #0e2a4a), var(--welcome-end, #245b82), var(--welcome-start, #0e2a4a)); }
+/* 06 · The heading arrives with a restrained lift. */
+.welcome-title { animation: display-title-arrive .9s cubic-bezier(.2,.8,.2,1) both; }
+/* 07 · Welcome copy follows the title with a gentle fade. */
+.welcome-content > :is(p, div, button) { animation: display-copy-arrive .75s ease both; animation-delay: .12s; }
+/* 08 · Footer security line glows softly rather than blinking. */
+.welcome-status-line { box-shadow: 0 0 12px rgba(139,213,255,.7); opacity: .8; }
+/* 09 · The login side gets a quiet multicolor wash behind its glass panel. */
+.welcome-login-panel { background-image: radial-gradient(ellipse at 12% 82%, rgba(131,215,204,.12), transparent 40%), radial-gradient(ellipse at 92% 10%, rgba(244,202,114,.15), transparent 34%); }
+/* 10 · Login labels gain a compact editorial hierarchy. */
+.welcome-login-panel label { color: #24415b; letter-spacing: .015em; }
+/* 11 · Inputs brighten and lift their border on hover. */
+.welcome-login-panel input:hover { border-color: color-mix(in srgb, var(--welcome-accent-alt, #83cee7) 55%, #d9e2e8); }
+/* 12 · Login CTA compresses slightly on press for tactile feedback. */
+.welcome-login-panel button[type="submit"]:active { transform: translateY(1px) scale(.99); }
+/* 13 · Feature tour cards receive a jewel-tone edge. */
+.welcome-feature-card { border-color: color-mix(in srgb, var(--color-info) 24%, var(--color-line)); }
+/* 14 · Feature tour canvas has a soft radial spotlight. */
+.welcome-features-dialog { background-image: radial-gradient(ellipse at 100% 0%, rgba(139,213,255,.18), transparent 40%), linear-gradient(145deg, #fffdf9, #f7fbfd 58%, #fff8e9); }
+/* 15 · Public report page background feels related to the secure portal. */
+main:has(.report-print-area) { background-image: radial-gradient(ellipse at 5% 0%, rgba(120,205,218,.12), transparent 38%), radial-gradient(ellipse at 100% 95%, rgba(207,166,87,.1), transparent 34%); }
+/* 16 · Public QR introduction becomes a quiet glass ribbon. */
+main:has(.report-print-area) > div > p:first-child { padding: .8rem 1rem; border: 1px solid rgba(29,78,137,.12); border-radius: 1rem; background: rgba(255,252,247,.72); box-shadow: 0 8px 24px rgba(14,42,74,.045); backdrop-filter: blur(8px); }
+
+/* 17 · Portal shell uses a deeper layered paper foundation. */
+.portal-animated-background { background-image: radial-gradient(ellipse at 12% 8%, rgba(126,209,218,.1), transparent 35%), radial-gradient(ellipse at 88% 82%, rgba(226,182,99,.09), transparent 38%); }
+/* 18 · Side rail transitions from school navy to blue-teal. */
+.portal-animated-background > aside { background-image: radial-gradient(ellipse at 6% 0%, rgba(122,211,215,.19), transparent 42%), linear-gradient(165deg, #0b2745 0%, #12385b 54%, #17445c 100%); box-shadow: inset -1px 0 rgba(255,255,255,.12), 8px 0 28px rgba(14,42,74,.09); }
+/* 19 · Side rail brand block gains a subtle separator glow. */
+.portal-animated-background > aside > div:first-child { border-bottom: 1px solid rgba(255,255,255,.1); box-shadow: 0 8px 18px rgba(0,0,0,.04); }
+/* 20 · School mark receives a slim, light-catching ring. */
+.portal-animated-background > aside img { border-radius: 1rem; box-shadow: 0 0 0 1px rgba(255,255,255,.28), 0 8px 20px rgba(0,0,0,.18); }
+/* 21 · Navigation labels feel like deliberate, soft-touch controls. */
+.portal-animated-background > aside nav button { position: relative; border: 1px solid transparent; border-radius: .85rem; letter-spacing: .01em; transition: color .24s ease, background .28s ease, border-color .28s ease, transform .28s ease, box-shadow .28s ease; }
+/* 22 · A small accent rail marks the selected section. */
+.portal-animated-background > aside nav button.bg-navy-2::before { content: ""; position: absolute; left: .18rem; top: 25%; bottom: 25%; width: 3px; border-radius: 99px; background: linear-gradient(#83d9d3, #f4ca72); box-shadow: 0 0 12px rgba(131,217,211,.65); }
+/* 23 · Navigation hover adds a translucent teal layer. */
+@media (hover: hover) { .portal-animated-background > aside nav button:not(.bg-navy-2):hover { border-color: rgba(255,255,255,.11); background: rgba(255,255,255,.075); transform: translateX(3px); } }
+/* 24 · Active navigation has a dimensional, polished highlight. */
+.portal-animated-background > aside nav button.bg-navy-2 { border-color: rgba(255,255,255,.12); background-image: linear-gradient(105deg, rgba(131,217,211,.12), rgba(244,202,114,.08)); box-shadow: inset 0 1px rgba(255,255,255,.08), 0 6px 18px rgba(0,0,0,.12); }
+/* 25 · Account footer separates identity from actions. */
+.portal-animated-background > aside > div:last-child { background: linear-gradient(135deg, rgba(255,255,255,.035), transparent); }
+/* 26 · Sign-out reads like a calm text action. */
+.portal-animated-background > aside > div:last-child button { padding: .35rem .55rem; border-radius: .6rem; transition: color .2s ease, background .2s ease; }
+.portal-animated-background > aside > div:last-child button:hover { color: #fff; background: rgba(255,255,255,.1); }
+/* 27 · Sticky portal masthead uses a moving glass gradient. */
+.portal-animated-background > div > header { border-color: rgba(29,78,137,.12); background-image: linear-gradient(110deg, rgba(255,252,247,.96), rgba(242,250,251,.91), rgba(255,249,235,.93)); box-shadow: 0 7px 22px rgba(14,42,74,.045); }
+/* 28 · Period label sits in a rounded, soft-tint capsule. */
+.portal-animated-background > div > header > p { padding: .42rem .72rem; border: 1px solid rgba(29,78,137,.1); border-radius: 999px; background: rgba(29,78,137,.045); font-variant-numeric: tabular-nums; }
+/* 29 · Current-section heading gains a clear little marker. */
+.portal-animated-background > div > header > div > p { color: #16385f; letter-spacing: .025em; }
+/* 30 · Toolbar pills use a soft chromatic sheen. */
+.portal-animated-background > div > header button { background-image: linear-gradient(135deg, rgba(255,255,255,.76), rgba(120,205,218,.07), rgba(244,202,114,.08)); box-shadow: 0 3px 10px rgba(14,42,74,.06); }
+/* 31 · Quick-display popover gets a crisp frosted surface. */
+#quick-display-controls { border-color: rgba(29,78,137,.16); background-image: radial-gradient(ellipse at 100% 0%, rgba(131,217,211,.12), transparent 40%), linear-gradient(145deg, rgba(255,252,247,.98), rgba(247,251,252,.98)); backdrop-filter: blur(18px); }
+/* 32 · Content sections arrive with a light, non-blocking entrance. */
+.portal-page-content { animation: display-page-arrive .48s cubic-bezier(.2,.75,.25,1) both; }
+/* 33 · Section titles gain a small animated underline. */
+.portal-page-content h1 { position: relative; text-wrap: balance; }
+.portal-page-content h1::after { content: ""; display: block; width: clamp(2.3rem, 7vw, 4.2rem); height: 3px; margin-top: .46rem; border-radius: 99px; background: linear-gradient(90deg, var(--color-info), #83d9d3, #f4ca72); transform-origin: left; animation: display-rule-grow .7s .12s ease both; }
+/* 34 · Subheadings get improved rhythm and spacing. */
+.portal-page-content h2 { text-wrap: balance; line-height: 1.2; }
+/* 35 · Glass panels receive translucent, multi-hue surfaces. */
+.portal-page-content :is(article, section, form)[class~="bg-card"] { border-color: color-mix(in srgb, var(--color-line) 82%, rgba(29,78,137,.25)); background-color: rgba(255,252,247,.91); backdrop-filter: blur(8px); }
+/* 36 · Hoverable panels rise without affecting report print sheets. */
+@media (hover: hover) and (prefers-reduced-motion: no-preference) { html:not([data-portal-motion="reduced"]) .portal-page-content :is(article, section)[class~="bg-card"]:hover { box-shadow: 0 18px 44px rgba(14,42,74,.11), 0 2px 0 rgba(255,255,255,.75) inset; } }
+/* 37 · Primary actions receive a subtle color depth and shine. */
+.portal-page-content button.bg-navy { background-image: linear-gradient(115deg, #0e2a4a, #17466d 58%, #1a5362); box-shadow: 0 7px 18px rgba(14,42,74,.14), inset 0 1px rgba(255,255,255,.13); }
+/* 38 · Ghost actions lift a little on hover. */
+.portal-page-content button.border-line.bg-card:hover { border-color: color-mix(in srgb, var(--color-info) 34%, var(--color-line)); box-shadow: 0 6px 16px rgba(14,42,74,.07); }
+/* 39 · Inputs have a cleaner inset depth. */
+.portal-page-content input, .portal-page-content select, .portal-page-content textarea { box-shadow: inset 0 1px 2px rgba(14,42,74,.035); }
+/* 40 · Focused inputs use an accessible two-tone halo. */
+.portal-page-content input:focus-visible, .portal-page-content select:focus-visible, .portal-page-content textarea:focus-visible { border-color: #28758a; box-shadow: 0 0 0 3px rgba(120,205,218,.2), 0 4px 12px rgba(14,42,74,.07); }
+/* 41 · Labels become easier to scan in dense settings forms. */
+.portal-page-content label { line-height: 1.45; }
+/* 42 · Data grids get a clean school-blue divider. */
+.portal-page-content table { border-color: color-mix(in srgb, var(--color-info) 15%, var(--color-line)); border-radius: .75rem; }
+/* 43 · Table headings use a polished pastel gradient. */
+.portal-page-content thead th { background-image: linear-gradient(110deg, rgba(120,205,218,.11), rgba(255,252,247,.94), rgba(244,202,114,.1)); color: #16385f; letter-spacing: .045em; }
+/* 44 · Alternating data lines use a low-contrast tint. */
+.portal-page-content tbody tr:nth-child(even) { background-color: rgba(29,78,137,.022); }
+/* 45 · Hovered rows become visible without loud highlight. */
+.portal-page-content tbody tr:hover { background-color: rgba(120,205,218,.09); }
+/* 46 · Status notices glow by meaning, not by animation. */
+.portal-page-content > p[class*="text-good"], .portal-page-content > p[class*="text-bad"] { box-shadow: 0 8px 22px rgba(14,42,74,.045); backdrop-filter: blur(8px); }
+/* 47 · Progress tracks and meters get a multicolor fill. */
+.portal-page-content progress { accent-color: #2c8790; }
+.portal-page-content [role="progressbar"] { background-image: linear-gradient(90deg, #2c8790, #83d9d3, #f4ca72); }
+/* 48 · Dashboard visualizations gain a light card-like frame. */
+.portal-page-content .recharts-wrapper { border-radius: 1rem; background: linear-gradient(145deg, rgba(255,255,255,.38), rgba(120,205,218,.035)); }
+/* 49 · Spreadsheet preview receives stronger sticky-header depth. */
+.marks-preview-table th { box-shadow: 0 4px 8px rgba(14,42,74,.08); }
+/* 50 · Spreadsheet cells get smoother focus/hover feedback. */
+.marks-preview-table td:focus-within { background: rgba(244,202,114,.18); box-shadow: inset 0 0 0 2px rgba(29,78,137,.2); }
+/* 51 · Focus rings are unified for touch and keyboard discovery. */
+:where(button, a, input, select, textarea, [tabindex]):focus-visible { outline-color: #28758a; outline-offset: 3px; }
+/* 52 · Compact screens receive smaller card radii and calmer page padding. */
+@media (max-width: 640px) { .portal-page-content { padding-top: 1.15rem; } .portal-page-content :is(article, section)[class~="bg-card"] { border-radius: 1rem; } .portal-animated-background > div > header { gap: .4rem; } }
+
+@keyframes display-title-arrive { from { opacity: 0; transform: translateY(9px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes display-copy-arrive { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes display-page-arrive { from { opacity: .65; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes display-rule-grow { from { opacity: .45; transform: scaleX(.42); } to { opacity: 1; transform: scaleX(1); } }
+
+/* Motion-off and OS accessibility settings take precedence over every added animation. */
+.welcome-static .welcome-title, .welcome-static .welcome-content > :is(p, div, button) { animation: none !important; }
+html[data-portal-motion="reduced"] .portal-page-content { animation: none !important; }
+html[data-portal-accent-motion="off"] .portal-page-content h1::after { animation: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  .welcome-title, .welcome-content > :is(p, div, button), .portal-page-content, .portal-page-content h1::after { animation: none !important; }
+  .portal-animated-background > aside nav button, .portal-page-content button, .portal-page-content article, .portal-page-content section { transition-duration: .01ms !important; }
+  .portal-animated-background > aside nav button:hover, .portal-page-content :is(article, section)[class~="bg-card"]:hover { transform: none !important; }
+}
+html[data-portal-motion="reduced"] .welcome-title, html[data-portal-motion="reduced"] .welcome-content > :is(p, div, button), html[data-portal-motion="reduced"] .portal-page-content h1::after { animation: none !important; }
+
+/* Keep editorial surfaces and the report sheet still and clean in print. */
+@media print {
+  body::before, .portal-animated-background::before, .portal-animated-background::after { display: none !important; }
+  .report-print-area, .analysis-print-area { backdrop-filter: none !important; background-image: none !important; }
+  .portal-page-content h1::after { animation: none !important; }
+}
