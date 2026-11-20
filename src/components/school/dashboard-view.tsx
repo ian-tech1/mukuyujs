@@ -334,6 +334,13 @@ export function DashboardView({ ws, refresh, flash }: Gate) {
         })()}</p>
       </header>
       {(ws.me.role === "teacher" || (ws.me.role === "admin" && !ws.me.isDeputy)) ? <p role="status" className="rounded-xl border border-info/25 bg-info/5 px-4 py-3 text-sm text-muted">Dashboard result summaries use only marks your account is allowed to view. Teacher results follow your class/subject assignments and the Super Admin’s marks-view controls. If expected results are missing, ask the Super Admin to check your assignment and the selected year, term and CAT permissions.</p> : null}
+      <nav className="sticky top-0 z-20 -mx-1 flex min-w-0 items-center gap-2 overflow-x-auto rounded-xl border border-line bg-paper/95 p-2 shadow-sm backdrop-blur" aria-label="Dashboard sections">
+        <span className="shrink-0 px-1 text-xs font-semibold uppercase tracking-wide text-muted">Jump to</span>
+        <a className="shrink-0 rounded-full bg-navy px-3 py-2 text-xs font-semibold text-paper" href="#dashboard-summary">Overview</a>
+        <a className="shrink-0 rounded-full bg-card px-3 py-2 text-xs font-semibold text-navy" href="#dashboard-performance">Performance</a>
+        <a className="shrink-0 rounded-full bg-card px-3 py-2 text-xs font-semibold text-navy" href="#dashboard-quality">Data quality</a>
+        <a className="shrink-0 rounded-full bg-card px-3 py-2 text-xs font-semibold text-navy" href="#dashboard-interventions">Interventions</a>
+      </nav>
       <section className="dashboard-command-center rounded-2xl border border-line bg-card p-4 shadow-card" aria-labelledby="dashboard-command-title">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-brass">Dashboard command center</p><h2 id="dashboard-command-title" className="font-serif text-2xl text-navy">Work faster with your school data</h2><p className="mt-1 text-sm text-muted">Last refreshed {refreshedAt.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })} · Press <kbd className="rounded border border-line bg-paper px-1.5 py-0.5 text-xs">/</kbd> to search or <kbd className="rounded border border-line bg-paper px-1.5 py-0.5 text-xs">R</kbd> to refresh.</p></div>
@@ -354,7 +361,6 @@ export function DashboardView({ ws, refresh, flash }: Gate) {
             <label className="text-xs font-semibold text-navy">Rows to show<select className="mt-1 w-full rounded-lg border border-line bg-card px-3 py-2 text-sm font-normal" value={maxFocusRows} onChange={(event) => setMaxFocusRows(event.target.value)}><option value="10">10 rows</option><option value="20">20 rows</option><option value="40">40 rows</option><option value="all">All rows</option></select></label>
           </div>
           <div className="flex flex-wrap items-center gap-2 text-xs"><button type="button" className={`rounded-full border px-3 py-2 font-semibold ${incompleteOnly ? "border-warn bg-warn/10 text-warn" : "border-line text-navy"}`} aria-pressed={incompleteOnly} onClick={() => setIncompleteOnly((value) => !value)}>Incomplete marks only {incompleteOnly ? "✓" : ""}</button><span className="rounded-full bg-paper px-3 py-2 text-muted">Pinned learners: {pinnedLearners.length}</span><button type="button" className="rounded-full border border-line px-3 py-2 font-semibold text-navy" onClick={() => setPinnedLearners([])}>Clear pins</button><span className="ml-auto text-muted">{focusRows.length} records match all filters</span></div>
-          <nav className="flex flex-wrap gap-2 border-t border-line pt-3" aria-label="Dashboard sections"><a className="rounded-full bg-paper px-3 py-2 text-xs font-semibold text-navy" href="#dashboard-summary">Summary</a><a className="rounded-full bg-paper px-3 py-2 text-xs font-semibold text-navy" href="#dashboard-performance">Performance</a><a className="rounded-full bg-paper px-3 py-2 text-xs font-semibold text-navy" href="#dashboard-quality">Data quality</a><a className="rounded-full bg-paper px-3 py-2 text-xs font-semibold text-navy" href="#dashboard-interventions">Interventions</a></nav>
         </div> : null}
       </section>
       <SchoolIntelligenceCenter ws={ws} refresh={refresh} flash={flash} />
@@ -382,7 +388,7 @@ export function DashboardView({ ws, refresh, flash }: Gate) {
           {compareRows.length ? <div className="mt-4 rounded-xl border border-info/20 bg-info/5 p-4"><div className="flex flex-wrap items-center justify-between gap-2"><div><p className="text-xs font-semibold uppercase tracking-wide text-info">Side-by-side comparison</p><p className="text-sm text-muted">Select up to two learner rows using ⇄.</p></div><button type="button" className="rounded-full border border-line px-3 py-2 text-xs font-semibold text-navy" onClick={() => setCompareIds([])}>Clear comparison</button></div><div className="mt-3 grid gap-2 sm:grid-cols-2">{compareRows.map((row) => <div key={row.learner.id} className="rounded-lg border border-line bg-card p-3"><p className="font-semibold text-navy">{row.learner.fullName}</p><div className="mt-2 grid grid-cols-3 gap-2 text-center text-xs"><span><strong className="block text-lg text-info">{fmt(row.avgMean)}</strong>Mean</span><span><strong className="block text-lg text-navy">{row.overall.position}</strong>Position</span><span><strong className="block text-lg text-navy">{learnerCoverage.find((item) => item.learner.id === row.learner.id)?.percent ?? 0}%</strong>Coverage</span></div></div>)}</div></div> : null}
         </> : null}
       </section>
-      <section className="grid gap-2 sm:grid-cols-4">
+      <section id="dashboard-summary" className="scroll-mt-24 grid gap-2 sm:grid-cols-4">
         {ws.years.map((year) => {
           const yearMarks = periodMarks(ws.marks, year.id, ws.profile.activeTermId);
           const mean = meanOf(buildBoards(ws.learners, yearMarks, subjects, exams, ws.bands).map((board) => board.avgMean));
@@ -406,7 +412,7 @@ export function DashboardView({ ws, refresh, flash }: Gate) {
         <p><strong>Best girl North:</strong> {displayNames(bestGirlNorth)}</p><p><strong>Best girl South:</strong> {displayNames(bestGirlSouth)}</p><p><strong>Best girl overall:</strong> {displayNames(bestGirls)}</p><p><strong>Best student overall:</strong> {displayNames(bestOverall)}</p>
         {bestSubjectLeaders.map((item) => <p key={item.subject.id}><strong>Best in {item.subject.name}:</strong> {item.names}{item.score == null ? "" : ` (${fmt(item.score)})`}</p>)}
       </div><p className="mt-2 text-xs text-muted">All ties are included. North/South awards are based on stream names containing “North” or “South”.</p></section>
-      <section id="dashboard-performance" className="grid gap-4 lg:grid-cols-[1.3fr_0.7fr]">
+      <section id="dashboard-performance" className="scroll-mt-24 grid gap-4 lg:grid-cols-[1.3fr_0.7fr]">
         <article className="rounded-md border border-line bg-card p-4 shadow-card">
           <h2 className="font-serif text-xl text-navy">{focusGrade?.grade.name ?? "Grade"} subject means</h2>
           <div className="mt-4 h-64">
@@ -445,7 +451,7 @@ export function DashboardView({ ws, refresh, flash }: Gate) {
         />
         <List title="Needs support (mean under 41)" rows={concern.map((row) => `${row.learner.fullName}  ·  ${fmt(row.avgMean)} ${row.level ?? ""}`)} empty="Nobody is under 41." />
       </section>
-      <section id="dashboard-quality" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <section id="dashboard-quality" className="scroll-mt-24 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Tile label="Learners with marks" value={`${learnersWithMarks.size}/${ws.learners.length}`} hint="Learners with at least one recorded score" />
         <Tile label="Learners awaiting marks" value={String(learnersWithoutMarks.length)} hint="No recorded score in the selected period" />
         <Tile label="Mark completion" value={`${averageCompletion}%`} hint="Average completion across subjects" />
@@ -572,7 +578,7 @@ export function DashboardView({ ws, refresh, flash }: Gate) {
           {biggestSubjectGaps.length ? <ul className="mt-3 space-y-2 text-sm">{biggestSubjectGaps.map((row) => <li key={row.learner.id} className="border-b border-line/70 pb-2"><p className="font-medium">{row.learner.fullName} · {(row.strongestAvg - row.weakestAvg).toFixed(1)} pts</p><p className="text-xs text-muted">{row.strongest.name}: {fmt(row.strongestAvg)} · {row.weakest.name}: {fmt(row.weakestAvg)}</p></li>)}</ul> : <p className="mt-3 text-sm text-muted">Not enough subject results yet.</p>}
         </article>
       </section>
-      <section id="dashboard-interventions" className="space-y-4">
+      <section id="dashboard-interventions" className="scroll-mt-24 space-y-4">
         <div>
           <h2 className="font-serif text-2xl text-navy">Advanced school intelligence & governance</h2>
           <p className="mt-1 text-sm text-muted">Ten additional insights based on the active academic year and term. These are advisory alerts; they do not change marks or learner records.</p>
