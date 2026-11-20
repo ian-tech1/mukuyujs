@@ -333,6 +333,7 @@ export function DashboardView({ ws, refresh, flash }: Gate) {
           return `${dateStr} · ${timeStr} · ${roleLine(ws.me.role)} · ${ws.profile.name}`;
         })()}</p>
       </header>
+      {(ws.me.role === "teacher" || (ws.me.role === "admin" && !ws.me.isDeputy)) ? <p role="status" className="rounded-xl border border-info/25 bg-info/5 px-4 py-3 text-sm text-muted">Dashboard result summaries use only marks your account is allowed to view. Teacher results follow your class/subject assignments and the Super Admin’s marks-view controls. If expected results are missing, ask the Super Admin to check your assignment and the selected year, term and CAT permissions.</p> : null}
       <section className="dashboard-command-center rounded-2xl border border-line bg-card p-4 shadow-card" aria-labelledby="dashboard-command-title">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-brass">Dashboard command center</p><h2 id="dashboard-command-title" className="font-serif text-2xl text-navy">Work faster with your school data</h2><p className="mt-1 text-sm text-muted">Last refreshed {refreshedAt.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })} · Press <kbd className="rounded border border-line bg-paper px-1.5 py-0.5 text-xs">/</kbd> to search or <kbd className="rounded border border-line bg-paper px-1.5 py-0.5 text-xs">R</kbd> to refresh.</p></div>

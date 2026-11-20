@@ -455,7 +455,21 @@ export const getWorkspace = createServerFn({ method: "GET" }).handler(async (): 
     from assignments`;
   const assignments = isAdmin(me.role) ? assignmentRows : assignmentRows.filter((row) => row.userId === me.id);
   if (me.role === "teacher" || (me.role === "admin" && !me.isDeputy)) {
-    marks = marks.filter((mark) => canViewMark(me, assignments, mark, markControlFor({ markControls }, mark.yearId, mark.termId, mark.examId)));
+    const placementByLearnerYear = new Map(placements.map((placement) => [`${placement.learnerId}|${placement.yearId}`, placement]));
+    const learnerById = new Map(learners.map((learner) => [learner.id, learner]));
+    marks = marks.filter((mark) => {
+      const placement = placementByLearnerYear.get(`${mark.learnerId}|${mark.yearId}`);
+      const learner = learnerById.get(mark.learnerId);
+      // Older records may not have class stamps on the mark itself. Resolve the
+      // learner's year placement before applying role scope, or valid teacher
+      // marks disappear from the dashboard and mark views.
+      const scopedMark = {
+        ...mark,
+        gradeId: mark.gradeId ?? placement?.gradeId ?? learner?.gradeId,
+        streamId: mark.streamId ?? placement?.streamId ?? learner?.streamId,
+      };
+      return canViewMark(me, assignments, scopedMark, markControlFor({ markControls }, mark.yearId, mark.termId, mark.examId));
+    });
   }
   const subjectTeacherSlots = await sql<SubjectTeacherSlot>`
     select a.subject_id as "subjectId", a.grade_id as "gradeId", a.stream_id as "streamId", u.initials
