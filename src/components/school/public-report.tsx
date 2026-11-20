@@ -5,6 +5,7 @@ import { SchoolLogo } from "@/components/school/logo";
 import { getPublicReport } from "@/lib/school/api";
 import { QrParentFeedback } from "@/components/school/qr-parent-feedback";
 import { downloadReportPdf, qrFor } from "@/lib/school/pdf";
+import { logoDataUrl } from "@/lib/school/brand";
 
 type PublicReportData = Extract<Awaited<ReturnType<typeof getPublicReport>>, { profile: unknown }>;
 
@@ -65,7 +66,8 @@ export function PublicReport({ code }: { code: string }) {
       const url = new URL(`/?c=${encodeURIComponent(code)}`, window.location.origin).toString();
       const qr = data.profile.showQr ? await qrFor(url) : "";
       const safeName = data.row.learner.fullName.trim().replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "").toLowerCase() || "learner";
-      await downloadReportPdf(`${safeName}-${data.profile.academicYear}-${data.profile.termName}-report.pdf`.replace(/[^a-z0-9._-]+/gi, "-"), [{ profile: data.profile, grade: data.grade, stream: data.stream, subjects: data.subjects, exams: data.exams, row: data.row, extras: data.extras, qr, logo: data.profile.logoData || "" }]);
+      const logo = await logoDataUrl(data.profile.logoData || "");
+      await downloadReportPdf(`${safeName}-${data.profile.academicYear}-${data.profile.termName}-report.pdf`.replace(/[^a-z0-9._-]+/gi, "-"), [{ profile: data.profile, grade: data.grade, stream: data.stream, subjects: data.subjects, exams: data.exams, row: data.row, extras: data.extras, qr, logo }]);
     } catch { window.print(); }
     finally { setDownloading(false); }
   }

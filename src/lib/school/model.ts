@@ -111,9 +111,15 @@ export type Learner = {
   admissionNumber: string | null;
   cohortYear: string;
 };
-export type MarkControl = { yearId: string; termId: string; examId: string; entryAllowed: boolean; editAllowed: boolean; reason: string };
+export type MarkControl = {
+  yearId: string; termId: string; examId: string; entryAllowed: boolean; editAllowed: boolean; reason: string;
+  deadlineAt?: string | null; adminsCanEnter?: boolean; subjectTeachersCanEnter?: boolean; classTeachersCanEnter?: boolean;
+  classTeachersAllSubjects?: boolean; adminsCanViewMarks?: boolean; subjectTeachersCanViewMarks?: boolean; classTeachersCanViewMarks?: boolean;
+  adminsCanEditLocked?: boolean; subjectTeachersCanEditLocked?: boolean; classTeachersCanEditLocked?: boolean;
+  updatedBy?: string | null; updatedAt?: string | null;
+};
 export type Placement = { learnerId: string; yearId: string; gradeId: string; streamId: string };
-export type Mark = { learnerId: string; subjectId: string; examId: string; score: number; yearId: string; termId: string; gradeId?: string; streamId?: string; status?: string };
+export type Mark = { learnerId: string; subjectId: string; examId: string; score: number; yearId: string; termId: string; gradeId?: string; streamId?: string; status?: string; updatedAt?: string; updatedBy?: string | null; updatedByName?: string | null };
 export type Year = { id: string; name: string; sort: number };
 export type Term = { id: string; name: string; sort: number };
 export type TermAssessment = { yearId: string; termId: string; examId: string; active: boolean };
@@ -618,5 +624,45 @@ export function learnersForYear(ws: Pick<Workspace, "learners" | "placements" | 
 
 /** The lock settings for one year, term and CAT (everything is open when nothing is saved). */
 export function markControlFor(ws: Pick<Workspace, "markControls">, yearId: string, termId: string, examId: string) {
-  return ws.markControls.find((row) => row.yearId === yearId && row.termId === termId && row.examId === examId) ?? { yearId, termId, examId, entryAllowed: true, editAllowed: true, reason: "" };
+  return ws.markControls.find((row) => row.yearId === yearId && row.termId === termId && row.examId === examId) ?? {
+    yearId, termId, examId, entryAllowed: true, editAllowed: true, reason: "", deadlineAt: null,
+    adminsCanEnter: true, subjectTeachersCanEnter: true, classTeachersCanEnter: true, classTeachersAllSubjects: true,
+    adminsCanViewMarks: true, subjectTeachersCanViewMarks: true, classTeachersCanViewMarks: true,
+    adminsCanEditLocked: false, subjectTeachersCanEditLocked: false, classTeachersCanEditLocked: false,
+  };
+}
+
+function assignmentMatches(assignment: Assignment, me: Me, learner: Pick<Learner, "gradeId" | "streamId">, subjectId: string) {
+  if (assignment.userId !== me.id) return false;
+  if (assignment.gradeId && assignment.gradeId !== learner.gradeId) return false;
+  if (assignment.streamId && assignment.streamId !== learner.streamId) return false;
+  if (assignment.kind === "class_teacher") return assignment.streamId === learner.streamId;
+  if (assignment.kind === "dos") return true;
+  return (assignment.kind === "subject_teacher" || assignment.kind === "hod") && assignment.subjectId === subjectId;
+}
+
+export function canEnterMark(me: Me, assignments: Assignment[], learner: Learner, subjectId: string, control: MarkControl, locked = false) {
+  if (!me.active) return false;
+  if (me.role === "super_admin" || me.isDeputy) return true;
+  if (me.role === "admin") return locked ? Boolean(control.adminsCanEditLocked) : control.adminsCanEnter !== false;
+  if (me.role !== "teacher") return false;
+  const subjectAssigned = assignments.some((assignment) => assignmentMatches(assignment, me, learner, subjectId) && (assignment.kind === "subject_teacher" || assignment.kind === "hod"));
+  const classAssigned = assignments.some((assignment) => assignmentMatches(assignment, me, learner, subjectId) && assignment.kind === "class_teacher");
+  const dosAssigned = assignments.some((assignment) => assignmentMatches(assignment, me, learner, subjectId) && assignment.kind === "dos");
+  if (locked) return Boolean((subjectAssigned && control.subjectTeachersCanEditLocked) || (classAssigned && control.classTeachersCanEditLocked));
+  if (subjectAssigned && control.subjectTeachersCanEnter !== false) return true;
+  if (classAssigned && control.classTeachersCanEnter !== false && control.classTeachersAllSubjects !== false) return true;
+  return dosAssigned;
+}
+
+export function canViewMark(me: Me, assignments: Assignment[], mark: Mark, control: MarkControl) {
+  if (!me.active) return false;
+  if (me.role === "super_admin" || me.isDeputy) return true;
+  if (me.role === "admin") return control.adminsCanViewMarks !== false;
+  if (me.role !== "teacher") return true;
+  const learnerScope = { gradeId: mark.gradeId ?? "", streamId: mark.streamId ?? "" };
+  const subjectAssigned = assignments.some((assignment) => assignmentMatches(assignment, me, learnerScope, mark.subjectId) && (assignment.kind === "subject_teacher" || assignment.kind === "hod"));
+  const classAssigned = assignments.some((assignment) => assignmentMatches(assignment, me, learnerScope, mark.subjectId) && assignment.kind === "class_teacher");
+  const dosAssigned = assignments.some((assignment) => assignmentMatches(assignment, me, learnerScope, mark.subjectId) && assignment.kind === "dos");
+  return Boolean((subjectAssigned && control.subjectTeachersCanViewMarks !== false) || (classAssigned && control.classTeachersCanViewMarks !== false) || dosAssigned);
 }

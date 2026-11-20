@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { createHmac, randomBytes, randomInt, scryptSync, timingSafeEqual } from "node:crypto";
 import { getSql, type Sql } from "@/lib/db";
 import type { AppearancePalette, Assignment, AvailabilityLevel, Band, ClassConstraint, Decorated, Exam, Grade, Learner, LessonRelation, MailItem, Mark, MarkControl, Me, Placement, Profile, ReportExtras, Role, StaffMember, Stream, Subject, SubjectConstraint, SubjectRemark, SubjectTeacherSlot, TeacherContract, TermAssessment, TermNote, TimetableAvailability, TimetableEntry, TimetablePeriod, TimetableRequirement, TimetableRoom, TimetableState, TimetableVersion, Workspace } from "@/lib/school/model";
-import { DEFAULT_APPEARANCE, isAdmin, buildBoards, decorate, can, canEditLearner, canEditMark, canManageTimetable } from "@/lib/school/model";
+import { DEFAULT_APPEARANCE, isAdmin, buildBoards, decorate, can, canEditLearner, canEditMark, canEnterMark, canViewMark, markControlFor, canManageTimetable } from "@/lib/school/model";
 import { initialsForSubject, meanForPeriod, previousPeriod } from "@/lib/school/extras";
 import { canReadPortalMusic, isSupportedMusicSource, normalizeMusicAttribution, normalizeMusicOptions } from "@/lib/school/music";
 import { DEFAULT_WELCOME_DISPLAY, normalizeWelcomeDisplay, type WelcomeDisplayOptions } from "@/lib/school/welcome-display";
@@ -421,7 +421,7 @@ export const getWorkspace = createServerFn({ method: "GET" }).handler(async (): 
   const years = await sql<{ id: string; name: string; sort: number }>`select id, name, sort from academic_years order by sort`;
   const terms = await sql<{ id: string; name: string; sort: number }>`select id, name, sort from terms order by sort`;
   const termAssessments = await sql<TermAssessment>`select year_id as "yearId", term_id as "termId", exam_id as "examId", active from term_assessments order by year_id, term_id, exam_id`;
-  const markControls = await sql<MarkControl>`select year_id as "yearId", term_id as "termId", exam_id as "examId", entry_allowed as "entryAllowed", edit_allowed as "editAllowed", reason from mark_controls`;
+  const markControls = await sql<MarkControl>`select year_id as "yearId", term_id as "termId", exam_id as "examId", entry_allowed as "entryAllowed", edit_allowed as "editAllowed", reason, deadline_at::text as "deadlineAt", admins_can_enter as "adminsCanEnter", subject_teachers_can_enter as "subjectTeachersCanEnter", class_teachers_can_enter as "classTeachersCanEnter", class_teachers_all_subjects as "classTeachersAllSubjects", admins_can_view_marks as "adminsCanViewMarks", subject_teachers_can_view_marks as "subjectTeachersCanViewMarks", class_teachers_can_view_marks as "classTeachersCanViewMarks", admins_can_edit_locked as "adminsCanEditLocked", subject_teachers_can_edit_locked as "subjectTeachersCanEditLocked", class_teachers_can_edit_locked as "classTeachersCanEditLocked", updated_by as "updatedBy", updated_at::text as "updatedAt" from mark_controls`;
   const calendars = await sql<{
     yearId: string; termId: string; closingDate: string; openingDate: string; reportTitle: string; requirements: string;
   }>`
@@ -441,8 +441,10 @@ export const getWorkspace = createServerFn({ method: "GET" }).handler(async (): 
 
   const allowed = new Set(learners.map((learner) => learner.id));
   const markRows = await sql<Mark>`
-    select learner_id as "learnerId", subject_id as "subjectId", exam_id as "examId", score,
-      year_id as "yearId", term_id as "termId", grade_id as "gradeId", stream_id as "streamId", status from marks`;
+    select m.learner_id as "learnerId", m.subject_id as "subjectId", m.exam_id as "examId", m.score,
+      m.year_id as "yearId", m.term_id as "termId", m.grade_id as "gradeId", m.stream_id as "streamId", m.status,
+      m.updated_at::text as "updatedAt", m.updated_by as "updatedBy", u.full_name as "updatedByName"
+    from marks m left join users u on u.id = m.updated_by`;
   let marks = me.role === "student" || me.role === "parent" ? markRows.filter((mark) => allowed.has(mark.learnerId)) : markRows;
   if ((me.role === "student" || me.role === "parent") && !canActorAccess(roleAccess, me.role, "familyResults", "view")) marks = [];
 
@@ -452,6 +454,9 @@ export const getWorkspace = createServerFn({ method: "GET" }).handler(async (): 
     select id, user_id as "userId", kind, grade_id as "gradeId", stream_id as "streamId", subject_id as "subjectId"
     from assignments`;
   const assignments = isAdmin(me.role) ? assignmentRows : assignmentRows.filter((row) => row.userId === me.id);
+  if (me.role === "teacher" || (me.role === "admin" && !me.isDeputy)) {
+    marks = marks.filter((mark) => canViewMark(me, assignments, mark, markControlFor({ markControls }, mark.yearId, mark.termId, mark.examId)));
+  }
   const subjectTeacherSlots = await sql<SubjectTeacherSlot>`
     select a.subject_id as "subjectId", a.grade_id as "gradeId", a.stream_id as "streamId", u.initials
     from assignments a join users u on u.id = a.user_id
@@ -798,28 +803,47 @@ export const deleteLearner = createServerFn({ method: "POST" })
     return { ok: true, archived: true };
   });
 
+type MarkAuditChange = { action: "entered" | "edited" | "cleared"; source: string; learnerId: string; learnerName: string; subjectId: string; subjectName: string; examId: string; yearId: string; termId: string; oldScore: number | null; newScore: number | null; reason?: string };
+async function recordMarkAudit(sql: Sql, me: Me, change: MarkAuditChange) {
+  await sql`insert into mark_audit_log (id, actor_id, actor_name, actor_role, action, source, learner_id, learner_name, subject_id, subject_name, exam_id, year_id, term_id, old_score, new_score, reason)
+    values (${newId("mka")}, ${me.id}, ${me.fullName}, ${me.role}, ${change.action}, ${change.source}, ${change.learnerId}, ${change.learnerName}, ${change.subjectId}, ${change.subjectName}, ${change.examId}, ${change.yearId}, ${change.termId}, ${change.oldScore}, ${change.newScore}, ${(change.reason ?? "").slice(0, 300)})`;
+}
+
+export const getMarkAuditHistory = createServerFn({ method: "GET" })
+  .handler(async () => {
+    const me = await requireActor();
+    if (!isPowerful(me)) throw new Error("Only the Super Admin and Deputy Super Admins can view mark change history.");
+    const sql = await getSql();
+    return sql<{ id: string; actorName: string; actorRole: string; action: string; source: string; learnerName: string; subjectName: string; examId: string; yearId: string; termId: string; oldScore: number | null; newScore: number | null; reason: string; createdAt: string }>`
+      select id, actor_name as "actorName", actor_role as "actorRole", action, source, learner_name as "learnerName", subject_name as "subjectName", exam_id as "examId", year_id as "yearId", term_id as "termId", old_score as "oldScore", new_score as "newScore", reason, created_at::text as "createdAt"
+      from mark_audit_log order by created_at desc limit 200`;
+  });
+
 export const getMarkControl = createServerFn({ method: "GET" })
   .validator((input: { yearId: string; termId: string; examId: string }) => input)
   .handler(async ({ data }) => {
     const me = await requireActor();
     if (!isPowerful(me)) throw new Error("Only the super admin and deputy super admins can view mark-entry controls.");
     const sql = await getSql();
-    const rows = await sql<{ entry_allowed: boolean; edit_allowed: boolean; reason: string }>`select entry_allowed, edit_allowed, reason from mark_controls where year_id = ${data.yearId} and term_id = ${data.termId} and exam_id = ${data.examId}`;
-    return rows[0] ? { entryAllowed: rows[0].entry_allowed, editAllowed: rows[0].edit_allowed, reason: rows[0].reason ?? "" } : { entryAllowed: true, editAllowed: true, reason: "" };
+    const rows = await sql<MarkControl>`select year_id as "yearId", term_id as "termId", exam_id as "examId", entry_allowed as "entryAllowed", edit_allowed as "editAllowed", reason, deadline_at::text as "deadlineAt", admins_can_enter as "adminsCanEnter", subject_teachers_can_enter as "subjectTeachersCanEnter", class_teachers_can_enter as "classTeachersCanEnter", class_teachers_all_subjects as "classTeachersAllSubjects", admins_can_view_marks as "adminsCanViewMarks", subject_teachers_can_view_marks as "subjectTeachersCanViewMarks", class_teachers_can_view_marks as "classTeachersCanViewMarks", admins_can_edit_locked as "adminsCanEditLocked", subject_teachers_can_edit_locked as "subjectTeachersCanEditLocked", class_teachers_can_edit_locked as "classTeachersCanEditLocked", updated_by as "updatedBy", updated_at::text as "updatedAt" from mark_controls where year_id = ${data.yearId} and term_id = ${data.termId} and exam_id = ${data.examId}`;
+    return rows[0] ?? markControlFor({ markControls: [] }, data.yearId, data.termId, data.examId);
   });
 
 export const saveMarkControl = createServerFn({ method: "POST" })
-  .validator((input: { yearId: string; termId: string; examId: string; entryAllowed: boolean; editAllowed: boolean; reason?: string }) => input)
+  .validator((input: { yearId: string; termId: string; examId: string; entryAllowed: boolean; editAllowed: boolean; reason?: string; deadlineAt?: string | null; adminsCanEnter?: boolean; subjectTeachersCanEnter?: boolean; classTeachersCanEnter?: boolean; classTeachersAllSubjects?: boolean; adminsCanViewMarks?: boolean; subjectTeachersCanViewMarks?: boolean; classTeachersCanViewMarks?: boolean; adminsCanEditLocked?: boolean; subjectTeachersCanEditLocked?: boolean; classTeachersCanEditLocked?: boolean }) => input)
   .handler(async ({ data }) => {
     const me = await requireActor();
     if (!isPowerful(me)) throw new Error("Only the super admin and deputy super admins can lock or unlock marks.");
     const reason = (data.reason ?? "").trim().slice(0, 300);
+    const parsedDeadline = data.deadlineAt?.trim() ? new Date(data.deadlineAt) : null;
+    if (parsedDeadline && Number.isNaN(parsedDeadline.getTime())) throw new Error("Choose a valid marks deadline date and time.");
+    const deadlineAt = parsedDeadline?.toISOString() ?? null;
     const sql = await getSql();
     const valid = await sql`select (select count(*) from academic_years where id = ${data.yearId}) as years, (select count(*) from terms where id = ${data.termId}) as terms, (select count(*) from exams where id = ${data.examId}) as exams`;
     if (Number(valid[0]?.years) < 1 || Number(valid[0]?.terms) < 1 || Number(valid[0]?.exams) < 1) throw new Error("Choose a valid year, term and CAT.");
-    await sql`insert into mark_controls (year_id, term_id, exam_id, entry_allowed, edit_allowed, reason, updated_by, updated_at)
-      values (${data.yearId}, ${data.termId}, ${data.examId}, ${Boolean(data.entryAllowed)}, ${Boolean(data.editAllowed)}, ${reason}, ${me.id}, now())
-      on conflict (year_id, term_id, exam_id) do update set entry_allowed = ${Boolean(data.entryAllowed)}, edit_allowed = ${Boolean(data.editAllowed)}, reason = ${reason}, updated_by = ${me.id}, updated_at = now()`;
+    await sql`insert into mark_controls (year_id, term_id, exam_id, entry_allowed, edit_allowed, reason, deadline_at, admins_can_enter, subject_teachers_can_enter, class_teachers_can_enter, class_teachers_all_subjects, admins_can_view_marks, subject_teachers_can_view_marks, class_teachers_can_view_marks, admins_can_edit_locked, subject_teachers_can_edit_locked, class_teachers_can_edit_locked, updated_by, updated_at)
+      values (${data.yearId}, ${data.termId}, ${data.examId}, ${Boolean(data.entryAllowed)}, ${Boolean(data.editAllowed)}, ${reason}, ${deadlineAt}, ${data.adminsCanEnter ?? true}, ${data.subjectTeachersCanEnter ?? true}, ${data.classTeachersCanEnter ?? true}, ${data.classTeachersAllSubjects ?? true}, ${data.adminsCanViewMarks ?? true}, ${data.subjectTeachersCanViewMarks ?? true}, ${data.classTeachersCanViewMarks ?? true}, ${data.adminsCanEditLocked ?? false}, ${data.subjectTeachersCanEditLocked ?? false}, ${data.classTeachersCanEditLocked ?? false}, ${me.id}, now())
+      on conflict (year_id, term_id, exam_id) do update set entry_allowed = ${Boolean(data.entryAllowed)}, edit_allowed = ${Boolean(data.editAllowed)}, reason = ${reason}, deadline_at = ${deadlineAt}, admins_can_enter = ${data.adminsCanEnter ?? true}, subject_teachers_can_enter = ${data.subjectTeachersCanEnter ?? true}, class_teachers_can_enter = ${data.classTeachersCanEnter ?? true}, class_teachers_all_subjects = ${data.classTeachersAllSubjects ?? true}, admins_can_view_marks = ${data.adminsCanViewMarks ?? true}, subject_teachers_can_view_marks = ${data.subjectTeachersCanViewMarks ?? true}, class_teachers_can_view_marks = ${data.classTeachersCanViewMarks ?? true}, admins_can_edit_locked = ${data.adminsCanEditLocked ?? false}, subject_teachers_can_edit_locked = ${data.subjectTeachersCanEditLocked ?? false}, class_teachers_can_edit_locked = ${data.classTeachersCanEditLocked ?? false}, updated_by = ${me.id}, updated_at = now()`;
     return { ok: true };
   });
 
@@ -830,8 +854,8 @@ export const saveMarks = createServerFn({ method: "POST" })
     const sql = await getSql();
     const yearId = data.yearId || "y2026";
     const termId = data.termId || "t3";
-    const controls = await sql<{ entry_allowed: boolean; edit_allowed: boolean; reason: string }>`select entry_allowed, edit_allowed, reason from mark_controls where year_id = ${yearId} and term_id = ${termId} and exam_id = ${data.examId}`;
-    const control = controls[0] ?? { entry_allowed: true, edit_allowed: true, reason: "" };
+    const controls = await sql<{ entry_allowed: boolean; edit_allowed: boolean; reason: string; deadline_at: string | null; admins_can_enter: boolean; subject_teachers_can_enter: boolean; class_teachers_can_enter: boolean; class_teachers_all_subjects: boolean; admins_can_edit_locked: boolean; subject_teachers_can_edit_locked: boolean; class_teachers_can_edit_locked: boolean }>`select entry_allowed, edit_allowed, reason, deadline_at::text as deadline_at, admins_can_enter, subject_teachers_can_enter, class_teachers_can_enter, class_teachers_all_subjects, admins_can_edit_locked, subject_teachers_can_edit_locked, class_teachers_can_edit_locked from mark_controls where year_id = ${yearId} and term_id = ${termId} and exam_id = ${data.examId}`;
+    const control = controls[0] ?? { entry_allowed: true, edit_allowed: true, reason: "", deadline_at: null, admins_can_enter: true, subject_teachers_can_enter: true, class_teachers_can_enter: true, class_teachers_all_subjects: true, admins_can_edit_locked: false, subject_teachers_can_edit_locked: false, class_teachers_can_edit_locked: false };
     // The super admin and deputies set the locks, so they are never blocked by them.
     const bypass = isPowerful(me);
     const note = control.reason ? ` (${control.reason})` : "";
@@ -844,31 +868,36 @@ export const saveMarks = createServerFn({ method: "POST" })
     const assignments = await sql<Assignment>`
       select id, user_id as "userId", kind, grade_id as "gradeId", stream_id as "streamId", subject_id as "subjectId"
       from assignments where user_id = ${me.id}`;
-    const { canEditMark } = await import("@/lib/school/model");
+    const subjectRows = await sql<{ name: string }>`select name from subjects where id = ${data.subjectId}`;
+    const subjectName = subjectRows[0]?.name ?? data.subjectId;
     for (const row of data.rows) {
       const learner = byId.get(row.learnerId);
       if (!learner) throw new Error("A learner in this list no longer exists.");
-      if (!canEditMark(me, assignments, learner, data.subjectId)) {
-        throw new Error(`You are not assigned to enter ${data.subjectId} for ${learner.fullName}.`);
-      }
-      const existing = await sql<{ score: number }>`select score from marks where learner_id = ${row.learnerId} and subject_id = ${data.subjectId} and exam_id = ${data.examId} and year_id = ${yearId} and term_id = ${termId}`;
+      const existing = await sql<{ score: number; updated_by: string | null; updated_at: string | null }>`select score, updated_by, updated_at::text as updated_at from marks where learner_id = ${row.learnerId} and subject_id = ${data.subjectId} and exam_id = ${data.examId} and year_id = ${yearId} and term_id = ${termId}`;
       const had = existing.length > 0;
+      const deadlinePassed = Boolean(control.deadline_at && new Date(control.deadline_at).getTime() <= Date.now());
+      const entryLocked = !control.entry_allowed || deadlinePassed;
+      const editLocked = !control.edit_allowed || deadlinePassed;
+      const markControl: MarkControl = { yearId, termId, examId: data.examId, entryAllowed: !entryLocked, editAllowed: !editLocked, reason: control.reason ?? "", deadlineAt: control.deadline_at, adminsCanEnter: control.admins_can_enter, subjectTeachersCanEnter: control.subject_teachers_can_enter, classTeachersCanEnter: control.class_teachers_can_enter, classTeachersAllSubjects: control.class_teachers_all_subjects, adminsCanEditLocked: control.admins_can_edit_locked, subjectTeachersCanEditLocked: control.subject_teachers_can_edit_locked, classTeachersCanEditLocked: control.class_teachers_can_edit_locked };
+      if (!isPowerful(me) && !canEnterMark(me, assignments, learner, data.subjectId, markControl, had && editLocked)) throw new Error(`You are not permitted to enter or edit ${subjectName} for ${learner.fullName}.`);
       if (row.score == null) {
         if (!had) continue; // blank cell, nothing saved: nothing to lock
-        if (!bypass && !control.edit_allowed) throw new Error(`Editing or clearing existing results is switched off for this academic year, term and CAT${note}.`);
+        if (!bypass && !canEnterMark(me, assignments, learner, data.subjectId, markControl, true)) throw new Error(`Editing or clearing existing results is locked${note}.`);
         await sql`delete from marks where learner_id = ${row.learnerId} and subject_id = ${data.subjectId} and exam_id = ${data.examId} and year_id = ${yearId} and term_id = ${termId}`;
+        await recordMarkAudit(sql, me, { action: "cleared", source: "manual", learnerId: learner.id, learnerName: learner.fullName, subjectId: data.subjectId, subjectName, examId: data.examId, yearId, termId, oldScore: Number(existing[0].score), newScore: null });
         continue;
       }
       const score = Math.round(Number(row.score));
       if (!Number.isFinite(score) || score < 0 || score > 100) throw new Error("Scores must be between 0 and 100.");
       if (had && Number(existing[0].score) === score) continue; // unchanged: not an edit
-      if (!had && !bypass && !control.entry_allowed) throw new Error(`Mark entry is locked for this academic year, term and CAT${note}.`);
-      if (had && !bypass && !control.edit_allowed) throw new Error(`Editing existing results is switched off for this academic year, term and CAT${note}.`);
+      if (!had && !bypass && entryLocked && !canEnterMark(me, assignments, learner, data.subjectId, markControl, true)) throw new Error(`Mark entry is locked for this academic year, term and CAT${note}. Contact the Super Admin or a Deputy Super Admin.`);
+      if (had && !bypass && editLocked && !canEnterMark(me, assignments, learner, data.subjectId, markControl, true)) throw new Error(`Editing existing results is locked${note}. Contact the Super Admin or a Deputy Super Admin.`);
       await sql`
         insert into marks (learner_id, subject_id, exam_id, year_id, term_id, grade_id, stream_id, score, updated_by, updated_at)
         values (${row.learnerId}, ${data.subjectId}, ${data.examId}, ${yearId}, ${termId}, ${learner.gradeId}, ${learner.streamId}, ${score}, ${me.id}, now())
         on conflict (learner_id, subject_id, exam_id, year_id, term_id)
         do update set score = ${score}, grade_id = ${learner.gradeId}, stream_id = ${learner.streamId}, status = 'recorded', updated_by = ${me.id}, updated_at = now()`;
+      await recordMarkAudit(sql, me, { action: had ? "edited" : "entered", source: "manual", learnerId: learner.id, learnerName: learner.fullName, subjectId: data.subjectId, subjectName, examId: data.examId, yearId, termId, oldScore: had ? Number(existing[0].score) : null, newScore: score });
     }
     return { ok: true };
   });
@@ -2154,11 +2183,16 @@ export const clearBulkResults = createServerFn({ method: "POST" })
     await sql`insert into office_backups (id,kind,note,payload,created_by) values (${backupId},'pre-delete',${`Safety snapshot before clearing marks: ${scope}`},${JSON.stringify(safety)},${me.id})`;
     const rows = data.streamId
       ? data.examId
-        ? await sql<{ id: string }>`delete from marks where grade_id=${data.gradeId} and stream_id=${data.streamId} and year_id=${data.yearId} and term_id=${data.termId} and exam_id=${data.examId} returning learner_id as id`
-        : await sql<{ id: string }>`delete from marks where grade_id=${data.gradeId} and stream_id=${data.streamId} and year_id=${data.yearId} and term_id=${data.termId} returning learner_id as id`
+        ? await sql<{ learnerId: string; subjectId: string; examId: string; score: number }>`delete from marks where grade_id=${data.gradeId} and stream_id=${data.streamId} and year_id=${data.yearId} and term_id=${data.termId} and exam_id=${data.examId} returning learner_id as "learnerId", subject_id as "subjectId", exam_id as "examId", score`
+        : await sql<{ learnerId: string; subjectId: string; examId: string; score: number }>`delete from marks where grade_id=${data.gradeId} and stream_id=${data.streamId} and year_id=${data.yearId} and term_id=${data.termId} returning learner_id as "learnerId", subject_id as "subjectId", exam_id as "examId", score`
       : data.examId
-        ? await sql<{ id: string }>`delete from marks where grade_id=${data.gradeId} and year_id=${data.yearId} and term_id=${data.termId} and exam_id=${data.examId} returning learner_id as id`
-        : await sql<{ id: string }>`delete from marks where grade_id=${data.gradeId} and year_id=${data.yearId} and term_id=${data.termId} returning learner_id as id`;
+        ? await sql<{ learnerId: string; subjectId: string; examId: string; score: number }>`delete from marks where grade_id=${data.gradeId} and year_id=${data.yearId} and term_id=${data.termId} and exam_id=${data.examId} returning learner_id as "learnerId", subject_id as "subjectId", exam_id as "examId", score`
+        : await sql<{ learnerId: string; subjectId: string; examId: string; score: number }>`delete from marks where grade_id=${data.gradeId} and year_id=${data.yearId} and term_id=${data.termId} returning learner_id as "learnerId", subject_id as "subjectId", exam_id as "examId", score`;
+    const auditSubjects = await sql<{ id: string; name: string }>`select id, name from subjects`;
+    for (const row of rows) {
+      const learner = await sql<{ full_name: string }>`select full_name from learners where id=${row.learnerId}`;
+      await recordMarkAudit(sql, me, { action: "cleared", source: "bulk-clear", learnerId: row.learnerId, learnerName: learner[0]?.full_name ?? row.learnerId, subjectId: row.subjectId, subjectName: auditSubjects.find((subject) => subject.id === row.subjectId)?.name ?? row.subjectId, examId: row.examId, yearId: data.yearId, termId: data.termId, oldScore: Number(row.score), newScore: null, reason: scope });
+    }
     await sql`delete from office_backups where kind='pre-delete' and id not in (select id from office_backups where kind='pre-delete' order by created_at desc limit 10)`;
     return { ok: true, cleared: rows.length, scope, backupId };
   });
@@ -2908,10 +2942,13 @@ export const importMarksExcel = createServerFn({ method: "POST" })
     const term = await sql`select id from terms where id = ${data.termId}`;
     const exam = await sql`select id from exams where id = ${data.examId}`;
     if (!year[0] || !term[0] || !exam[0]) throw new Error("Select a valid academic year, term and CAT/exam.");
-    const controlRows = await sql<{ entry_allowed: boolean; edit_allowed: boolean }>`select entry_allowed, edit_allowed from mark_controls where year_id = ${data.yearId} and term_id = ${data.termId} and exam_id = ${data.examId}`;
-    const control = controlRows[0] ?? { entry_allowed: true, edit_allowed: true };
+    const controlRows = await sql<{ entry_allowed: boolean; edit_allowed: boolean; reason: string; deadline_at: string | null; admins_can_enter: boolean; subject_teachers_can_enter: boolean; class_teachers_can_enter: boolean; class_teachers_all_subjects: boolean; admins_can_edit_locked: boolean; subject_teachers_can_edit_locked: boolean; class_teachers_can_edit_locked: boolean }>`select entry_allowed, edit_allowed, reason, deadline_at::text as deadline_at, admins_can_enter, subject_teachers_can_enter, class_teachers_can_enter, class_teachers_all_subjects, admins_can_edit_locked, subject_teachers_can_edit_locked, class_teachers_can_edit_locked from mark_controls where year_id = ${data.yearId} and term_id = ${data.termId} and exam_id = ${data.examId}`;
+    const control = controlRows[0] ?? { entry_allowed: true, edit_allowed: true, reason: "", deadline_at: null, admins_can_enter: true, subject_teachers_can_enter: true, class_teachers_can_enter: true, class_teachers_all_subjects: true, admins_can_edit_locked: false, subject_teachers_can_edit_locked: false, class_teachers_can_edit_locked: false };
     const bypass = isPowerful(me);
+    const deadlinePassed = Boolean(control.deadline_at && new Date(control.deadline_at).getTime() <= Date.now());
+    const markControl: MarkControl = { yearId: data.yearId, termId: data.termId, examId: data.examId, entryAllowed: control.entry_allowed && !deadlinePassed, editAllowed: control.edit_allowed && !deadlinePassed, reason: control.reason ?? "", deadlineAt: control.deadline_at, adminsCanEnter: control.admins_can_enter, subjectTeachersCanEnter: control.subject_teachers_can_enter, classTeachersCanEnter: control.class_teachers_can_enter, classTeachersAllSubjects: control.class_teachers_all_subjects, adminsCanEditLocked: control.admins_can_edit_locked, subjectTeachersCanEditLocked: control.subject_teachers_can_edit_locked, classTeachersCanEditLocked: control.class_teachers_can_edit_locked };
     const placedAtYear = new Map((await learnersAtYear(sql, data.yearId)).map((placed) => [placed.id, placed]));
+    const assignments = await sql<Assignment>`select id, user_id as "userId", kind, grade_id as "gradeId", stream_id as "streamId", subject_id as "subjectId" from assignments where user_id = ${me.id}`;
     const availableSubjects = await sql<{ id: string; name: string; short_name: string }>`select id, name, short_name from subjects order by sort`;
     const normalizeSubject = (value: string) => value.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/\([^)]*\)/g, " ").toLowerCase().replace(/&/g, "and").replace(/[^a-z0-9]+/g, " ").trim().replace(/\s+/g, " ");
     const activeLearners = await sql<{ id: string; full_name: string; admission_number: string | null; grade_id: string; stream_id: string }>`select id, full_name, admission_number, grade_id, stream_id from learners where status = 'active'`;
@@ -2956,18 +2993,18 @@ export const importMarksExcel = createServerFn({ method: "POST" })
       const key = `${learner.id}|${matchedSubject.id}`;
       if (seen.has(key)) { errors.push(`Row ${line}: duplicate learner/subject row.`); continue; }
       seen.add(key);
-      if (me.role === "teacher") {
-        const assigned = await sql<{ id: string }>`select id from assignments where user_id = ${me.id} and subject_id = ${matchedSubject.id} and (grade_id is null or grade_id = ${learner.grade_id}) and (stream_id is null or stream_id = ${learner.stream_id})`;
-        if (!assigned[0]) { errors.push(`Row ${line}: you are not assigned to this subject/class.`); continue; }
-      }
       const existing = await sql<{ score: number }>`select score from marks where learner_id = ${learner.id} and subject_id = ${matchedSubject.id} and exam_id = ${data.examId} and year_id = ${data.yearId} and term_id = ${data.termId}`;
       if (existing.length && Number(existing[0].score) === Math.round(score)) continue; // unchanged: not an edit
-      if (!existing.length && !bypass && !control.entry_allowed) { errors.push(`Row ${line}: mark entry is locked for this year, term and CAT.`); continue; }
-      if (existing.length && !bypass && !control.edit_allowed) { errors.push(`Row ${line}: editing an existing result is disabled for this year, term and CAT.`); continue; }
+      const learnerScope = { id: learner.id, roll: 0, fullName: learner.full_name, gender: "", gradeId: learner.grade_id, streamId: learner.stream_id, status: "active", publicCode: "", admissionNumber: learner.admission_number, cohortYear: "" } satisfies Learner;
+      const locked = existing.length > 0 ? !markControl.editAllowed : !markControl.entryAllowed;
+      const roleAllowed = canEnterMark(me, assignments, learnerScope, matchedSubject.id, markControl, existing.length > 0 && locked);
+      const lockedOverrideAllowed = !locked || canEnterMark(me, assignments, learnerScope, matchedSubject.id, markControl, true);
+      if (!bypass && (!roleAllowed || !lockedOverrideAllowed)) { errors.push(`Row ${line}: you are not permitted to enter or edit this subject/class for this CAT. ${deadlinePassed ? "The deadline has passed. Contact the Super Admin or a Deputy Super Admin." : ""}`); continue; }
       await sql`
         insert into marks (learner_id, subject_id, exam_id, score, year_id, term_id, grade_id, stream_id, updated_by)
         values (${learner.id}, ${matchedSubject.id}, ${data.examId}, ${score}, ${data.yearId}, ${data.termId}, ${learner.grade_id}, ${learner.stream_id}, ${me.id})
         on conflict (learner_id, subject_id, exam_id, year_id, term_id) do update set score = ${score}, grade_id = ${learner.grade_id}, stream_id = ${learner.stream_id}, status = 'recorded', updated_by = ${me.id}, updated_at = now()`;
+      await recordMarkAudit(sql, me, { action: existing.length ? "edited" : "entered", source: "spreadsheet", learnerId: learner.id, learnerName: learner.full_name, subjectId: matchedSubject.id, subjectName: matchedSubject.name, examId: data.examId, yearId: data.yearId, termId: data.termId, oldScore: existing.length ? Number(existing[0].score) : null, newScore: Math.round(score) });
       saved++;
     }
     return { ok: true, saved, errors };

@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 import type { Gate } from "@/components/school/gate";
 import { btnClass, btnGhost, errText, inputClass } from "@/components/school/gate";
-import type { AppearancePalette, Band, Profile } from "@/lib/school/model";
+import type { AppearancePalette, Band, MarkControl, Profile } from "@/lib/school/model";
 import { ACCESS_AREAS, ACCESS_GROUPS, type AccessArea, type AccessGroup, type RoleAccessPolicy } from "@/lib/school/role-access";
 import { DEFAULT_APPEARANCE, can, isAdmin } from "@/lib/school/model";
 import { DEFAULT_WELCOME_DISPLAY, hexToRgba, normalizeWelcomeDisplay, type WelcomeDisplayOptions } from "@/lib/school/welcome-display";
 import { DISPLAY_PALETTES } from "@/lib/school/display";
-import { addExam, addSubject, deleteSubject, addYear, changePassword, deleteStream, deleteExam, deleteYear, exportSchoolBackup, getWelcomePage, listBackupSnapshots, restoreSchoolBackup, saveAppearance, saveBands, saveExams, saveProfile, saveReportOptions, saveStream, saveSubjects, saveTermAssessments, saveTermDate, saveWelcomePage, setActivePeriod, saveMarkControl, saveRoleAccessPolicy } from "@/lib/school/api";
+import { addExam, addSubject, deleteSubject, addYear, changePassword, deleteStream, deleteExam, deleteYear, exportSchoolBackup, getWelcomePage, listBackupSnapshots, restoreSchoolBackup, saveAppearance, saveBands, saveExams, saveProfile, saveReportOptions, saveStream, saveSubjects, saveTermAssessments, saveTermDate, saveWelcomePage, setActivePeriod, getMarkAuditHistory, saveMarkControl, saveRoleAccessPolicy } from "@/lib/school/api";
 import { DEFAULT_MUSIC_OPTIONS, formatPlaylistText, normalizeMusicOptions, parseMusicSetting, parsePlaylistText, type MusicOptions } from "@/lib/school/music";
 import { MusicStudioCard } from "@/components/school/music-studio";
 import { AdminAutomationCards } from "@/components/school/admin-automation-cards";
@@ -669,17 +669,23 @@ function MarkEntryControlsCard({ ws, flash, refresh }: Pick<Gate, "ws" | "flash"
   const [yearId, setYearId] = useState(ws.profile.activeYearId || ws.years[0]?.id || "");
   const [termId, setTermId] = useState(ws.profile.activeTermId || ws.terms[0]?.id || "");
   const [examId, setExamId] = useState(ws.exams[0]?.id || "");
-  const [entryAllowed, setEntryAllowed] = useState(true);
-  const [editAllowed, setEditAllowed] = useState(true);
-  const [reason, setReason] = useState("");
-  const loaded = true;
+  const [draft, setDraft] = useState<MarkControl>({ yearId, termId, examId, entryAllowed: true, editAllowed: true, reason: "", deadlineAt: null, adminsCanEnter: true, subjectTeachersCanEnter: true, classTeachersCanEnter: true, classTeachersAllSubjects: true, adminsCanViewMarks: true, subjectTeachersCanViewMarks: true, classTeachersCanViewMarks: true, adminsCanEditLocked: false, subjectTeachersCanEditLocked: false, classTeachersCanEditLocked: false });
+  const [history, setHistory] = useState<Array<{id:string;actorName:string;actorRole:string;action:string;source:string;learnerName:string;subjectName:string;examId:string;yearId:string;termId:string;oldScore:number|null;newScore:number|null;reason:string;createdAt:string}>>([]);
+  const [busy, setBusy] = useState(false);
+  const localDateTimeValue = (value?: string | null) => {
+    if (!value) return "";
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? "" : new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+  };
   // Read the saved lock for the chosen year, term and CAT straight from the workspace so the switches always match what is stored.
   useEffect(() => {
     const saved = ws.markControls.find((row) => row.yearId === yearId && row.termId === termId && row.examId === examId);
-    setEntryAllowed(saved ? saved.entryAllowed : true);
-    setEditAllowed(saved ? saved.editAllowed : true);
-    setReason(saved?.reason ?? "");
+    setDraft({ yearId, termId, examId, entryAllowed: saved?.entryAllowed ?? true, editAllowed: saved?.editAllowed ?? true, reason: saved?.reason ?? "", deadlineAt: saved?.deadlineAt ?? null, adminsCanEnter: saved?.adminsCanEnter ?? true, subjectTeachersCanEnter: saved?.subjectTeachersCanEnter ?? true, classTeachersCanEnter: saved?.classTeachersCanEnter ?? true, classTeachersAllSubjects: saved?.classTeachersAllSubjects ?? true, adminsCanViewMarks: saved?.adminsCanViewMarks ?? true, subjectTeachersCanViewMarks: saved?.subjectTeachersCanViewMarks ?? true, classTeachersCanViewMarks: saved?.classTeachersCanViewMarks ?? true, adminsCanEditLocked: saved?.adminsCanEditLocked ?? false, subjectTeachersCanEditLocked: saved?.subjectTeachersCanEditLocked ?? false, classTeachersCanEditLocked: saved?.classTeachersCanEditLocked ?? false });
   }, [ws.markControls, yearId, termId, examId]);
+  useEffect(() => { getMarkAuditHistory().then(setHistory).catch(() => setHistory([])); }, [ws.marks.length]);
+  function set<K extends keyof MarkControl>(key: K, value: MarkControl[K]) { setDraft((old) => ({ ...old, [key]: value })); }
+  const expired = Boolean(draft.deadlineAt && new Date(draft.deadlineAt).getTime() <= Date.now());
+  const permissionOptions: Array<[keyof MarkControl, string]> = [["adminsCanEnter", "Admins may enter new marks"], ["subjectTeachersCanEnter", "Subject teachers may enter assigned subjects"], ["classTeachersCanEnter", "Class teachers may enter marks"], ["classTeachersAllSubjects", "Class teachers may enter every subject in their class"], ["adminsCanViewMarks", "Admins may view marks"], ["subjectTeachersCanViewMarks", "Subject teachers may view assigned-subject marks"], ["classTeachersCanViewMarks", "Class teachers may view class marks"], ["adminsCanEditLocked", "Admins may edit marks after lock/deadline"], ["subjectTeachersCanEditLocked", "Subject teachers may edit assigned marks after lock/deadline"], ["classTeachersCanEditLocked", "Class teachers may edit class marks after lock/deadline"]];
   return <section className="rounded-md border border-amber-300 bg-card p-4 space-y-3">
     <h2 className="font-serif text-xl text-navy">Lock or allow marks by year, term and CAT</h2>
     <p className="text-sm text-muted">Only the Super Admin and the three Deputy Super Admins can change these controls. The server checks them for both manual entry and Excel/CSV uploads.</p>
@@ -688,11 +694,14 @@ function MarkEntryControlsCard({ ws, flash, refresh }: Pick<Gate, "ws" | "flash"
       <label className="block text-sm">Term<select className={inputClass + " mt-1"} value={termId} onChange={(event) => setTermId(event.target.value)}>{ws.terms.map((term) => <option key={term.id} value={term.id}>{term.name}</option>)}</select></label>
       <label className="block text-sm">Specific CAT / exam<select className={inputClass + " mt-1"} value={examId} onChange={(event) => setExamId(event.target.value)}>{ws.exams.map((exam) => <option key={exam.id} value={exam.id}>{exam.name}</option>)}</select></label>
     </div>
-    <label className="flex items-start gap-2 text-sm"><input className="mt-1" type="checkbox" checked={entryAllowed} onChange={(event) => setEntryAllowed(event.target.checked)} /><span><strong>Allow new marks to be entered</strong><br/><span className="text-muted">Turn off to block blank/new mark cells for this CAT.</span></span></label>
-    <label className="flex items-start gap-2 text-sm"><input className="mt-1" type="checkbox" checked={editAllowed} onChange={(event) => setEditAllowed(event.target.checked)} /><span><strong>Allow existing results to be edited or cleared</strong><br/><span className="text-muted">Turn off to protect results already saved for this CAT.</span></span></label>
-    <label className="block text-sm">Reason / instruction (optional)<input className={inputClass + " mt-1"} value={reason} onChange={(event) => setReason(event.target.value)} maxLength={300} placeholder="e.g. Results closed after approval" /></label>
-    <div className="rounded bg-paper p-3 text-sm"><strong>Current selection:</strong> {entryAllowed ? "new entry allowed" : "new entry locked"}; {editAllowed ? "existing results editable" : "existing results protected"}.</div>
-    <button className={btnClass} type="button" disabled={!loaded || !yearId || !termId || !examId} onClick={async () => { try { await saveMarkControl({ data: { yearId, termId, examId, entryAllowed, editAllowed, reason } }); flash("Mark-entry and editing controls saved for the selected year, term and CAT."); await refresh(); } catch (error) { flash(errText(error), true); } }}>Save mark controls</button>
+    <label className="flex items-start gap-2 text-sm"><input className="mt-1" type="checkbox" checked={draft.entryAllowed} onChange={(event) => set("entryAllowed", event.target.checked)} /><span><strong>Allow new marks to be entered</strong><br/><span className="text-muted">Turn off to block blank/new mark cells for this CAT.</span></span></label>
+    <label className="flex items-start gap-2 text-sm"><input className="mt-1" type="checkbox" checked={draft.editAllowed} onChange={(event) => set("editAllowed", event.target.checked)} /><span><strong>Allow existing results to be edited or cleared</strong><br/><span className="text-muted">Turn off to protect results already saved for this CAT.</span></span></label>
+    <label className="block text-sm">Automatic deadline (optional)<input className={inputClass + " mt-1"} type="datetime-local" value={localDateTimeValue(draft.deadlineAt)} onChange={(event) => set("deadlineAt", event.target.value ? new Date(event.target.value).toISOString() : null)} /><span className="text-xs text-muted">Local school time. At the deadline, entry and editing lock automatically; Super Admin and deputies can still override.</span></label>
+    <div className="grid gap-2 sm:grid-cols-2">{permissionOptions.map(([key, label]) => <label key={String(key)} className="flex items-start gap-2 rounded-lg border border-line bg-paper/70 p-2 text-sm"><input className="mt-1" type="checkbox" checked={Boolean(draft[key])} onChange={(event) => set(key, event.target.checked as never)} /><span>{label}</span></label>)}</div>
+    <label className="block text-sm">Reason / instruction (optional)<input className={inputClass + " mt-1"} value={draft.reason} onChange={(event) => set("reason", event.target.value)} maxLength={300} placeholder="e.g. Results close after approval" /></label>
+    <div className="rounded bg-paper p-3 text-sm"><strong>Status:</strong> {expired ? "Deadline passed — automatically locked" : draft.entryAllowed && draft.editAllowed ? "Entry and editing open" : "One or more actions locked"}{draft.deadlineAt ? ` · deadline ${new Date(draft.deadlineAt).toLocaleString()}` : ""}.</div>
+    <button className={btnClass} type="button" disabled={busy || !yearId || !termId || !examId} onClick={async () => { setBusy(true); try { await saveMarkControl({ data: { ...draft, yearId, termId, examId } }); flash("Mark governance controls saved for this year, term and CAT."); await refresh(); } catch (error) { flash(errText(error), true); } finally { setBusy(false); } }}>{busy ? "Saving…" : "Save mark controls"}</button>
+    <div className="border-t border-line pt-3"><h3 className="font-semibold text-navy">Recent mark history (last 200 changes)</h3><p className="text-xs text-muted">Visible only to Super Admin and Deputy Super Admins. Each event records who changed which learner/subject, when, and the old/new value.</p><div className="mt-2 max-h-64 overflow-auto rounded-lg border border-line"><table className="w-full min-w-[42rem] text-left text-xs"><thead className="sticky top-0 bg-paper"><tr><th className="p-2">When / account</th><th className="p-2">Learner · subject</th><th className="p-2">Action / source</th><th className="p-2">Old → new</th></tr></thead><tbody>{history.map((item) => <tr key={item.id} className="border-t border-line"><td className="p-2">{new Date(item.createdAt).toLocaleString()}<br/>{item.actorName} · {item.actorRole}</td><td className="p-2">{item.learnerName}<br/>{item.subjectName}</td><td className="p-2">{item.action} · {item.source}</td><td className="p-2">{item.oldScore ?? "—"} → {item.newScore ?? "—"}</td></tr>)}</tbody></table>{!history.length ? <p className="p-3 text-xs text-muted">No mark-history events yet.</p> : null}</div></div>
   </section>;
 }
 

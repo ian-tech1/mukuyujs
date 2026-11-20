@@ -49,3 +49,12 @@
 ## User-requested visual-only refresh
 
 - [x] Deliver at least 42 distinct display improvements across welcome/login, portal shell/navigation, cards, controls, tables, status feedback, mobile layouts and motion/accessibility; keep all changes presentational and preserve responsive behavior, print readability, reduced-motion support and existing motion switches. Implemented 52 numbered refinements in `src/school-display.css` and imported them from `src/styles.css`; typecheck and development build pass.
+
+
+## User-requested report branding and marks governance
+
+- [x] Make the QR-opened report PDF use the same configured school logo, with the same default-logo fallback, as teacher-printed/downloaded reports.
+- [x] Extend Super Admin mark controls so entry/view/edit permissions can be configured for admins, subject teachers, and class teachers; class-teacher all-subject access is explicit, locked-edit exceptions are role-specific, and local-time entry/edit deadlines lock automatically; no-control defaults remain open.
+- [x] Enforce role/action/deadline rules on the server for manual and spreadsheet writes, preserve Super Admin/deputy override, and explain deadline/lock state and contact instructions in the marks UI.
+- [x] Preserve attribution and timestamp fields on each mark; record entered, edited, manually cleared, spreadsheet, and bulk-clear events with actor, source, learner, subject and old/new score; show last-save attribution and privileged recent history.
+- [ ] Add dedicated regression tests for QR logo fallback and marks role/deadline policy; typecheck and changed-file lint passed, migration 0036 applied twice successfully in isolated PGLite, report-link/spreadsheet tests passed (marklist test could not resolve the repository `@/` alias under direct Node), and development asset build is blocked by a missing platform-specific Rolldown native binding. Refresh and verify the requested ZIP after final changes.

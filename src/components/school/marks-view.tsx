@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { Gate } from "@/components/school/gate";
 import { btnClass, btnGhost, errText, inputClass } from "@/components/school/gate";
 import { PeriodBar, useSchoolPeriod } from "@/components/school/period-bar";
-import { bandFor, buildBoards, canEditMark, learnersForYear, markControlFor } from "@/lib/school/model";
+import { bandFor, buildBoards, canEditMark, canEnterMark, learnersForYear, markControlFor } from "@/lib/school/model";
 import { approveMarksPeriod, clearBulkResults, importMarksExcel, saveMarks, saveSubjectRemarks } from "@/lib/school/api";
 import { parseMarkSpreadsheet, marksFromDelimited, type MarkSheetRow } from "@/lib/school/sheet";
 
@@ -23,6 +23,11 @@ function parseEnteredScore(raw: string, denominator = 100): number | null {
 }
 
 export function MarksView({ ws, refresh, flash }: Gate) {
+  const [, refreshDeadlineClock] = useState(0);
+  useEffect(() => {
+    const timer = window.setInterval(() => refreshDeadlineClock((value) => value + 1), 30000);
+    return () => window.clearInterval(timer);
+  }, []);
   const subjects = [...ws.subjects].sort((a, b) => a.sort - b.sort);
   const exams = [...ws.exams].sort((a, b) => a.sort - b.sort);
   const period = useSchoolPeriod(ws);
@@ -40,11 +45,15 @@ export function MarksView({ ws, refresh, flash }: Gate) {
   // Locks set by the super admin or a deputy for this year, term and CAT. They never block the people who set them.
   const control = markControlFor(ws, period.yearId, period.termId, examId);
   const exempt = ws.me.role === "super_admin" || ws.me.isDeputy;
-  const lockText = (exempt ? "" : [!control.entryAllowed ? "new marks cannot be entered" : "", !control.editAllowed ? "saved marks cannot be changed or cleared" : ""].filter(Boolean).join(" and "));
+  const deadlinePassed = Boolean(control.deadlineAt && new Date(control.deadlineAt).getTime() <= Date.now());
+  const entryLocked = !control.entryAllowed || deadlinePassed;
+  const editLocked = !control.editAllowed || deadlinePassed;
+  const lockText = (exempt ? "" : [entryLocked ? "new marks are locked" : "", editLocked ? "saved marks are locked against changes" : ""].filter(Boolean).join(" and "));
   const cellLocked = (learnerId: string) => {
     if (exempt) return false;
     const saved = period.marks.some((mark) => mark.learnerId === learnerId && mark.subjectId === subjectId && mark.examId === examId);
-    return saved ? !control.editAllowed : !control.entryAllowed;
+    const learner = learners.find((row) => row.id === learnerId);
+    return !learner || !canEnterMark(ws.me, ws.assignments, learner, subjectId, control, saved ? editLocked : entryLocked);
   };
   const [scores, setScores] = useState<Record<string, string>>({});
   const [remarks, setRemarks] = useState<Record<string, string>>({});
@@ -68,7 +77,7 @@ export function MarksView({ ws, refresh, flash }: Gate) {
     setRemarks(next);
   }, [learners, ws.subjectRemarks, subjectId, period.yearId, period.termId]);
 
-  const editable = learners.some((learner) => canEditMark(ws.me, ws.assignments, learner, subjectId));
+  const editable = learners.some((learner) => canEnterMark(ws.me, ws.assignments, learner, subjectId, control, false) || canEnterMark(ws.me, ws.assignments, learner, subjectId, control, true));
   const filled = learners.filter((learner) => (scores[learner.id] ?? "").trim() !== "").length;
   const progress = learners.length ? Math.round((filled / learners.length) * 100) : 0;
 
@@ -138,7 +147,7 @@ export function MarksView({ ws, refresh, flash }: Gate) {
   }
 
   const boards = buildBoards(learners, period.marks, subjects, exams, ws.bands);
-  const lockBanner = lockText ? <p className="rounded-md border border-amber-300 bg-card px-3 py-2 text-sm">Locked for this year, term and CAT: {lockText}.{control.reason ? ` ${control.reason}` : ""}</p> : null;
+  const lockBanner = lockText || control.deadlineAt ? <p className="rounded-md border border-amber-300 bg-card px-3 py-2 text-sm">{deadlinePassed ? `Deadline passed (${new Date(control.deadlineAt!).toLocaleString()}); marks are automatically locked. ` : control.deadlineAt ? `Entry deadline: ${new Date(control.deadlineAt).toLocaleString()}. ` : ""}{lockText ? `Locked for this year, term and CAT: ${lockText}.` : exempt && deadlinePassed ? "Super Admin and deputies retain override access." : "Entry and editing are currently open."}{control.reason ? ` ${control.reason}` : ""}{deadlinePassed && !exempt ? " Contact the Super Admin or a Deputy Super Admin for an authorized override." : ""}</p> : null;
   const configuredAssessments = ws.termAssessments.filter((item) => item.yearId === period.yearId && item.termId === period.termId);
   const requiredExams = configuredAssessments.length ? exams.filter((exam) => configuredAssessments.some((item) => item.examId === exam.id && item.active)) : exams;
   const missingMarkRows = learners.flatMap((learner) => subjects.flatMap((subject) => requiredExams.filter((exam) => !period.marks.some((mark) => mark.learnerId === learner.id && mark.subjectId === subject.id && mark.examId === exam.id && (!mark.gradeId || mark.gradeId === gradeId))).map((exam) => ({ learner, subject, exam }))));
@@ -200,6 +209,7 @@ export function MarksView({ ws, refresh, flash }: Gate) {
                   <td className="px-3 py-2">
                     <span className="font-medium">{learner.fullName}</span>
                     <span className="ml-2 text-xs text-muted">{ws.streams.find((stream) => stream.id === learner.streamId)?.name} · mean {mean == null ? "—" : mean.toFixed(1)}</span>
+                    {(() => { const saved = period.marks.find((mark) => mark.learnerId === learner.id && mark.subjectId === subjectId && mark.examId === examId); return saved ? <span className="block text-[11px] text-muted">Last saved {saved.updatedAt ? new Date(saved.updatedAt).toLocaleString() : "date unavailable"}{saved.updatedByName ? ` by ${saved.updatedByName}` : ""}</span> : null; })()}
                   </td>
                   <td className="px-3 py-2">
                     <input
