@@ -131,3 +131,143 @@ html[data-portal-motion="reduced"] .welcome-title, html[data-portal-motion="redu
   .report-print-area, .analysis-print-area { backdrop-filter: none !important; background-image: none !important; }
   .portal-page-content h1::after { animation: none !important; }
 }
+
+
+/* Mukuyu visual polish pass 2 — 42 additive refinements; presentation only. */
+/* 53 · Establish a richer layered portal canvas with slow, low-contrast color movement. */
+.portal-animated-background { position: relative; isolation: isolate; background-color: #f4f0e6; background-size: 180% 180%; animation: portal-canvas-breathe 44s ease-in-out infinite alternate; }
+/* 54 · Place ambient light behind the portal without intercepting clicks. */
+.portal-animated-background::before { content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none; opacity: .48; background: radial-gradient(ellipse at 12% 18%, rgba(76,175,181,.14), transparent 35%), radial-gradient(ellipse at 92% 78%, rgba(222,180,92,.14), transparent 36%), radial-gradient(ellipse at 55% 105%, rgba(94,139,184,.1), transparent 38%); background-size: 140% 140%; animation: portal-light-drift 38s ease-in-out infinite alternate; }
+/* 55 · Keep portal content above the ambient canvas. */
+.portal-animated-background > aside { z-index: 1; }
+.portal-animated-background > div { position: relative; z-index: 1; }
+/* 56 · Add a soft inset edge to the sidebar's upper edge. */
+.portal-animated-background > aside::after { content: ""; position: absolute; top: 0; right: 0; left: 0; height: 1px; pointer-events: none; background: linear-gradient(90deg, transparent, rgba(151,231,220,.45), rgba(244,202,114,.38), transparent); }
+/* 57 · Smooth sidebar brand illumination as the portal loads. */
+.portal-animated-background > aside > div:first-child { background-image: linear-gradient(110deg, rgba(255,255,255,.045), transparent 48%, rgba(131,217,211,.04)); }
+/* 58 · Make active navigation color transitions feel more deliberate. */
+.portal-animated-background > aside nav button.bg-navy-2 { transition: background .35s ease, color .25s ease, box-shadow .35s ease; }
+/* 59 · Add a soft inset edge to navigation hover states. */
+@media (hover: hover) { .portal-animated-background > aside nav button:hover { box-shadow: inset 0 1px rgba(255,255,255,.06); } }
+/* 60 · Give the account area a quiet topographic wash. */
+.portal-animated-background > aside > div:last-child { background-image: radial-gradient(ellipse at 0% 100%, rgba(131,217,211,.1), transparent 65%), linear-gradient(135deg, rgba(255,255,255,.035), transparent); }
+/* 61 · The portal masthead separates softly from scrolling content. */
+.portal-animated-background > div > header { backdrop-filter: blur(14px); }
+/* 62 · Give the current view label room to breathe on desktop. */
+.portal-animated-background > div > header > div > p { text-wrap: balance; }
+/* 63 · Toolbar controls show a clear hover boundary. */
+@media (hover: hover) { .portal-animated-background > div > header button:hover { border-color: rgba(29,78,137,.22); box-shadow: 0 7px 18px rgba(14,42,74,.1); } }
+/* 64 · Quick display menu gets a crisp dimensional top edge. */
+#quick-display-controls { box-shadow: 0 22px 60px rgba(14,42,74,.18), inset 0 1px rgba(255,255,255,.85); }
+/* 65 · Keep headings visually anchored with more consistent spacing. */
+.portal-page-content h1 { letter-spacing: -.018em; }
+/* 66 · Section subheads receive a gentle color hierarchy. */
+.portal-page-content h2 { letter-spacing: -.012em; }
+/* 67 · Third-level headings read cleanly in dense admin pages. */
+.portal-page-content h3 { line-height: 1.3; text-wrap: balance; }
+/* 68 · Give panels refined edges and preserve their existing content layout. */
+.portal-page-content :is(article, section, form)[class~="bg-card"] { box-shadow: 0 1px 0 rgba(255,255,255,.8) inset, 0 10px 28px rgba(14,42,74,.045); }
+/* 69 · Hoverable cards lift with smoother shadow interpolation. */
+@media (hover: hover) and (prefers-reduced-motion: no-preference) { html:not([data-portal-motion="reduced"]) .portal-page-content :is(article, section)[class~="bg-card"] { transition: transform .32s cubic-bezier(.2,.75,.25,1), box-shadow .38s ease, border-color .32s ease; } }
+/* 70 · Focused cards have a keyboard-visible perimeter. */
+.portal-page-content :is(article, section, form)[class~="bg-card"]:focus-within { border-color: color-mix(in srgb, var(--color-info) 32%, var(--color-line)); }
+/* 71 · Standard action buttons gain a coordinated tactile press state. */
+.portal-page-content button:not(:disabled) { transition: transform .2s ease, box-shadow .25s ease, filter .25s ease, background-color .25s ease; }
+/* 72 · Primary actions brighten slightly on hover, without flashing. */
+@media (hover: hover) { .portal-page-content button.bg-navy:not(:disabled):hover { filter: brightness(1.08) saturate(1.05); box-shadow: 0 10px 24px rgba(14,42,74,.2), inset 0 1px rgba(255,255,255,.15); } }
+/* 73 · Disabled actions stay visually calm and unmistakable. */
+.portal-page-content button:disabled { cursor: not-allowed; filter: saturate(.68); }
+/* 74 · Links gain a subtle school-color underline cue on hover. */
+.portal-page-content a { text-decoration-color: color-mix(in srgb, currentColor 32%, transparent); text-underline-offset: .2em; transition: color .22s ease, text-decoration-color .22s ease; }
+/* 75 · Form controls use consistent corner and surface treatment. */
+.portal-page-content :is(input, select, textarea) { border-radius: .72rem; background-color: rgba(255,255,255,.84); transition: border-color .24s ease, box-shadow .24s ease, background-color .24s ease; }
+/* 76 · Placeholder text stays legible against refined form surfaces. */
+.portal-page-content input::placeholder, .portal-page-content textarea::placeholder { color: color-mix(in srgb, var(--color-muted) 78%, white); }
+/* 77 · Select options use the school ink color. */
+.portal-page-content select { color: var(--color-ink); }
+/* 78 · Table frames get softer corners and restrained depth. */
+.portal-page-content .overflow-x-auto { border-radius: .9rem; }
+/* 79 · Table headers have a clearer sticky-layer edge. */
+.portal-page-content thead th { box-shadow: inset 0 -1px rgba(29,78,137,.12); }
+/* 80 · Compact data cells align more evenly across varied values. */
+.portal-page-content :is(td, th) { font-variant-numeric: tabular-nums; }
+/* 81 · Row hover color eases in rather than popping. */
+.portal-page-content tbody tr { transition: background-color .22s ease; }
+/* 82 · Large tables distinguish their first column gently. */
+.portal-page-content tbody td:first-child { color: color-mix(in srgb, var(--color-ink) 92%, var(--color-info)); }
+/* 83 · Dashboard charts stand out from their container without heavy framing. */
+.portal-page-content .recharts-wrapper { padding: .25rem; }
+/* 84 · Chart tooltips use a clean paper surface. */
+.portal-page-content .recharts-tooltip-wrapper { filter: drop-shadow(0 8px 18px rgba(14,42,74,.12)); }
+/* 85 · Feedback cards get a warmer, more welcoming mixed-color edge. */
+.qr-feedback-card { position: relative; overflow: hidden; background-image: radial-gradient(ellipse at 100% 0%, rgba(120,205,218,.12), transparent 48%), linear-gradient(135deg, rgba(255,255,255,.78), rgba(244,250,247,.92), rgba(255,248,231,.78)); transition: box-shadow .35s ease, border-color .35s ease; }
+/* 86 · Feedback card hover remains a mild, nonessential enhancement. */
+@media (hover: hover) and (prefers-reduced-motion: no-preference) { html:not([data-portal-motion="reduced"]) .qr-feedback-card:hover { border-color: rgba(54,148,153,.35); box-shadow: 0 18px 42px rgba(14,42,74,.1); } }
+/* 87 · Feedback heading has a compact editorial finish. */
+.qr-feedback-card h2 { letter-spacing: -.02em; text-wrap: balance; }
+/* 88 · Feedback helper text is set apart as a soft welcome note. */
+.qr-feedback-welcome { padding: .65rem .8rem; border-left: 3px solid #61b6b2; border-radius: 0 .65rem .65rem 0; background: rgba(255,255,255,.56); }
+/* 89 · Welcome eyebrow gets a more refined contrast glow. */
+.welcome-eyebrow { text-shadow: 0 1px 12px rgba(4,16,35,.22); }
+/* 90 · Welcome heading's tracking settles across narrow and wide screens. */
+.welcome-title { text-wrap: balance; }
+/* 91 · School identity icon receives a tiny clear-glass ring. */
+.welcome-hero img { filter: drop-shadow(0 8px 18px rgba(3,16,39,.24)); }
+/* 92 · Welcome heading rule gradients blend as one signature accent. */
+.welcome-heading-rule { filter: drop-shadow(0 3px 12px color-mix(in srgb, var(--welcome-accent-alt, #8bd5ff) 25%, transparent)); }
+/* 93 · Announcement copy gains a softer readable shadow over moving color. */
+.welcome-copy { text-shadow: 0 1px 8px rgba(3,16,39,.18); }
+/* 94 · The feature-tour CTA gets a stronger focus-visible ring. */
+.welcome-features-button:focus-visible { outline-color: var(--welcome-accent-alt, #8bd5ff); box-shadow: 0 0 0 5px rgba(255,255,255,.16); }
+/* 95 · Login title and helper copy align to a calmer rhythm. */
+.welcome-login-panel > form > :is(h2, p) { text-wrap: pretty; }
+/* 96 · Login fields gain a restrained focus lift. */
+.welcome-login-panel input:focus-visible { transform: translateY(-1px); }
+/* 97 · Login panel's submit action gets a clearer disabled appearance. */
+.welcome-login-panel button[type="submit"]:disabled { filter: saturate(.65); box-shadow: none; }
+/* 98 · Welcome display switch communicates hover and press more clearly. */
+.welcome-display-switch:active { transform: scale(.97); }
+/* 99 · Public report introduction looks consistent with portal glass surfaces. */
+main:has(.report-print-area) > div { text-wrap: pretty; }
+/* 100 · Public report canvas carries a quieter top-side ambient tint. */
+main:has(.report-print-area) { background-color: #f5f2ea; }
+/* 101 · Keep spreadsheet preview's sticky header distinctly legible. */
+.marks-preview-table th { color: #16385f; }
+/* 102 · Pasted-grid focus state transitions with less visual jolt. */
+.marks-paste-grid { transition: border-color .24s ease, box-shadow .24s ease, background-color .24s ease; }
+/* 103 · Input focus-visible ring is shared across nested content controls. */
+.portal-page-content :is(input, select, textarea, button, a):focus-visible { scroll-margin-block: 1rem; }
+/* 104 · Mobile masthead avoids visual crowding on very narrow screens. */
+@media (max-width: 420px) { .portal-animated-background > div > header { padding-inline: .75rem; } .portal-animated-background > div > header > p { font-size: .72rem; } }
+/* 105 · Tablet welcome copy remains comfortable beside the sign-in panel. */
+@media (min-width: 641px) and (max-width: 1023px) { .welcome-content { max-width: 42rem; } }
+/* 106 · Touch-first devices avoid hover lift being mistaken for a selected state. */
+@media (hover: none) { .portal-animated-background > aside nav button:hover, .portal-page-content :is(article, section)[class~="bg-card"]:hover { transform: none; } }
+/* 107 · Keep decorative portal canvas layers out of stacking and hit testing. */
+.portal-animated-background::before { contain: paint; }
+/* 108 · Print sheets retain pure paper regardless of animated screen backgrounds. */
+@media print { .portal-animated-background { animation: none !important; background: white !important; } .portal-animated-background::before, .portal-animated-background::after { display: none !important; } }
+/* 109 · Welcome hero stops running its ambient effects when configured static. */
+.welcome-static::before, .welcome-static::after, .welcome-static .welcome-ribbon { animation-play-state: paused; }
+/* 110 · Accent-motion preference also pauses the new portal canvas animation. */
+html[data-portal-accent-motion="off"] .portal-animated-background { animation: none !important; }
+/* 111 · User motion preference pauses portal canvas movement. */
+html[data-portal-motion="reduced"] .portal-animated-background { animation: none !important; }
+/* 112 · Accessibility setting also suppresses new ambient portal wash. */
+html[data-portal-motion="reduced"] .portal-animated-background::before { animation: none !important; }
+/* 113 · The OS reduced-motion preference suppresses the new ambient layer. */
+@media (prefers-reduced-motion: reduce) { .portal-animated-background, .portal-animated-background::before { animation: none !important; } }
+/* 114 · Slow canvas drift keyframes keep color movement subtle and non-flashing. */
+@keyframes portal-canvas-breathe { from { background-position: 0% 20%; } to { background-position: 100% 80%; } }
+/* 115 · Ambient light shifts gradually without moving interface content. */
+@keyframes portal-light-drift { from { transform: translate3d(-1%,0,0) scale(.99); background-position: 0% 20%; } to { transform: translate3d(1%,0,0) scale(1.01); background-position: 100% 80%; } }
+/* 116 · Small-screen ambient surfaces use less blur to protect rendering smoothness. */
+@media (max-width: 640px) { .portal-page-content :is(article, section, form)[class~="bg-card"] { backdrop-filter: blur(5px); } }
+/* 117 · Narrow-phone decorative gradients are simplified for performance. */
+@media (max-width: 420px) { .portal-animated-background::before { opacity: .3; } }
+/* 118 · All added transitions remain near-instant when system motion is reduced. */
+@media (prefers-reduced-motion: reduce) { .portal-page-content :is(input, select, textarea, button, a), .qr-feedback-card, .welcome-display-switch { transition-duration: .01ms !important; } }
+/* 119 · The portal's newly added entrance atmosphere respects the saved motion toggle. */
+html[data-portal-motion="reduced"] .qr-feedback-card { transition-duration: .01ms !important; }
+/* 120 · Ensure print output never inherits frosted panel blur. */
+@media print { .portal-page-content :is(article, section, form)[class~="bg-card"] { backdrop-filter: none !important; box-shadow: none !important; } }
