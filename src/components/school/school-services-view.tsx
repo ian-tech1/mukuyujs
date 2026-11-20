@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import type { Gate } from "@/components/school/gate";
 import { btnClass, btnGhost, errText, inputClass } from "@/components/school/gate";
 import { can, isAdmin } from "@/lib/school/model";
-import { QrParentFeedbackInbox } from "@/components/school/qr-parent-feedback-inbox";
 import { createHomeworkTask, createParentMeetingRequest, createSchoolEvent, createStaffAbsenceRequest, getSchoolServices, logGuardianContact, respondParentMeeting, reviewStaffAbsenceRequest, saveDailyAttendance, saveGuardianContact, saveLearnerEmergencyProfile, saveLearnerSupportEvent, setHomeworkProgress } from "@/lib/school/api";
 
 type ServiceLearner = { id: string; fullName: string; roll: number; gradeId: string; streamId: string; gender: string; admissionNumber: string | null };
@@ -107,7 +106,6 @@ export function SchoolServicesView({ ws, refresh, flash }: Gate) {
       <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4">{[["Attendance", service.attendance.length], ["Homework", service.homework.length], ["Events", service.events.length], ["Meeting requests", service.meetings.length]].map(([label, value]) => <div key={label} className="rounded-xl border border-white/10 bg-white/10 px-3 py-2"><div className="text-lg font-semibold">{value}</div><div className="text-xs text-white/70">{label}</div></div>)}</div>
     </header>
 
-    {staffOrManager && <QrParentFeedbackInbox flash={flash} />}
 
     {staffOrManager && <section className="rounded-2xl border border-line bg-card p-5 shadow-card">
       <div className="flex flex-wrap items-end justify-between gap-3"><div><p className="text-xs font-semibold uppercase tracking-wider text-brass">01 · Daily roll</p><h2 className="font-serif text-2xl text-navy">Learner attendance</h2><p className="text-sm text-muted">Separate from end-of-term attendance notes. Individual daily records stay staff-only.</p></div><div className="flex gap-2"><input className={input} type="date" value={date} onChange={(e) => setDate(e.target.value)} /><select className={input} value={activeStreamId} onChange={(e) => setSelectedStream(e.target.value)}><option value="">Choose class</option>{availableStreams.map((s) => <option key={s.id} value={s.id}>{s.gradeName} · {s.name}</option>)}</select></div></div>

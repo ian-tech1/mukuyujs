@@ -1320,7 +1320,7 @@ export const submitQrParentFeedback = createServerFn({ method: "POST" })
     let teacherIds: string[] = [];
     if (requested.length) {
       if (!settings.allow_teacher_selection || !["teacher", "class_teacher"].includes(settings.recipient_scope)) throw new Error("Individual teacher selection is not enabled by the school.");
-      const valid = await sql<{ id: string }>`select distinct u.id from users u join assignments a on a.user_id=u.id where u.id = any(${requested}::text[]) and u.active=true and u.role in ('teacher','admin','super_admin') and a.stream_id=${learner.streamId} and a.kind in ('class_teacher','subject_teacher','hod')`;
+      const valid = await sql<{ id: string }>`select distinct u.id from users u join assignments a on a.user_id=u.id where u.id = any(${requested}::text[]) and u.active=true and u.role in ('teacher','admin','super_admin') and (a.grade_id is null or a.grade_id=${learner.gradeId}) and (a.stream_id is null or a.stream_id=${learner.streamId}) and a.kind in ('class_teacher','subject_teacher','hod')`;
       teacherIds = valid.map((item) => item.id);
       if (teacherIds.length !== requested.length) throw new Error("One or more selected teachers are no longer assigned to this class. Refresh and try again.");
     }
@@ -1331,7 +1331,7 @@ export const submitQrParentFeedback = createServerFn({ method: "POST" })
       const teacherRows = await sql<{ email: string; fullName: string }>`select email,full_name as "fullName" from users where id = any(${teacherIds}::text[]) and active=true and coalesce(trim(email),'')<>''`;
       for (const teacher of teacherRows) {
         try {
-          const response = await fetch("https://api.resend.com/emails", { method: "POST", headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, "Content-Type": "application/json" }, body: JSON.stringify({ from: process.env.EMAIL_FROM, to: [teacher.email], subject: `Parent message about ${learner.fullName}`, text: `Dear ${teacher.fullName},\n\nA parent has sent a message about ${learner.fullName} (${learner.gradeName} · ${learner.streamName}). Sign in to the Mukuyu school portal and open School Services → Messages from scanned report cards to read and respond.\n\nParent: ${parentName}${email ? `\nReply email: ${email}` : ""}\n\n${message}\n\nThis notification contains confidential learner information. Please handle it securely.` }) });
+          const response = await fetch("https://api.resend.com/emails", { method: "POST", headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, "Content-Type": "application/json" }, body: JSON.stringify({ from: process.env.EMAIL_FROM, to: [teacher.email], subject: `Parent message about ${learner.fullName}`, text: `Dear ${teacher.fullName},\n\nA parent has sent a message about ${learner.fullName} (${learner.gradeName} · ${learner.streamName}). Sign in to the Mukuyu school portal and open the Parents Feedback tab to read and respond.\n\nParent: ${parentName}${email ? `\nReply email: ${email}` : ""}\n\n${message}\n\nThis notification contains confidential learner information. Please handle it securely.` }) });
           if (response.ok) teacherEmailsSent += 1;
         } catch { /* Inbox persistence remains authoritative when email is unavailable. */ }
       }

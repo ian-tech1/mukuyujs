@@ -14,6 +14,7 @@ import { SettingsView } from "@/components/school/settings-view";
 import { StaffView } from "@/components/school/staff-view";
 import { TimetableView } from "@/components/school/timetable-view";
 import { SchoolServicesView } from "@/components/school/school-services-view";
+import { QrParentFeedbackInbox } from "@/components/school/qr-parent-feedback-inbox";
 import { StaffMusicDock } from "@/components/school/music-dock";
 import { getWorkspace, getWelcomePage, logout } from "@/lib/school/api";
 import { visibleViews, type Workspace } from "@/lib/school/model";
@@ -31,6 +32,7 @@ const LABELS: Record<string, string> = {
   mail: "Mail log",
   timetable: "Timetable",
   services: "School Services",
+  "parent-feedback": "Parents Feedback",
   settings: "Settings",
   results: "My results",
 };
@@ -240,6 +242,7 @@ function PortalPage() {
           {current === "mail" ? <MailView {...gate} /> : null}
           {current === "timetable" ? <TimetableView {...gate} /> : null}
           {current === "services" ? <SchoolServicesView {...gate} /> : null}
+          {current === "parent-feedback" ? <QrParentFeedbackInbox flash={flash} /> : null}
           {current === "settings" ? <SettingsView {...gate} /> : null}
           {current === "results" ? <ResultsView {...gate} /> : null}
         </div>

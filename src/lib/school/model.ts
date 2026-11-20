@@ -570,7 +570,7 @@ export function canEditLearner(me: Me, assignments: Assignment[], streamId: stri
 
 export function visibleViews(me: Me, policy: RoleAccessPolicy): string[] {
   if (me.role === "student" || me.role === "parent") return [...(canActorAccess(policy, me.role, "familyResults", "view") ? ["results"] : []), "timetable", "services", "settings"];
-  const views = me.role === "teacher" ? ["home", "learners", "marks", "timetable", "services"] : ["home", "learners", "marks", "timetable", "services"];
+  const views = me.role === "teacher" ? ["home", "learners", "marks", "timetable", "services", "parent-feedback"] : ["home", "learners", "marks", "timetable", "services", "parent-feedback"];
   if (canActorAccess(policy, me.role, "analysis", "view")) views.push("analysis");
   if (canActorAccess(policy, me.role, "reports", "view")) views.push("reports");
   if (canActorAccess(policy, me.role, "marklists", "view")) views.push("marklists");
