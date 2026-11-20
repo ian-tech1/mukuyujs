@@ -16,9 +16,12 @@ test("public QR report viewing can be explicitly locked and unlocked", () => {
   const locked = normalizeRoleAccess({ qr_guest: { reports: { view: false, download: true } } });
   assert.equal(canRoleAccess(locked, "qr_guest", "reports", "view"), false);
   assert.equal(canRoleAccess(locked, "qr_guest", "reports", "download"), false);
+  assert.equal(canActorAccess(locked, "qr_guest", "reports", "view"), false);
 
   const unlocked = normalizeRoleAccess({ qr_guest: { reports: { view: true, download: false } } });
   assert.equal(canRoleAccess(unlocked, "qr_guest", "reports", "view"), true);
+  assert.equal(canActorAccess(unlocked, "qr_guest", "reports", "view"), true);
+  assert.equal(canActorAccess(DEFAULT_ROLE_ACCESS, "qr_guest", "reports", "view"), true);
 });
 
 test("locked views force downloads off and unrelated groups stay unchanged", () => {

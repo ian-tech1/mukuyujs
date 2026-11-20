@@ -38,7 +38,7 @@ export function canRoleAccess(policy: RoleAccessPolicy, group: AccessGroup, area
 
 export function policyForRole(policy: RoleAccessPolicy, role: string): AccessGroup | null {
   if (role === "super_admin") return null;
-  if (role === "admin" || role === "teacher" || role === "parent" || role === "student") return role;
+  if (role === "admin" || role === "teacher" || role === "parent" || role === "student" || role === "qr_guest") return role;
   return null;
 }
 
