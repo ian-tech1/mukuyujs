@@ -172,12 +172,14 @@ function youtubeEmbed(url: URL): MusicSource | null {
   if (!videoId && listId && EMBED_ID.test(listId)) {
     const target = new URL("https://www.youtube.com/embed/videoseries");
     target.searchParams.set("list", listId);
+    target.searchParams.set("autoplay", "0");
     return { kind: "embed", provider: "YouTube", url: target.toString(), height: 240 };
   }
   if (!EMBED_ID.test(videoId)) return null;
   const target = new URL(`https://www.youtube.com/embed/${videoId}`);
   target.searchParams.set("playsinline", "1");
   target.searchParams.set("rel", "0");
+  target.searchParams.set("autoplay", "0");
   if (listId && EMBED_ID.test(listId)) target.searchParams.set("list", listId);
   return { kind: "embed", provider: "YouTube", url: target.toString(), height: 240 };
 }
@@ -188,7 +190,7 @@ function spotifyEmbed(value: string, url?: URL): MusicSource | null {
     return {
       kind: "embed",
       provider: "Spotify",
-      url: `https://open.spotify.com/embed/${uri[1].toLowerCase()}/${uri[2]}?utm_source=generator`,
+      url: `https://open.spotify.com/embed/${uri[1].toLowerCase()}/${uri[2]}?utm_source=generator&autoplay=false`,
       height: 240,
     };
   }
@@ -201,7 +203,7 @@ function spotifyEmbed(value: string, url?: URL): MusicSource | null {
   return {
     kind: "embed",
     provider: "Spotify",
-    url: `https://open.spotify.com/embed/${type}/${id}?utm_source=generator`,
+    url: `https://open.spotify.com/embed/${type}/${id}?utm_source=generator&autoplay=false`,
     height: type === "track" || type === "episode" ? 152 : 240,
   };
 }
@@ -227,6 +229,7 @@ function mixcloudEmbed(url: URL): MusicSource | null {
   target.searchParams.set("hide_cover", "1");
   target.searchParams.set("light", "1");
   target.searchParams.set("feed", feed);
+  target.searchParams.set("autoplay", "0");
   return { kind: "embed", provider: "Mixcloud", url: target.toString(), height: 180 };
 }
 
@@ -234,6 +237,7 @@ function appleMusicEmbed(url: URL): MusicSource | null {
   if (!hostIs(url.hostname.toLowerCase(), "music.apple.com")) return null;
   const target = new URL(url.toString());
   target.hostname = "embed.music.apple.com";
+  target.searchParams.delete("autoplay");
   return { kind: "embed", provider: "Apple Music", url: target.toString(), height: 175 };
 }
 
@@ -252,7 +256,9 @@ function tidalEmbed(url: URL): MusicSource | null {
   const match = /\/(?:browse\/)?(track|album|playlist)\/(\d+)/i.exec(url.pathname);
   if (!match) return null;
   const type = match[1].toLowerCase() === "track" ? "tracks" : `${match[1].toLowerCase()}s`;
-  return { kind: "embed", provider: "TIDAL", url: `https://embed.tidal.com/${type}/${match[2]}`, height: 240 };
+  const target = new URL(`https://embed.tidal.com/${type}/${match[2]}`);
+  target.searchParams.set("autoplay", "false");
+  return { kind: "embed", provider: "TIDAL", url: target.toString(), height: 240 };
 }
 
 export function resolveMusicSource(value: string, useProviderEmbeds = true): MusicSource {

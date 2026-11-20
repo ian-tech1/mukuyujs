@@ -1,5 +1,6 @@
 import type { RoleAccessPolicy } from "@/lib/school/role-access";
 import { canActorAccess } from "@/lib/school/role-access";
+export { reportLink } from "./report-link.ts";
 
 export type Role = "super_admin" | "admin" | "teacher" | "parent" | "student";
 
@@ -321,11 +322,6 @@ export function can(me: Me, privilege: "settings" | "staff" | "import" | "calend
 
 export function periodMarks(marks: Mark[], yearId: string, termId: string) {
   return marks.filter((mark) => mark.yearId === yearId && mark.termId === termId);
-}
-
-export function reportLink(base: string, code: string, origin = "") {
-  const root = (base.trim() || origin).replace(/\/$/, "");
-  return `${root}/?c=${code}`;
 }
 
 export function calendarFor(calendars: TermDate[], yearId: string, termId: string) {

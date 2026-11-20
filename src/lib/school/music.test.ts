@@ -49,6 +49,23 @@ test("provider share links resolve to official in-page embeds", () => {
   }
 });
 
+test("provider embeds explicitly disable autoplay, including imported Apple Music autoplay parameters", () => {
+  const cases = [
+    ["https://www.youtube.com/watch?v=abcdefghijk", "autoplay", "0"],
+    ["https://open.spotify.com/track/1234567890abcdef", "autoplay", "false"],
+    ["https://soundcloud.com/artist/song", "auto_play", "false"],
+    ["https://www.mixcloud.com/dj/show-name/", "autoplay", "0"],
+    ["https://music.apple.com/us/album/example/123?autoplay=true", "autoplay", null],
+    ["https://www.deezer.com/track/1234", "autoplay", "false"],
+    ["https://tidal.com/browse/track/12345", "autoplay", "false"],
+  ] as const;
+  for (const [input, parameter, expected] of cases) {
+    const source = resolveMusicSource(input);
+    assert.equal(source.kind, "embed", input);
+    if (source.kind === "embed") assert.equal(new URL(source.url).searchParams.get(parameter), expected, input);
+  }
+});
+
 test("YouTube playlists are embedded in-page and recognized provider links can be disabled", () => {
   const playlist = resolveMusicSource("https://www.youtube.com/playlist?list=PLabcdefghijk");
   assert.equal(playlist.kind, "embed");

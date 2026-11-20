@@ -44,7 +44,6 @@ export function StaffMusicDock({ url, options: rawOptions }: { url: string; opti
   const countedStations = useRef(new Set<string>());
   const wasPlaying = useRef(false);
   const retryTimer = useRef<number | null>(null);
-  const autoPlayKey = useRef("");
   const currentIndex = tracks.length ? Math.min(index, tracks.length - 1) : 0;
   const current = tracks[currentIndex];
   const activeUrl = current ? (sourceAttempt === 1 && current.fallbackUrl ? current.fallbackUrl : current.url) : "";
@@ -56,7 +55,6 @@ export function StaffMusicDock({ url, options: rawOptions }: { url: string; opti
     if (!saved.autoSearch) {
       setAutoTracks([]);
       setAutoError("");
-      autoPlayKey.current = "";
       return;
     }
     let cancelled = false;
@@ -71,21 +69,6 @@ export function StaffMusicDock({ url, options: rawOptions }: { url: string; opti
     }).finally(() => { if (!cancelled) setAutoLoading(false); });
     return () => { cancelled = true; };
   }, [saved.autoSearch, saved.genre]);
-
-  useEffect(() => {
-    if (!saved.autoSearch || radioMode || !current || source?.kind !== "audio" || !audioElement.current) return;
-    const playKey = `${saved.genre}|${current.url}`;
-    if (autoPlayKey.current === playKey) return;
-    autoPlayKey.current = playKey;
-    const player = audioElement.current;
-    void player.play().then(() => {
-      setIsPlaying(true);
-      setError(false);
-    }).catch(() => {
-      setError(false);
-      setAutoError("Music is ready. Tap Play once to allow automatic playback in this browser.");
-    });
-  }, [saved.autoSearch, saved.genre, radioMode, current, source?.kind]);
 
   useEffect(() => {
     setExpanded(options.showQueue);
@@ -333,7 +316,7 @@ export function StaffMusicDock({ url, options: rawOptions }: { url: string; opti
             <span>Your browser does not support audio playback.</span>
           </audio> : null}
           {(radioMode && radioStation || !radioMode && source?.kind === "audio" && current) ? <button type="button" className="mt-2 rounded-full bg-navy px-4 py-2 text-xs font-semibold text-white" onClick={() => { void toggleNativePlayback(); }} aria-pressed={isPlaying}>{isPlaying ? "Pause" : "Play"}</button> : null}
-          {!radioMode && current && source?.kind === "embed" ? <div className="w-full min-w-0 rounded-lg bg-white p-1"><p className="px-2 pb-1 text-[10px] font-semibold text-muted">{source.provider} in-page player</p><iframe className="w-full rounded-md" style={{ height: `${Math.max(200, source.height)}px` }} src={source.url} title={`${source.provider}: ${current.title}`} loading="lazy" referrerPolicy="strict-origin-when-cross-origin" allow="autoplay; encrypted-media; picture-in-picture; clipboard-write; web-share" allowFullScreen /></div> : null}
+          {!radioMode && current && source?.kind === "embed" ? <div className="w-full min-w-0 rounded-lg bg-white p-1"><p className="px-2 pb-1 text-[10px] font-semibold text-muted">{source.provider} in-page player</p><iframe className="w-full rounded-md" style={{ height: `${Math.max(200, source.height)}px` }} src={source.url} title={`${source.provider}: ${current.title}`} loading="lazy" referrerPolicy="strict-origin-when-cross-origin" allow="encrypted-media; picture-in-picture; clipboard-write; web-share" allowFullScreen /></div> : null}
           {!radioMode && source?.kind === "embed" ? <p className="mt-1 text-[11px] text-muted">Tap Play inside the official {source.provider} player. Its cross-origin playback controls are managed by the provider. If the provider says this item is unavailable, open the source link below or skip to another track.</p> : null}
           {!radioMode && current?.sourcePageUrl ? <p className="mt-1 text-[11px] text-muted">Credit: <a className="font-semibold underline" href={current.sourcePageUrl} target="_blank" rel="noreferrer">{current.credit || "Open source page"}</a>{current.licenseName ? <> · License: {current.licenseUrl ? <a className="underline" href={current.licenseUrl} target="_blank" rel="noreferrer">{current.licenseName}</a> : current.licenseName}</> : null}</p> : null}
           {!radioMode && source?.kind === "invalid" ? <p className="text-xs text-bad">{source.message}</p> : null}
