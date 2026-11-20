@@ -23,3 +23,18 @@ test("QR feedback and scheduled-backup migration creates safe defaults and const
     await db.close();
   }
 });
+
+test("multi-teacher QR feedback migration backfills legacy direct recipients", async () => {
+  const multi = await readFile(join(here, "..", "migrations", "0035_qr_feedback_multi_teacher.sql"), "utf8");
+  const db = new PGlite();
+  try {
+    await db.exec("create table learners (id text primary key); create table users (id text primary key);");
+    await db.exec(migration);
+    await db.exec("insert into learners(id) values ('learner-1'); insert into users(id) values ('teacher-1');");
+    await db.exec("insert into qr_parent_feedback(id,learner_id,learner_name,grade_name,stream_name,parent_name,teacher_user_id,recipient_scope,message) values ('msg-1','learner-1','Learner','Grade 1','A','Parent','teacher-1','teacher','Hello');");
+    await db.exec(multi);
+    const rows = await db.query("select teacher_user_ids from qr_parent_feedback where id='msg-1'");
+    assert.deepEqual(rows.rows[0].teacher_user_ids, ["teacher-1"]);
+    await db.exec("insert into qr_parent_feedback(id,learner_id,learner_name,grade_name,stream_name,parent_name,teacher_user_ids,recipient_scope,message) values ('msg-2','learner-1','Learner','Grade 1','A','Parent',array['teacher-1'],'teacher','Hello again');");
+  } finally { await db.close(); }
+});

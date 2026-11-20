@@ -1298,34 +1298,71 @@ export async function buildSchoolBackupPayload(sql: Awaited<ReturnType<typeof ge
 
 export const getQrFeedbackSettings = createServerFn({method:"GET"}).handler(async()=>{const me=await requireActor();if(!isTrueSuper(me))throw new Error("Only the super admin can configure QR parent feedback.");const sql=await getSql();return(await sql<{recipientScope:string;allowTeacherSelection:boolean;autoreplyEnabled:boolean}>`select recipient_scope as "recipientScope",allow_teacher_selection as "allowTeacherSelection",autoreply_enabled as "autoreplyEnabled" from qr_feedback_settings where id=1`)[0]??{recipientScope:"class_teacher",allowTeacherSelection:true,autoreplyEnabled:false};});
 export const saveQrFeedbackSettings = createServerFn({method:"POST"}).validator((input:{recipientScope:"teacher"|"class_teacher"|"admin"|"super_admin";allowTeacherSelection:boolean;autoreplyEnabled:boolean})=>input).handler(async({data})=>{const me=await requireActor();if(!isTrueSuper(me))throw new Error("Only the super admin can configure QR parent feedback.");const sql=await getSql();await sql`update qr_feedback_settings set recipient_scope=${data.recipientScope},allow_teacher_selection=${data.allowTeacherSelection},autoreply_enabled=${data.autoreplyEnabled},updated_at=now() where id=1`;return{ok:true};});
-export const submitQrParentFeedback = createServerFn({method:"POST"}).validator((input:{code:string;parentName:string;parentEmail:string;teacherUserId?:string;message:string;website?:string})=>input).handler(async({data})=>{if(data.website?.trim())throw new Error("Unable to submit this message.");const code=data.code.trim().toLowerCase();const parentName=data.parentName.trim();const email=data.parentEmail.trim().toLowerCase();const message=data.message.trim();if(!/^[a-z0-9]{4,12}$/.test(code)||parentName.length<2||parentName.length>120||message.length<4||message.length>1500)throw new Error("Enter your name and a message (4–1,500 characters).");if(email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))throw new Error("Enter a valid email address or leave it blank.");const sql=await getSql();const learners=await sql<{id:string;fullName:string;gradeId:string;streamId:string;gradeName:string;streamName:string}>`select l.id,l.full_name as "fullName",l.grade_id as "gradeId",l.stream_id as "streamId",g.name as "gradeName",s.name as "streamName" from learners l join grades g on g.id=l.grade_id join streams s on s.id=l.stream_id where l.public_code=${code} and l.status='active'`;const learner=learners[0];if(!learner)throw new Error("This report link is no longer active.");const settings=(await sql<{recipient_scope:string;autoreply_enabled:boolean;allow_teacher_selection:boolean}>`select recipient_scope,autoreply_enabled,allow_teacher_selection from qr_feedback_settings where id=1`)[0]??{recipient_scope:"class_teacher",autoreply_enabled:false,allow_teacher_selection:true};const recent=await sql<{n:number}>`select count(*)::int as n from qr_parent_feedback where learner_id=${learner.id} and created_at>now()-interval '1 hour'`;if(Number(recent[0]?.n??0)>=8)throw new Error("Please wait before sending another message for this report.");let teacherId:string|null=null;if(data.teacherUserId&&settings.allow_teacher_selection&&["teacher","class_teacher"].includes(settings.recipient_scope)){const valid=await sql<{id:string}>`select u.id from users u join assignments a on a.user_id=u.id where u.id=${data.teacherUserId} and u.active=true and u.role in ('teacher','admin','super_admin') and a.stream_id=${learner.streamId} and a.kind in ('class_teacher','subject_teacher','hod')`;if(!valid[0])throw new Error("That teacher is not assigned to this class.");teacherId=valid[0].id;}const id=newId("qrf");await sql`insert into qr_parent_feedback(id,learner_id,learner_name,grade_name,stream_name,parent_name,parent_email,teacher_user_id,recipient_scope,message) values(${id},${learner.id},${learner.fullName},${learner.gradeName},${learner.streamName},${parentName},${email},${teacherId},${settings.recipient_scope},${message})`;let autoReplySent=false;if(settings.autoreply_enabled&&email&&process.env.RESEND_API_KEY&&process.env.EMAIL_FROM){try{const response=await fetch("https://api.resend.com/emails",{method:"POST",headers:{Authorization:`Bearer ${process.env.RESEND_API_KEY}`,"Content-Type":"application/json"},body:JSON.stringify({from:process.env.EMAIL_FROM,to:[email],subject:`We received your message about ${learner.fullName}`,text:`Dear ${parentName},\n\nThank you for contacting the school. Your message about ${learner.fullName} (${learner.gradeName} ${learner.streamName}) has been received by the school. A member of staff will follow up if needed.\n\nPlease do not reply with sensitive information.`})});autoReplySent=response.ok;}catch{autoReplySent=false;}}return{ok:true,autoReplySent};});
+export const submitQrParentFeedback = createServerFn({ method: "POST" })
+  .validator((input: { code: string; parentName: string; parentEmail: string; teacherUserId?: string; teacherUserIds?: string[]; message: string; website?: string }) => input)
+  .handler(async ({ data }) => {
+    if (data.website?.trim()) throw new Error("Unable to submit this message.");
+    const code = data.code.trim().toLowerCase();
+    const parentName = data.parentName.trim();
+    const email = data.parentEmail.trim().toLowerCase();
+    const message = data.message.trim();
+    if (!/^[a-z0-9]{4,12}$/.test(code) || parentName.length < 2 || parentName.length > 120 || message.length < 4 || message.length > 1500) throw new Error("Enter your name and a message (4–1,500 characters).");
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error("Enter a valid email address or leave it blank.");
+    const sql = await getSql();
+    const learners = await sql<{ id: string; fullName: string; gradeId: string; streamId: string; gradeName: string; streamName: string }>`select l.id,l.full_name as "fullName",l.grade_id as "gradeId",l.stream_id as "streamId",g.name as "gradeName",s.name as "streamName" from learners l join grades g on g.id=l.grade_id join streams s on s.id=l.stream_id where l.public_code=${code} and l.status='active'`;
+    const learner = learners[0];
+    if (!learner) throw new Error("This report link is no longer active.");
+    const settings = (await sql<{ recipient_scope: string; autoreply_enabled: boolean; allow_teacher_selection: boolean }>`select recipient_scope,autoreply_enabled,allow_teacher_selection from qr_feedback_settings where id=1`)[0] ?? { recipient_scope: "class_teacher", autoreply_enabled: false, allow_teacher_selection: true };
+    const recent = await sql<{ n: number }>`select count(*)::int as n from qr_parent_feedback where learner_id=${learner.id} and created_at>now()-interval '1 hour'`;
+    if (Number(recent[0]?.n ?? 0) >= 8) throw new Error("Please wait before sending another message for this report.");
+    const requested = [...new Set([...(data.teacherUserIds ?? []), ...(data.teacherUserId ? [data.teacherUserId] : [])].filter(Boolean))];
+    if (requested.length > 12) throw new Error("Choose no more than 12 teachers for one message.");
+    let teacherIds: string[] = [];
+    if (requested.length) {
+      if (!settings.allow_teacher_selection || !["teacher", "class_teacher"].includes(settings.recipient_scope)) throw new Error("Individual teacher selection is not enabled by the school.");
+      const valid = await sql<{ id: string }>`select distinct u.id from users u join assignments a on a.user_id=u.id where u.id = any(${requested}::text[]) and u.active=true and u.role in ('teacher','admin','super_admin') and a.stream_id=${learner.streamId} and a.kind in ('class_teacher','subject_teacher','hod')`;
+      teacherIds = valid.map((item) => item.id);
+      if (teacherIds.length !== requested.length) throw new Error("One or more selected teachers are no longer assigned to this class. Refresh and try again.");
+    }
+    const id = newId("qrf");
+    await sql`insert into qr_parent_feedback(id,learner_id,learner_name,grade_name,stream_name,parent_name,parent_email,teacher_user_id,teacher_user_ids,recipient_scope,message) values(${id},${learner.id},${learner.fullName},${learner.gradeName},${learner.streamName},${parentName},${email},${teacherIds[0] ?? null},${teacherIds},${settings.recipient_scope},${message})`;
+    let teacherEmailsSent = 0;
+    if (teacherIds.length && process.env.RESEND_API_KEY && process.env.EMAIL_FROM) {
+      const teacherRows = await sql<{ email: string; fullName: string }>`select email,full_name as "fullName" from users where id = any(${teacherIds}::text[]) and active=true and coalesce(trim(email),'')<>''`;
+      for (const teacher of teacherRows) {
+        try {
+          const response = await fetch("https://api.resend.com/emails", { method: "POST", headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, "Content-Type": "application/json" }, body: JSON.stringify({ from: process.env.EMAIL_FROM, to: [teacher.email], subject: `Parent message about ${learner.fullName}`, text: `Dear ${teacher.fullName},\n\nA parent has sent a message about ${learner.fullName} (${learner.gradeName} · ${learner.streamName}). Sign in to the Mukuyu school portal and open School Services → Messages from scanned report cards to read and respond.\n\nParent: ${parentName}${email ? `\nReply email: ${email}` : ""}\n\n${message}\n\nThis notification contains confidential learner information. Please handle it securely.` }) });
+          if (response.ok) teacherEmailsSent += 1;
+        } catch { /* Inbox persistence remains authoritative when email is unavailable. */ }
+      }
+    }
+    let autoReplySent = false;
+    if (settings.autoreply_enabled && email && process.env.RESEND_API_KEY && process.env.EMAIL_FROM) {
+      try {
+        const response = await fetch("https://api.resend.com/emails", { method: "POST", headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, "Content-Type": "application/json" }, body: JSON.stringify({ from: process.env.EMAIL_FROM, to: [email], subject: `We received your message about ${learner.fullName}`, text: `Dear ${parentName},\n\nThank you for contacting the school. Your message about ${learner.fullName} (${learner.gradeName} ${learner.streamName}) has been received by the school. A member of staff will follow up if needed.\n\nPlease do not reply with sensitive information.` }) });
+        autoReplySent = response.ok;
+      } catch { autoReplySent = false; }
+    }
+    return { ok: true, autoReplySent, teacherEmailsSent, teacherCount: teacherIds.length };
+  });
 export const listQrParentFeedback = createServerFn({ method: "GET" }).handler(async () => {
   const me = await requireActor();
   if (!["teacher", "admin", "super_admin"].includes(me.role)) throw new Error("Only staff can view parent feedback.");
   const sql = await getSql();
   const assignments = await serviceAssignments(sql, me);
-  const rows = await sql<{
-    id: string; learnerId: string; learnerName: string; gradeName: string; streamName: string;
-    streamId: string; parentName: string; parentEmail: string; teacherUserId: string | null;
-    recipientScope: string; message: string; status: string; staffReply: string; createdAt: string;
-  }>`select f.id,f.learner_id as "learnerId",f.learner_name as "learnerName",f.grade_name as "gradeName",
-    f.stream_name as "streamName",l.stream_id as "streamId",f.parent_name as "parentName",f.parent_email as "parentEmail",
-    f.teacher_user_id as "teacherUserId",f.recipient_scope as "recipientScope",f.message,f.status,
-    f.staff_reply as "staffReply",f.created_at::text as "createdAt"
-    from qr_parent_feedback f join learners l on l.id=f.learner_id order by f.created_at desc limit 300`;
+  const rows = await sql<{ id: string; learnerId: string; learnerName: string; gradeName: string; streamName: string; streamId: string; parentName: string; parentEmail: string; teacherUserId: string | null; teacherUserIds: string[]; recipientScope: string; message: string; status: string; staffReply: string; createdAt: string }>`select f.id,f.learner_id as "learnerId",f.learner_name as "learnerName",f.grade_name as "gradeName",f.stream_name as "streamName",l.stream_id as "streamId",f.parent_name as "parentName",f.parent_email as "parentEmail",f.teacher_user_id as "teacherUserId",f.teacher_user_ids as "teacherUserIds",f.recipient_scope as "recipientScope",f.message,f.status,f.staff_reply as "staffReply",f.created_at::text as "createdAt" from qr_parent_feedback f join learners l on l.id=f.learner_id order by f.created_at desc`;
   return rows.filter((row) => {
     if (me.role === "super_admin") return true;
+    if (row.teacherUserIds?.includes(me.id) || row.teacherUserId === me.id) return true;
     if (row.recipientScope === "super_admin") return false;
     if (row.recipientScope === "admin") return me.role === "admin";
     if (me.role === "admin") return row.recipientScope === "class_teacher";
     if (me.role !== "teacher") return false;
-    if (row.recipientScope === "teacher") return row.teacherUserId === me.id;
+    if (row.recipientScope === "teacher") return false;
     if (row.recipientScope !== "class_teacher") return false;
-    if (row.teacherUserId) return row.teacherUserId === me.id;
     return assignments.some((assignment) => assignment.kind === "class_teacher" && assignment.streamId === row.streamId);
   }).map(({ streamId: _streamId, ...row }) => row);
 });
-
 export const replyQrParentFeedback = createServerFn({ method: "POST" })
   .validator((input: { id: string; reply: string }) => input)
   .handler(async ({ data }) => {
@@ -1333,39 +1370,26 @@ export const replyQrParentFeedback = createServerFn({ method: "POST" })
     const reply = data.reply?.trim() ?? "";
     if (reply.length < 2 || reply.length > 1200) throw new Error("Enter a brief reply (2–1,200 characters).");
     const sql = await getSql();
-    const target = await sql<{
-      teacherUserId: string | null; recipientScope: string; streamId: string;
-      email: string; parentName: string; learnerName: string;
-    }>`select f.teacher_user_id as "teacherUserId",f.recipient_scope as "recipientScope",l.stream_id as "streamId",
-      f.parent_email as email,f.parent_name as "parentName",f.learner_name as "learnerName"
-      from qr_parent_feedback f join learners l on l.id=f.learner_id where f.id=${data.id}`;
+    const target = await sql<{ teacherUserId: string | null; teacherUserIds: string[]; recipientScope: string; streamId: string; email: string; parentName: string; learnerName: string }>`select f.teacher_user_id as "teacherUserId",f.teacher_user_ids as "teacherUserIds",f.recipient_scope as "recipientScope",l.stream_id as "streamId",f.parent_email as email,f.parent_name as "parentName",f.learner_name as "learnerName" from qr_parent_feedback f join learners l on l.id=f.learner_id where f.id=${data.id}`;
     const row = target[0];
     if (!row) throw new Error("This parent message is no longer available.");
-    let permitted = me.role === "super_admin";
+    let permitted = me.role === "super_admin" || Boolean(row.teacherUserIds?.includes(me.id)) || row.teacherUserId === me.id;
     if (!permitted && me.role === "admin") permitted = row.recipientScope === "admin" || row.recipientScope === "class_teacher";
-    if (!permitted && me.role === "teacher") {
+    if (!permitted && me.role === "teacher" && row.recipientScope === "class_teacher") {
       const assignments = await serviceAssignments(sql, me);
-      if (row.recipientScope === "teacher") permitted = row.teacherUserId === me.id;
-      else if (row.recipientScope === "class_teacher") permitted = row.teacherUserId
-        ? row.teacherUserId === me.id
-        : assignments.some((assignment) => assignment.kind === "class_teacher" && assignment.streamId === row.streamId);
+      permitted = assignments.some((assignment) => assignment.kind === "class_teacher" && assignment.streamId === row.streamId);
     }
     if (!permitted) throw new Error("This parent message is not assigned to your account.");
     let emailSent = false;
     if (row.email && process.env.RESEND_API_KEY && process.env.EMAIL_FROM) {
       try {
-        const response = await fetch("https://api.resend.com/emails", {
-          method: "POST",
-          headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, "Content-Type": "application/json" },
-          body: JSON.stringify({ from: process.env.EMAIL_FROM, to: [row.email], subject: `Reply from the school about ${row.learnerName}`, text: `Dear ${row.parentName},\n\n${reply}\n\nSchool office` }),
-        });
+        const response = await fetch("https://api.resend.com/emails", { method: "POST", headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, "Content-Type": "application/json" }, body: JSON.stringify({ from: process.env.EMAIL_FROM, to: [row.email], subject: `Reply from the school about ${row.learnerName}`, text: `Dear ${row.parentName},\n\n${reply}\n\nSchool office` }) });
         emailSent = response.ok;
       } catch { emailSent = false; }
     }
     await sql`update qr_parent_feedback set staff_reply=${reply},status='replied',replied_at=now() where id=${data.id}`;
     return { ok: true, emailSent };
   });
-
 export const getScheduledBackupSettings = createServerFn({method:"GET"}).handler(async()=>{const me=await requireActor();if(!isTrueSuper(me))throw new Error("Only the super admin can configure automatic backups.");const sql=await getSql();return(await sql<{enabled:boolean;recipientEmail:string;cadence:string}>`select enabled,recipient_email as "recipientEmail",cadence from scheduled_backup_settings where id=1`)[0]??{enabled:false,recipientEmail:"",cadence:"daily"};});
 export const saveScheduledBackupSettings = createServerFn({method:"POST"}).validator((input:{enabled:boolean;recipientEmail:string;cadence:"daily"|"weekly"|"monthly"})=>input).handler(async({data})=>{const me=await requireActor();if(!isTrueSuper(me))throw new Error("Only the super admin can configure automatic backups.");if(data.enabled&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.recipientEmail.trim()))throw new Error("Enter a valid backup recipient email.");const sql=await getSql();await sql`update scheduled_backup_settings set enabled=${data.enabled},recipient_email=${data.recipientEmail.trim().toLowerCase()},cadence=${data.cadence},updated_at=now() where id=1`;return{ok:true};});
 
