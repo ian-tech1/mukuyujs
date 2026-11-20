@@ -15,6 +15,7 @@ import type { MusicCatalogProvider, MusicCatalogResult } from "@/lib/school/musi
 import { applyDoubleRule, auditTimetable, distributionWithDoubleDay, generateTimetableDraft as buildTimetableDraft, isValidDistribution, parseDistribution, subtractLessonPeriods, type EngineAssignment, type EngineOptimizationProfile, type EnginePlacement, type EngineSubjectRule } from "@/lib/school/timetable-engine";
 import { DEFAULT_ADMISSION_NUMBER_SETTINGS, normalizeAdmissionNumberSettings, validateAdmissionNumberSettings, type AdmissionNumberSettings } from "@/lib/school/admission-number";
 import { DEFAULT_ROLE_ACCESS, normalizeRoleAccess, canActorAccess, type RoleAccessPolicy } from "@/lib/school/role-access";
+import { normalizeReportCode, resolveReportCode } from "@/lib/school/report-code";
 
 type SessionData = { userId: string; v: number };
 let spotifyTokenCache: { accessToken: string; expiresAt: number } | null = null;
@@ -1536,15 +1537,18 @@ export const listBackupSnapshots = createServerFn({ method: "GET" }).handler(asy
 export const getPublicReport = createServerFn({ method: "GET" })
   .validator((input: { code: string; yearId?: string; termId?: string }) => input)
   .handler(async ({ data }) => {
-    const code = data.code?.trim().toLowerCase();
-    if (!code || !/^[a-z0-9]{4,12}$/.test(code)) return null;
+    const code = normalizeReportCode(data.code);
+    if (!code) return null;
     const sql = await getSql();
     const roleAccess = await readRoleAccess(sql);
     if (!canActorAccess(roleAccess, "qr_guest", "reports", "view")) return null;
+    const numericValue = Number(code);
+    const numericRoll = /^\d+$/.test(code) && Number.isSafeInteger(numericValue) && numericValue <= 2_147_483_647 ? numericValue : null;
     const learnerRows = await sql<Learner>`
       select id, roll, full_name as "fullName", gender, grade_id as "gradeId", stream_id as "streamId", status, public_code as "publicCode", admission_number as "admissionNumber", cohort_year as "cohortYear"
-      from learners where public_code = ${code} and status = 'active'`;
-    const learner = learnerRows[0];
+      from learners where status = 'active' and (public_code = ${code} or (${numericRoll}::int is not null and roll = ${numericRoll}))
+      order by case when public_code = ${code} then 0 else 1 end limit 2`;
+    const learner = resolveReportCode(learnerRows, code);
     if (!learner) return null;
     const profileRows = await sql<{
       name: string; poBox: string; mission: string; vision: string; motto: string; headTeacher: string; dos: string;
