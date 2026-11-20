@@ -12,6 +12,15 @@ test("defaults preserve staff reports, analysis, marklists and family linked res
   assert.equal(canRoleAccess(DEFAULT_ROLE_ACCESS, "qr_guest", "reports", "download"), false);
 });
 
+test("public QR report viewing can be explicitly locked and unlocked", () => {
+  const locked = normalizeRoleAccess({ qr_guest: { reports: { view: false, download: true } } });
+  assert.equal(canRoleAccess(locked, "qr_guest", "reports", "view"), false);
+  assert.equal(canRoleAccess(locked, "qr_guest", "reports", "download"), false);
+
+  const unlocked = normalizeRoleAccess({ qr_guest: { reports: { view: true, download: false } } });
+  assert.equal(canRoleAccess(unlocked, "qr_guest", "reports", "view"), true);
+});
+
 test("locked views force downloads off and unrelated groups stay unchanged", () => {
   const policy = normalizeRoleAccess({ teacher: { reports: { view: false, download: true } } });
   assert.equal(canRoleAccess(policy, "teacher", "reports", "view"), false);
