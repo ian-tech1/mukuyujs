@@ -74,6 +74,22 @@ test("matches exact supplied name tokens when the roster includes an omitted mid
   ]), null);
 });
 
+test("scores misspelled entered name tokens without penalizing an omitted middle name", () => {
+  const roster = [
+    { id: "a", fullName: "Amina Wanjiku Njeri" },
+    { id: "b", fullName: "Brian Otieno" },
+  ];
+  assert.equal(matchLearnerName("Amin Njer", roster)?.id, "a");
+  assert.equal(matchLearnerName("Amin Zzzzz", roster), null);
+});
+
+test("does not auto-link close fuzzy token-subset candidates", () => {
+  assert.equal(matchLearnerName("Amin Njer", [
+    { id: "a", fullName: "Amina Wanjiku Njeri" },
+    { id: "b", fullName: "Amine Maina Njeri" },
+  ]), null);
+});
+
 test("rejects tied fuzzy learner names and common one-token names", () => {
   assert.equal(matchLearnerName("Amin Njer", [
     { id: "a", fullName: "Amina Njeri" },

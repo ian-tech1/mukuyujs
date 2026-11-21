@@ -37,9 +37,10 @@ function damerauLevenshtein(left: string, right: string) {
 }
 
 /**
- * Match one learner conservatively. Similarity is 1 - edit distance / longest
- * name length. Unique exact names/tokens win first; fuzzy matches require 60%
- * similarity, and equally close candidates are not auto-linked.
+ * Match one learner conservatively. Exact names/tokens win first; fuzzy input
+ * tokens are compared with distinct roster tokens and weighted by entered
+ * letters, so an omitted middle name does not count as a spelling error.
+ * Fuzzy matches require 60% similarity, and equally close candidates are not auto-linked.
  */
 export function matchLearnerName(name: string, learners: NamedLearner[]) {
   const normalized = normalizeLearnerName(name);
@@ -92,12 +93,22 @@ export function matchLearnerName(name: string, learners: NamedLearner[]) {
   if (exactTokenSubsets.length > 1) return null;
 
   const scored = prepared.map((entry) => {
-    const orderedDistance = damerauLevenshtein(compactKey, entry.compact);
-    const reorderedDistance = damerauLevenshtein(sortedKey.replace(/\s/g, ""), entry.sortedCompact);
-    const edits = Math.min(orderedDistance, reorderedDistance);
-    const maxLength = Math.max(compactKey.length, entry.compact.length);
-    const score = maxLength ? 1 - edits / maxLength : 0;
-    return { learner: entry.learner, edits, score };
+    const pairs = tokens.flatMap((token, inputIndex) => entry.tokens.map((candidate, candidateIndex) => {
+      const maxLength = Math.max(token.length, candidate.length);
+      const edits = damerauLevenshtein(token, candidate);
+      return { inputIndex, candidateIndex, score: maxLength ? 1 - edits / maxLength : 0 };
+    })).sort((left, right) => right.score - left.score);
+    const usedInputs = new Set<number>();
+    const usedCandidates = new Set<number>();
+    let weightedSimilarity = 0;
+    for (const pair of pairs) {
+      if (usedInputs.has(pair.inputIndex) || usedCandidates.has(pair.candidateIndex)) continue;
+      usedInputs.add(pair.inputIndex);
+      usedCandidates.add(pair.candidateIndex);
+      weightedSimilarity += pair.score * tokens[pair.inputIndex].length;
+    }
+    const score = compactKey.length ? weightedSimilarity / compactKey.length : 0;
+    return { learner: entry.learner, score };
   }).sort((a, b) => b.score - a.score);
   const best = scored[0];
   if (!best || best.score < 0.6) return null;
