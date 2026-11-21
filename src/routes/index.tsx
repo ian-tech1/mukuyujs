@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { SchoolLogo } from "@/components/school/logo";
 import { PublicReport } from "@/components/school/public-report";
 import { btnClass, errText, inputClass } from "@/components/school/gate";
-import { getWorkspace, getWelcomePage, login, portalStatus } from "@/lib/school/api";
+import { getWorkspace, getWelcomePage, login, portalStatus, requestParentLoginCode, verifyParentLoginCode } from "@/lib/school/api";
 import { applyDisplayPreferences, DEFAULT_DISPLAY_PREFERENCES, DISPLAY_PALETTES, readDisplayPreferences, saveDisplayPreferences, type LocalDisplayPreferences } from "@/lib/school/display";
 import { DEFAULT_WELCOME_DISPLAY, hexToRgba, normalizeWelcomeDisplay, type WelcomeDisplayOptions } from "@/lib/school/welcome-display";
 
@@ -28,6 +28,14 @@ function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [parentOpen, setParentOpen] = useState(false);
+  const [parentEmail, setParentEmail] = useState("");
+  const [parentLearnerNames, setParentLearnerNames] = useState(["", ""]);
+  const [parentCode, setParentCode] = useState("");
+  const [parentCodeRequested, setParentCodeRequested] = useState(false);
+  const [parentBusy, setParentBusy] = useState(false);
+  const [parentError, setParentError] = useState("");
+  const [parentNotice, setParentNotice] = useState("");
   const [welcome, setWelcome] = useState<{ title: string; subtitle: string; announcement: string; contact: string; logoData?: string; backgroundStart?: string; backgroundEnd?: string; titleSize?: number; fontFamily?: string; animationStyle?: string; animated?: boolean; highlights?: string; certification?: string; footerText?: string; paragraphColoursEnabled?: boolean; paragraphColourInterval?: number; display?: WelcomeDisplayOptions } | null>(null);
   const [display, setDisplay] = useState<LocalDisplayPreferences>(DEFAULT_DISPLAY_PREFERENCES);
   const [paragraphColourTick, setParagraphColourTick] = useState(0);
@@ -126,6 +134,36 @@ function LoginPage() {
     }
   }
 
+  async function onRequestParentCode(event: React.FormEvent) {
+    event.preventDefault();
+    setParentBusy(true);
+    setParentError("");
+    setParentNotice("");
+    try {
+      await requestParentLoginCode({ data: { email: parentEmail, learnerNames: parentLearnerNames } });
+      setParentCodeRequested(true);
+      setParentNotice("If your details match the school roll, a sign-in code will be sent to your email. If no code arrives, check the names and email spelling or contact the school office.");
+    } catch (reason) {
+      setParentError(errText(reason));
+    } finally {
+      setParentBusy(false);
+    }
+  }
+
+  async function onVerifyParentCode(event: React.FormEvent) {
+    event.preventDefault();
+    setParentBusy(true);
+    setParentError("");
+    try {
+      await verifyParentLoginCode({ data: { email: parentEmail, code: parentCode } });
+      navigate({ to: "/portal", search: { view: "results" } });
+    } catch (reason) {
+      setParentError(errText(reason));
+    } finally {
+      setParentBusy(false);
+    }
+  }
+
   return (
     <main className="welcome-shell grid min-h-screen lg:grid-cols-[1.1fr_0.9fr]" style={welcomeHeroStyle}>
       <section className={`welcome-hero relative flex flex-col justify-between px-6 py-8 text-paper sm:px-12 ${welcome?.animated === false || welcome?.animationStyle === "none" ? "welcome-static" : `welcome-animated welcome-animation-${welcome?.animationStyle || "aurora"}`} ${welcomeDisplay.showRibbons ? "" : "welcome-no-ribbons"} ${welcomeDisplay.titleShadow ? "" : "welcome-title-shadow-disabled"} ${welcomeDisplay.contentAlignment === "center" ? "welcome-content-centered" : ""}`}>
@@ -161,10 +199,10 @@ function LoginPage() {
         </div>
         <div className="relative z-10 flex items-center gap-2 text-[10px] uppercase tracking-[0.28em] text-paper/55"><span className="welcome-status-line" /><span>Secure school office</span></div>
       </section>
-      <section className="welcome-login-panel flex items-center justify-center px-6 py-12" style={{ background: `radial-gradient(circle at 88% 12%, ${hexToRgba(welcomeDisplay.accentAltColor, 0.18)}, transparent 26%), ${hexToRgba(welcomeDisplay.panelColor, welcomeDisplay.panelOpacity)}` }}>
+      <section className="welcome-login-panel flex flex-col items-center justify-center px-6 py-12" style={{ background: `radial-gradient(circle at 88% 12%, ${hexToRgba(welcomeDisplay.accentAltColor, 0.18)}, transparent 26%), ${hexToRgba(welcomeDisplay.panelColor, welcomeDisplay.panelOpacity)}` }}>
         <form onSubmit={onSubmit} className="w-full max-w-sm">
           <h2 className="font-serif text-3xl text-navy">Sign in</h2>
-          <p className="mt-2 text-sm text-muted">Use the email and password issued by the school. Super admins, admins, teachers, parents and students can all sign in here.</p>
+          <p className="mt-2 text-sm text-muted">Use the email and password issued by the school. Super admins, admins, teachers and student accounts can sign in here.</p>
           <label className="mt-8 block text-sm font-medium">
             Email
             <input className={`${inputClass} mt-1.5`} type="email" autoComplete="username" value={email} onChange={(event) => setEmail(event.target.value)} required />
@@ -186,6 +224,26 @@ function LoginPage() {
             </p>
           ) : null}
         </form>
+        <div className="mt-5 w-full max-w-sm border-t border-line pt-4">
+          <button type="button" className="w-full rounded-xl border border-line bg-card px-4 py-3 text-left text-sm font-semibold text-navy shadow-sm transition hover:border-info" aria-expanded={parentOpen} aria-controls="parent-sign-in-panel" onClick={() => { setParentOpen((value) => !value); setParentError(""); setParentNotice(""); }}>
+            Sign in as PARENTS <span className="float-right" aria-hidden="true">{parentOpen ? "−" : "+"}</span>
+          </button>
+          {parentOpen ? <section id="parent-sign-in-panel" className="mt-3 rounded-2xl border border-line bg-card/90 p-4 shadow-card" aria-label="Parent sign in">
+            <h3 className="font-serif text-xl text-navy">Parent portal</h3>
+            <p className="mt-1 text-sm text-muted">Enter your email and the names of at least two learners. We’ll send a one-time code to verify your email before opening linked results.</p>
+            <form className="mt-4 space-y-3" onSubmit={parentCodeRequested ? onVerifyParentCode : onRequestParentCode}>
+              <label className="block text-sm font-medium">Your email address<input className={`${inputClass} mt-1.5`} type="email" autoComplete="email" value={parentEmail} onChange={(event) => setParentEmail(event.target.value)} required /></label>
+              {!parentCodeRequested ? <>
+                {parentLearnerNames.map((name, index) => <label key={index} className="block text-sm font-medium">Learner {index + 1} full name<input className={`${inputClass} mt-1.5`} autoComplete="off" value={name} onChange={(event) => setParentLearnerNames((current) => current.map((entry, item) => item === index ? event.target.value : entry))} required /></label>)}
+                {parentLearnerNames.length < 5 ? <button type="button" className="text-sm font-semibold text-info" onClick={() => setParentLearnerNames((current) => [...current, ""])}>+ Add another learner</button> : null}
+              </> : <label className="block text-sm font-medium">Six-digit email code<input className={`${inputClass} mt-1.5 tracking-[0.3em]`} type="text" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} value={parentCode} onChange={(event) => setParentCode(event.target.value.replace(/\D/g, "").slice(0, 6))} required /></label>}
+              {parentError ? <p className="text-sm text-bad" role="alert">{parentError}</p> : null}
+              {parentNotice ? <p className="text-sm text-good" role="status">{parentNotice}</p> : null}
+              <button className={`${btnClass} w-full`} style={{ backgroundColor: welcomeDisplay.accentColor }} disabled={parentBusy} type="submit">{parentBusy ? "Please wait…" : parentCodeRequested ? "Verify code and open parent portal" : "Continue with email verification"}</button>
+              {parentCodeRequested ? <button type="button" className="w-full text-sm font-semibold text-info" onClick={() => { setParentCodeRequested(false); setParentCode(""); setParentNotice(""); setParentError(""); }}>Use different details</button> : null}
+            </form>
+          </section> : null}
+        </div>
       </section>
       {featuresOpen ? <div className="welcome-features-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setFeaturesOpen(false); }}>
         <section className="welcome-features-dialog" role="dialog" aria-modal="true" aria-labelledby="welcome-features-title" aria-describedby="welcome-features-description">

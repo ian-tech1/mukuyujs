@@ -16,6 +16,7 @@ import { applyDoubleRule, auditTimetable, distributionWithDoubleDay, generateTim
 import { DEFAULT_ADMISSION_NUMBER_SETTINGS, normalizeAdmissionNumberSettings, validateAdmissionNumberSettings, type AdmissionNumberSettings } from "@/lib/school/admission-number";
 import { DEFAULT_ROLE_ACCESS, normalizeRoleAccess, canActorAccess, type RoleAccessPolicy } from "@/lib/school/role-access";
 import { normalizeReportCode, resolveReportCode } from "@/lib/school/report-code";
+import { isValidParentEmail, matchLearnerNames, normalizeParentEmail } from "@/lib/school/parent-access";
 
 type SessionData = { userId: string; v: number };
 let spotifyTokenCache: { accessToken: string; expiresAt: number } | null = null;
@@ -356,6 +357,93 @@ export const login = createServerFn({ method: "POST" })
     if (!row.active) throw new Error("This account is disabled. Ask the super admin.");
     const session = await sessionApi();
     await session.update({ userId: row.id, v: Number(row.session_version) });
+    return { ok: true };
+  });
+
+function parentCodeDigest(email: string, code: string) {
+  const secret = process.env.SESSION_SECRET ?? (process.env.NODE_ENV === "production" ? "" : "mukuyu-local-preview-only-session-secret");
+  if (!secret) throw new Error("SESSION_SECRET must be configured before parent sign-in can be used.");
+  return createHmac("sha256", secret).update(`parent-login:${email}:${code}`).digest("hex");
+}
+
+export const requestParentLoginCode = createServerFn({ method: "POST" })
+  .validator((input: { email: string; learnerNames: string[] }) => input)
+  .handler(async ({ data }) => {
+    const email = normalizeParentEmail(data.email ?? "");
+    if (!isValidParentEmail(email)) throw new Error("Enter a valid email address.");
+    const names = Array.isArray(data.learnerNames) ? data.learnerNames.slice(0, 5) : [];
+    if (names.length < 2 || names.length > 5 || names.some((name) => typeof name !== "string" || name.length > 160)) {
+      throw new Error("Enter at least two learner names (up to five).");
+    }
+    const sql = await getSql();
+    const limit = await sql<{ request_count: number }>`insert into parent_login_rate_limits (email, window_started_at, request_count) values (${email}, now(), 1) on conflict (email) do update set request_count = case when parent_login_rate_limits.window_started_at < now() - interval '1 hour' then 1 else parent_login_rate_limits.request_count + 1 end, window_started_at = case when parent_login_rate_limits.window_started_at < now() - interval '1 hour' then now() else parent_login_rate_limits.window_started_at end returning request_count`;
+    if (Number(limit[0]?.request_count ?? 0) > 5) return { ok: true };
+    const recent = await sql<{ count: number }>`select count(*)::int as count from parent_login_codes where email = ${email} and created_at > now() - interval '1 hour'`;
+    if (Number(recent[0]?.count ?? 0) >= 3) return { ok: true };
+    const accounts = await sql<{ role: string; active: boolean }>`select role, active from users where email = ${email}`;
+    if (accounts[0] && (accounts[0].role !== "parent" || !accounts[0].active)) return { ok: true };
+    const learners = await sql<{ id: string; fullName: string }>`select id, full_name as "fullName" from learners where status = 'active'`;
+    const matched = matchLearnerNames(names, learners);
+    if (matched.length < 2) return { ok: true };
+
+    const code = String(randomInt(100000, 1000000));
+    const delivery = await sendPasswordEmail(email, "Mukuyu parent sign-in code", `Your Mukuyu parent sign-in code is ${code}. It expires in 10 minutes and can be used once. If you did not request this code, you can ignore this email.`);
+    if (!delivery.sent) throw new Error("We could not send a verification code to that email. Please try again later or contact the school office.");
+    await sql`delete from parent_login_codes where expires_at < now() - interval '1 day'`;
+    await sql`update parent_login_codes set consumed_at = now() where email = ${email} and consumed_at is null`;
+    await sql`insert into parent_login_codes (id, email, code_hash, learner_ids, expires_at) values (${newId("plc")}, ${email}, ${parentCodeDigest(email, code)}, ${matched.map((learner) => learner.id)}, now() + interval '10 minutes')`;
+    return { ok: true };
+  });
+
+export const verifyParentLoginCode = createServerFn({ method: "POST" })
+  .validator((input: { email: string; code: string }) => input)
+  .handler(async ({ data }) => {
+    const email = normalizeParentEmail(data.email ?? "");
+    const code = String(data.code ?? "").trim();
+    if (!isValidParentEmail(email) || !/^\d{6}$/.test(code)) throw new Error("That email or code is not valid. Request a new code and try again.");
+    const sql = await getSql();
+    const signedIn = await sql.transaction(async (tx) => {
+      const challenges = await tx<{ id: string; code_hash: string; learner_ids: string[] }>`select id, code_hash, learner_ids from parent_login_codes where email = ${email} and consumed_at is null and expires_at > now() and attempts < 5 order by created_at desc limit 1 for update`;
+      const challenge = challenges[0];
+      if (!challenge) return null;
+      const expected = Buffer.from(challenge.code_hash, "hex");
+      const actual = Buffer.from(parentCodeDigest(email, code), "hex");
+      if (expected.length !== actual.length || !timingSafeEqual(expected, actual)) {
+        await tx`update parent_login_codes set attempts = attempts + 1, consumed_at = case when attempts + 1 >= 5 then now() else consumed_at end where id = ${challenge.id}`;
+        return null;
+      }
+      const linkedLearners = await tx<{ id: string }>`select id from learners where id = any(${challenge.learner_ids}::text[]) and status = 'active'`;
+      if (linkedLearners.length < 2) {
+        await tx`update parent_login_codes set consumed_at = now() where id = ${challenge.id}`;
+        return null;
+      }
+      let users = await tx<{ id: string; role: string; active: boolean; session_version: number }>`select id, role, active, session_version from users where email = ${email} for update`;
+      let user = users[0];
+      if (user && (user.role !== "parent" || !user.active)) {
+        await tx`update parent_login_codes set consumed_at = now() where id = ${challenge.id}`;
+        return null;
+      }
+      if (!user) {
+        const userId = newId("usr");
+        const inserted = await tx<{ id: string }>`insert into users (id, email, password_hash, full_name, role, active) values (${userId}, ${email}, ${hashPassword(randomBytes(32).toString("base64url"))}, 'Parent account', 'parent', true) on conflict (email) do nothing returning id`;
+        if (inserted[0]) {
+          user = { id: inserted[0].id, role: "parent", active: true, session_version: 1 };
+        } else {
+          users = await tx<{ id: string; role: string; active: boolean; session_version: number }>`select id, role, active, session_version from users where email = ${email} for update`;
+          user = users[0];
+          if (!user || user.role !== "parent" || !user.active) {
+            await tx`update parent_login_codes set consumed_at = now() where id = ${challenge.id}`;
+            return null;
+          }
+        }
+      }
+      await tx`insert into parent_links (parent_user_id, learner_id) select ${user.id}, learner_id from unnest(${challenge.learner_ids}::text[]) as learner_id on conflict do nothing`;
+      await tx`update parent_login_codes set consumed_at = now() where id = ${challenge.id}`;
+      return { userId: user.id, version: Number(user.session_version) };
+    });
+    if (!signedIn) throw new Error("That email or code is not valid. Request a new code and try again.");
+    const session = await sessionApi();
+    await session.update({ userId: signedIn.userId, v: signedIn.version });
     return { ok: true };
   });
 
