@@ -56,6 +56,7 @@ export function ReportSheet({
         <p className="mx-auto w-fit border px-4 py-1 text-center text-xs font-semibold tracking-wide text-navy sm:text-sm" style={{ borderColor: termColor, boxShadow: `inset 0 -2px 0 ${termColor}` }}>
           {heading}
         </p>
+        <p className="mt-1 text-center text-xs font-bold uppercase tracking-wide text-muted">{profile.termName} · {profile.academicYear}</p>
         <div className="mt-3 grid grid-cols-1 items-start gap-3 sm:grid-cols-[7rem_minmax(0,1fr)]">
           {profile.showQr ? (
             <div className="w-28 shrink-0 border border-line bg-white p-1 text-center">

@@ -6,9 +6,10 @@ import { PeriodBar, useSchoolPeriod } from "@/components/school/period-bar";
 import { buildBoards, calendarFor, decorate, learnersForYear, type Decorated } from "@/lib/school/model";
 import { liveReportLink, logoDataUrl } from "@/lib/school/brand";
 import { extrasFor } from "@/lib/school/extras";
-import { childReport } from "@/lib/school/api";
+import { childReport, getParentReportOptions } from "@/lib/school/api";
 import { downloadReportPdf, qrFor } from "@/lib/school/pdf";
 import { canActorAccess } from "@/lib/school/role-access";
+import { QrParentFeedback } from "@/components/school/qr-parent-feedback";
 
 export function ResultsView({ ws, flash }: Gate) {
   const canDownload = canActorAccess(ws.roleAccess, ws.me.role, "familyResults", "download");
@@ -22,16 +23,28 @@ export function ResultsView({ ws, flash }: Gate) {
   const displayExams = exams.slice(0, Math.max(1, ws.profile.reportExamCount || 2));
   const [learnerId, setLearnerId] = useState(ws.learners[0]?.id ?? "");
   const [extra, setExtra] = useState<Decorated[] | null>(null);
+  const [parentOptions, setParentOptions] = useState<Awaited<ReturnType<typeof getParentReportOptions>> | null>(null);
   const learner = ws.learners.find((item) => item.id === learnerId) ?? ws.learners[0];
+  const currentPeriod = period.current;
+  const selectedLearnerId = learner?.id;
   useEffect(() => {
-    if (period.current) {
+    if (currentPeriod) {
       setExtra(null);
       return;
     }
     childReport({ data: { yearId: period.yearId, termId: period.termId } }).then((result) => setExtra(result.rows)).catch(() => setExtra([]));
-  }, [period.current, period.yearId, period.termId]);
+  }, [currentPeriod, period.yearId, period.termId]);
+  useEffect(() => {
+    if (ws.me.role !== "parent" || !selectedLearnerId) { setParentOptions(null); return; }
+    let live = true;
+    setParentOptions(null);
+    getParentReportOptions({ data: { learnerId: selectedLearnerId, yearId: period.yearId, termId: period.termId } })
+      .then((options) => { if (live) setParentOptions(options); })
+      .catch(() => { if (live) setParentOptions(null); });
+    return () => { live = false; };
+  }, [ws.me.role, selectedLearnerId, period.yearId, period.termId]);
   if (!learner) return <p className="text-sm text-muted">No learner is linked to this login yet. Ask the school office.</p>;
-  const decorated = (period.current ? ws.familyReports : extra) ?? decorate(buildBoards(ws.learners.filter((item) => item.gradeId === learner.gradeId), period.marks, subjects, exams, ws.bands), ws.streams, exams);
+  const decorated = (currentPeriod ? ws.familyReports : extra) ?? decorate(buildBoards(ws.learners.filter((item) => item.gradeId === learner.gradeId), period.marks, subjects, exams, ws.bands), ws.streams, exams);
   const row = decorated.find((item) => item.learner.id === learner.id);
   const historicalPlacement = ws.marks.find((mark) => mark.learnerId === learner.id && mark.yearId === period.yearId && mark.termId === period.termId);
   const placedLearner = learnersForYear(ws, period.yearId).find((item) => item.id === learner.id);
@@ -46,6 +59,7 @@ export function ResultsView({ ws, flash }: Gate) {
     <div className="space-y-4">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
+          <p className="text-xs text-muted">Official result slip · {profileForPeriod.termName} {profileForPeriod.academicYear}{learner.publicCode ? ` · code ${learner.publicCode}` : ""}</p>
           <h1 className="font-serif text-3xl text-navy">{ws.me.role === "parent" ? "Your children" : "My results"}</h1>
           <p className="text-sm text-muted">{row ? `Position ${row.overall.position ?? "—"} of ${row.overall.outOf} · mean ${row.avgMean?.toFixed(2) ?? "—"} · ${row.level ?? "—"}` : "No marks for this term yet."}</p>
         </div>
@@ -66,9 +80,12 @@ export function ResultsView({ ws, flash }: Gate) {
               extras,
             }]);
           } catch (error) { flash(errText(error), true); }
-        }}>Download report card</button> : null}
+        }}>Download report card (PDF)</button> : null}
+        {row ? <button className={`${btnClass} border border-line bg-card text-navy`} type="button" onClick={() => window.print()}>Print / Save as PDF</button> : null}
       </header>
+      {ws.profile.whatsappGroupEnabled && ws.profile.whatsappGroupUrl ? <a className="block rounded-xl border-2 border-[#128C7E] bg-[#25D366] px-4 py-4 text-center text-base font-extrabold text-white shadow-lg ring-2 ring-[#25D366]/30 transition hover:brightness-95" aria-label={ws.profile.whatsappGroupLabel || `Tap to join ${ws.profile.name} WhatsApp group`} href={ws.profile.whatsappGroupUrl} target="_blank" rel="noreferrer"><span className="block text-xs uppercase tracking-widest text-white/90">School community</span><span className="mt-1 block">{ws.profile.whatsappGroupLabel || `Tap to join ${ws.profile.name} WhatsApp group`}</span></a> : null}
       {row ? <ReportSheet profile={profileForPeriod} grade={grade} stream={stream} subjects={subjects} exams={displayExams} row={row} closingDate={calendar?.closingDate} openingDate={calendar?.openingDate} title={calendar?.reportTitle} extras={extras} /> : <p className="text-sm text-muted">Marks for this term have not been entered.</p>}
+      {ws.me.role === "parent" && row && learner.publicCode && parentOptions ? <QrParentFeedback code={learner.publicCode} learnerName={learner.fullName} gradeName={grade.name} streamName={stream?.name ?? "Stream not listed"} settings={parentOptions.feedbackSettings} teachers={parentOptions.feedbackTeachers} /> : null}
     </div>
   );
 }

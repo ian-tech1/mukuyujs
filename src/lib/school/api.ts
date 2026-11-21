@@ -12,7 +12,7 @@ import { soundCloudSearchUrl, normalizeSoundCloudSearchResults } from "@/lib/sch
 import { internetArchiveGenreSearchUrl, internetArchiveSearchUrl, normalizeInternetArchiveResults, safeInternetArchiveFileUrl } from "@/lib/school/music-catalogs/internet-archive";
 import { normalizeYouTubeSearchResults, youtubeSearchUrl } from "@/lib/school/music-catalogs/youtube";
 import type { MusicCatalogProvider, MusicCatalogResult } from "@/lib/school/music-catalogs/types";
-import { applyDoubleRule, auditTimetable, distributionWithDoubleDay, generateTimetableDraft as buildTimetableDraft, isValidDistribution, parseDistribution, subtractLessonPeriods, type EngineAssignment, type EngineOptimizationProfile, type EnginePlacement, type EngineSubjectRule } from "@/lib/school/timetable-engine";
+import { applyDoubleRule, auditTimetable, distributionWithDoubleDay, generateTimetableDraft as buildTimetableDraft, isValidDistribution, parseDistribution, subtractLessonPeriods, type EngineOptimizationProfile, type EnginePlacement, type EngineSubjectRule } from "@/lib/school/timetable-engine";
 import { DEFAULT_ADMISSION_NUMBER_SETTINGS, normalizeAdmissionNumberSettings, validateAdmissionNumberSettings, type AdmissionNumberSettings } from "@/lib/school/admission-number";
 import { DEFAULT_ROLE_ACCESS, normalizeRoleAccess, canActorAccess, type RoleAccessPolicy } from "@/lib/school/role-access";
 import { normalizeReportCode, resolveReportCode } from "@/lib/school/report-code";
@@ -220,10 +220,14 @@ export const saveAdmissionNumberSettings = createServerFn({ method: "POST" })
 
 async function reportForGrade(sql: Awaited<ReturnType<typeof getSql>>, gradeId: string, yearId: string, termId: string, learnerIds: string[]) {
   const { subjects, exams, bands, streams, learners, marks } = await loadGradeBook(sql, gradeId, yearId, termId);
-  const rows = decorate(buildBoards(learners, marks, subjects, exams, bands), streams, exams).filter((row) =>
+  const configuredAssessments = await sql<{ exam_id: string; active: boolean }>`select exam_id, active from term_assessments where year_id = ${yearId} and term_id = ${termId}`;
+  const activeIds = configuredAssessments.length ? new Set(configuredAssessments.filter((item) => item.active).map((item) => item.exam_id)) : null;
+  const reportExams = activeIds ? exams.filter((exam) => activeIds.has(exam.id)) : exams;
+  const reportMarks = activeIds ? marks.filter((mark) => activeIds.has(mark.examId)) : marks;
+  const rows = decorate(buildBoards(learners, reportMarks, subjects, reportExams, bands), streams, reportExams).filter((row) =>
     learnerIds.includes(row.learner.id),
   );
-  return { subjects, exams, bands, streams, rows };
+  return { subjects, exams: reportExams, bands, streams, rows };
 }
 
 type SqlHandle = Awaited<ReturnType<typeof getSql>>;
@@ -724,13 +728,13 @@ export const getWorkspace = createServerFn({ method: "GET" }).handler(async (): 
     const configuredAssessments = await sql<{ exam_id: string; active: boolean }>`select exam_id, active from term_assessments where year_id = ${profile.activeYearId} and term_id = ${profile.activeTermId}`;
     const activeIds = configuredAssessments.length ? new Set(configuredAssessments.filter((item) => item.active).map((item) => item.exam_id)) : null;
     const activePeriodMarks = activeIds ? everyMark.filter((mark) => activeIds.has(mark.examId)) : everyMark;
+    const activeExams = activeIds ? exams.filter((exam) => activeIds.has(exam.id)) : exams;
     const learnerMarkGrades = activePeriodMarks.filter((mark) => allowed.has(mark.learnerId)).map((mark) => mark.gradeId).filter((id): id is string => Boolean(id));
     const gradeIds = [...new Set([...learners.map((learner) => learner.gradeId), ...learnerMarkGrades])];
     familyReports = gradeIds.flatMap((gradeId) => {
-      const historicalIds = new Set(activePeriodMarks.filter((mark) => mark.gradeId === gradeId).map((mark) => mark.learnerId));
       const group = everyone.filter((learner) => learner.gradeId === gradeId);
       const gradeMarks = activePeriodMarks.filter((mark) => mark.gradeId === gradeId);
-      return decorate(buildBoards(group, gradeMarks, subjects, exams, bands), streams, exams).filter((row) =>
+      return decorate(buildBoards(group, gradeMarks, subjects, activeExams, bands), streams, activeExams).filter((row) =>
         learners.some((learner) => learner.id === row.learner.id),
       );
     });
@@ -1835,6 +1839,7 @@ export const getPublicReport = createServerFn({ method: "GET" })
     const selectedTerm = await sql<{ name: string }>`select name from terms where id = ${selectedTermId}`;
     profile.activeYearId = selectedYearId; profile.activeTermId = selectedTermId;
     profile.academicYear = selectedYear[0]?.name ?? profile.academicYear; profile.termName = selectedTerm[0]?.name ?? profile.termName;
+    const reportCalendar = await sql<{ closingDate: string; openingDate: string; reportTitle: string }>`select closing_date as "closingDate", opening_date as "openingDate", report_title as "reportTitle" from term_dates where year_id = ${selectedYearId} and term_id = ${selectedTermId}`;
     const placement = await sql<{ grade_id: string; stream_id: string }>`select grade_id, stream_id from marks where learner_id = ${learner.id} and year_id = ${selectedYearId} and term_id = ${selectedTermId} order by updated_at desc limit 1`;
     const reportGradeId = placement[0]?.grade_id ?? learner.gradeId;
     const reportStreamId = placement[0]?.stream_id ?? learner.streamId;
@@ -1877,7 +1882,26 @@ export const getPublicReport = createServerFn({ method: "GET" })
     const extras: ReportExtras = { initials, previousMean, termNote: notes[0] ?? null, customRemarks };
     const feedbackSettings = (await sql<{ recipientScope: "teacher" | "class_teacher" | "admin" | "super_admin"; allowTeacherSelection: boolean; autoreplyEnabled: boolean }>`select recipient_scope as "recipientScope", allow_teacher_selection as "allowTeacherSelection", autoreply_enabled as "autoreplyEnabled" from qr_feedback_settings where id=1`)[0] ?? { recipientScope: "class_teacher" as const, allowTeacherSelection: true, autoreplyEnabled: false };
     const feedbackTeachers = feedbackSettings.allowTeacherSelection ? await sql<{id:string;fullName:string;subjectName:string}>`select u.id,u.full_name as "fullName",string_agg(distinct case when a.kind='class_teacher' then 'Class teacher' when a.kind='subject_teacher' then coalesce(sb.name,'Subject') || ' teacher' when a.kind='hod' then 'Head of department' else 'Teacher' end, ', ' order by case when a.kind='class_teacher' then 'Class teacher' when a.kind='subject_teacher' then coalesce(sb.name,'Subject') || ' teacher' when a.kind='hod' then 'Head of department' else 'Teacher' end) as "subjectName" from assignments a join users u on u.id=a.user_id and u.active=true left join subjects sb on sb.id=a.subject_id where (a.grade_id is null or a.grade_id=${reportGradeId}) and (a.stream_id is null or a.stream_id=${reportStreamId}) and a.kind in ('class_teacher','subject_teacher','hod') group by u.id,u.full_name order by u.full_name` : [];
-    return { profile, grade: grades[0], stream, subjects: book.subjects, exams: book.exams, row, extras, reportPeriods: { years, terms }, feedbackSettings, feedbackTeachers };
+    return { profile, grade: grades[0], stream, subjects: book.subjects, exams: book.exams, row, extras, calendar: reportCalendar[0] ?? null, reportPeriods: { years, terms }, feedbackSettings, feedbackTeachers };
+  });
+
+export const getParentReportOptions = createServerFn({ method: "GET" })
+  .validator((input: { learnerId: string; yearId: string; termId: string }) => input)
+  .handler(async ({ data }) => {
+    const me = await requireActor();
+    if (me.role !== "parent") throw new Error("Parent report options are available only to signed-in parent accounts.");
+    const sql = await getSql();
+    const roleAccess = await readRoleAccess(sql);
+    if (!canActorAccess(roleAccess, me.role, "familyResults", "view")) throw new Error("Family results viewing is currently locked by the Super Admin.");
+    const linked = await sql<{ id: string; gradeId: string; streamId: string }>`select l.id, l.grade_id as "gradeId", l.stream_id as "streamId" from learners l join parent_links p on p.learner_id = l.id where p.parent_user_id = ${me.id} and l.id = ${data.learnerId} and l.status = 'active'`;
+    const learner = linked[0];
+    if (!learner) throw new Error("This learner is not linked to your parent account.");
+    const placement = await sql<{ gradeId: string; streamId: string }>`select grade_id as "gradeId", stream_id as "streamId" from marks where learner_id = ${learner.id} and year_id = ${data.yearId} and term_id = ${data.termId} order by updated_at desc limit 1`;
+    const gradeId = placement[0]?.gradeId ?? learner.gradeId;
+    const streamId = placement[0]?.streamId ?? learner.streamId;
+    const feedbackSettings = (await sql<{ recipientScope: "teacher" | "class_teacher" | "admin" | "super_admin"; allowTeacherSelection: boolean; autoreplyEnabled: boolean }>`select recipient_scope as "recipientScope", allow_teacher_selection as "allowTeacherSelection", autoreply_enabled as "autoreplyEnabled" from qr_feedback_settings where id=1`)[0] ?? { recipientScope: "class_teacher" as const, allowTeacherSelection: true, autoreplyEnabled: false };
+    const feedbackTeachers = feedbackSettings.allowTeacherSelection ? await sql<{ id: string; fullName: string; subjectName: string }>`select u.id, u.full_name as "fullName", string_agg(distinct case when a.kind='class_teacher' then 'Class teacher' when a.kind='subject_teacher' then coalesce(sb.name,'Subject') || ' teacher' when a.kind='hod' then 'Head of department' else 'Teacher' end, ', ' order by case when a.kind='class_teacher' then 'Class teacher' when a.kind='subject_teacher' then coalesce(sb.name,'Subject') || ' teacher' when a.kind='hod' then 'Head of department' else 'Teacher' end) as "subjectName" from assignments a join users u on u.id=a.user_id and u.active=true left join subjects sb on sb.id=a.subject_id where (a.grade_id is null or a.grade_id=${gradeId}) and (a.stream_id is null or a.stream_id=${streamId}) and a.kind in ('class_teacher','subject_teacher','hod') group by u.id,u.full_name order by u.full_name` : [];
+    return { feedbackSettings, feedbackTeachers };
   });
 
 export const deleteUser = createServerFn({ method: "POST" })
