@@ -141,6 +141,8 @@ html[data-portal-motion="reduced"] .welcome-title, html[data-portal-motion="redu
 /* 55 · Keep portal content above the ambient canvas. */
 .portal-animated-background > aside { z-index: 1; }
 .portal-animated-background > div { position: relative; z-index: 1; }
+/* Keep the open mobile drawer above the later content sibling; desktop rail stays at its normal layer. */
+.portal-animated-background > aside.fixed { z-index: 30; }
 /* 56 · Add a soft inset edge to the sidebar's upper edge. */
 .portal-animated-background > aside::after { content: ""; position: absolute; top: 0; right: 0; left: 0; height: 1px; pointer-events: none; background: linear-gradient(90deg, transparent, rgba(151,231,220,.45), rgba(244,202,114,.38), transparent); }
 /* 57 · Smooth sidebar brand illumination as the portal loads. */

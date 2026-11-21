@@ -188,7 +188,7 @@ function PortalPage() {
       </aside>
       <div>
         <header className="relative flex items-center justify-between border-b border-line bg-card px-4 py-3 lg:px-8">
-          <button className="lg:hidden" type="button" onClick={() => setOpen(true)} aria-label="Open menu" aria-expanded={open} aria-controls="portal-navigation">
+          <button className="lg:hidden" type="button" onClick={() => { setDisplaySettingsOpen(false); setOpen(true); }} aria-label="Open menu" aria-expanded={open} aria-controls="portal-navigation">
             <Menu />
           </button>
           <p className="text-sm text-muted">
