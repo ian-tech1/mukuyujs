@@ -16,7 +16,7 @@ import { applyDoubleRule, auditTimetable, distributionWithDoubleDay, generateTim
 import { DEFAULT_ADMISSION_NUMBER_SETTINGS, normalizeAdmissionNumberSettings, validateAdmissionNumberSettings, type AdmissionNumberSettings } from "@/lib/school/admission-number";
 import { DEFAULT_ROLE_ACCESS, normalizeRoleAccess, canActorAccess, type RoleAccessPolicy } from "@/lib/school/role-access";
 import { normalizeReportCode, resolveReportCode } from "@/lib/school/report-code";
-import { isValidParentEmail, matchLearnerNames, normalizeParentEmail } from "@/lib/school/parent-access";
+import { isValidParentEmail, matchLearnerName, normalizeLearnerName, normalizeParentEmail } from "@/lib/school/parent-access";
 
 type SessionData = { userId: string; v: number };
 let spotifyTokenCache: { accessToken: string; expiresAt: number } | null = null;
@@ -367,32 +367,34 @@ function parentCodeDigest(email: string, code: string) {
 }
 
 export const requestParentLoginCode = createServerFn({ method: "POST" })
-  .validator((input: { email: string; learnerNames: string[] }) => input)
+  .validator((input: { email: string; learnerName: string; parentName: string; phoneNumber?: string }) => input)
   .handler(async ({ data }) => {
     const email = normalizeParentEmail(data.email ?? "");
     if (!isValidParentEmail(email)) throw new Error("Enter a valid email address.");
-    const names = Array.isArray(data.learnerNames) ? data.learnerNames.slice(0, 5) : [];
-    if (names.length < 2 || names.length > 5 || names.some((name) => typeof name !== "string" || name.length > 160)) {
-      throw new Error("Enter at least two learner names (up to five).");
-    }
+    const learnerName = String(data.learnerName ?? "").trim().slice(0, 160);
+    const parentName = String(data.parentName ?? "").trim().replace(/\s+/g, " ").slice(0, 120);
+    const phoneNumber = String(data.phoneNumber ?? "").trim().replace(/\s+/g, " ").slice(0, 40);
+    if (normalizeLearnerName(learnerName).replace(/\s/g, "").length < 4) throw new Error("Enter one learner's full name (at least four letters).");
+    if (parentName.length < 2) throw new Error("Enter your full name.");
+    if (phoneNumber && !/^[+()\d .-]{6,40}$/.test(phoneNumber)) throw new Error("Enter a valid contact number or leave it blank.");
     const sql = await getSql();
     const limit = await sql<{ request_count: number }>`insert into parent_login_rate_limits (email, window_started_at, request_count) values (${email}, now(), 1) on conflict (email) do update set request_count = case when parent_login_rate_limits.window_started_at < now() - interval '1 hour' then 1 else parent_login_rate_limits.request_count + 1 end, window_started_at = case when parent_login_rate_limits.window_started_at < now() - interval '1 hour' then now() else parent_login_rate_limits.window_started_at end returning request_count`;
-    if (Number(limit[0]?.request_count ?? 0) > 5) return { ok: true };
+    if (Number(limit[0]?.request_count ?? 0) > 5) return { matched: false };
     const recent = await sql<{ count: number }>`select count(*)::int as count from parent_login_codes where email = ${email} and created_at > now() - interval '1 hour'`;
-    if (Number(recent[0]?.count ?? 0) >= 3) return { ok: true };
+    if (Number(recent[0]?.count ?? 0) >= 3) return { matched: false };
     const accounts = await sql<{ role: string; active: boolean }>`select role, active from users where email = ${email}`;
-    if (accounts[0] && (accounts[0].role !== "parent" || !accounts[0].active)) return { ok: true };
+    if (accounts[0] && (accounts[0].role !== "parent" || !accounts[0].active)) return { matched: false };
     const learners = await sql<{ id: string; fullName: string }>`select id, full_name as "fullName" from learners where status = 'active'`;
-    const matched = matchLearnerNames(names, learners);
-    if (matched.length < 2) return { ok: true };
+    const matched = matchLearnerName(learnerName, learners);
+    if (!matched) return { matched: false };
 
     const code = String(randomInt(100000, 1000000));
-    const delivery = await sendPasswordEmail(email, "Mukuyu parent sign-in code", `Your Mukuyu parent sign-in code is ${code}. It expires in 10 minutes and can be used once. If you did not request this code, you can ignore this email.`);
+    const delivery = await sendPasswordEmail(email, "Your one-time Mukuyu parent login password", `Your one-time Mukuyu parent login password is ${code}. Enter it on the parent sign-in page to verify this email and open the portal. It expires in 10 minutes and can be used once. It is not a reusable account password. If you did not request it, ignore this email.`);
     if (!delivery.sent) throw new Error("We could not send a verification code to that email. Please try again later or contact the school office.");
     await sql`delete from parent_login_codes where expires_at < now() - interval '1 day'`;
     await sql`update parent_login_codes set consumed_at = now() where email = ${email} and consumed_at is null`;
-    await sql`insert into parent_login_codes (id, email, code_hash, learner_ids, expires_at) values (${newId("plc")}, ${email}, ${parentCodeDigest(email, code)}, ${matched.map((learner) => learner.id)}, now() + interval '10 minutes')`;
-    return { ok: true };
+    await sql`insert into parent_login_codes (id, email, code_hash, learner_ids, parent_name, parent_phone, expires_at) values (${newId("plc")}, ${email}, ${parentCodeDigest(email, code)}, ${[matched.id]}, ${parentName}, ${phoneNumber || null}, now() + interval '10 minutes')`;
+    return { matched: true };
   });
 
 export const verifyParentLoginCode = createServerFn({ method: "POST" })
@@ -403,7 +405,7 @@ export const verifyParentLoginCode = createServerFn({ method: "POST" })
     if (!isValidParentEmail(email) || !/^\d{6}$/.test(code)) throw new Error("That email or code is not valid. Request a new code and try again.");
     const sql = await getSql();
     const signedIn = await sql.transaction(async (tx) => {
-      const challenges = await tx<{ id: string; code_hash: string; learner_ids: string[] }>`select id, code_hash, learner_ids from parent_login_codes where email = ${email} and consumed_at is null and expires_at > now() and attempts < 5 order by created_at desc limit 1 for update`;
+      const challenges = await tx<{ id: string; code_hash: string; learner_ids: string[]; parent_name: string; parent_phone: string | null }>`select id, code_hash, learner_ids, parent_name, parent_phone from parent_login_codes where email = ${email} and consumed_at is null and expires_at > now() and attempts < 5 order by created_at desc limit 1 for update`;
       const challenge = challenges[0];
       if (!challenge) return null;
       const expected = Buffer.from(challenge.code_hash, "hex");
@@ -413,7 +415,7 @@ export const verifyParentLoginCode = createServerFn({ method: "POST" })
         return null;
       }
       const linkedLearners = await tx<{ id: string }>`select id from learners where id = any(${challenge.learner_ids}::text[]) and status = 'active'`;
-      if (linkedLearners.length < 2) {
+      if (linkedLearners.length !== 1) {
         await tx`update parent_login_codes set consumed_at = now() where id = ${challenge.id}`;
         return null;
       }
@@ -425,7 +427,7 @@ export const verifyParentLoginCode = createServerFn({ method: "POST" })
       }
       if (!user) {
         const userId = newId("usr");
-        const inserted = await tx<{ id: string }>`insert into users (id, email, password_hash, full_name, role, active) values (${userId}, ${email}, ${hashPassword(randomBytes(32).toString("base64url"))}, 'Parent account', 'parent', true) on conflict (email) do nothing returning id`;
+        const inserted = await tx<{ id: string }>`insert into users (id, email, password_hash, full_name, role, active) values (${userId}, ${email}, ${hashPassword(randomBytes(32).toString("base64url"))}, ${challenge.parent_name}, 'parent', true) on conflict (email) do nothing returning id`;
         if (inserted[0]) {
           user = { id: inserted[0].id, role: "parent", active: true, session_version: 1 };
         } else {
@@ -437,7 +439,10 @@ export const verifyParentLoginCode = createServerFn({ method: "POST" })
           }
         }
       }
+      await tx`update users set full_name = ${challenge.parent_name} where id = ${user.id} and full_name = 'Parent account'`;
       await tx`insert into parent_links (parent_user_id, learner_id) select ${user.id}, learner_id from unnest(${challenge.learner_ids}::text[]) as learner_id on conflict do nothing`;
+      const learner = await tx<{ full_name: string }>`select full_name from learners where id = ${challenge.learner_ids[0]}`;
+      await tx`insert into parent_login_events (parent_user_id, parent_name, parent_email, parent_phone, learner_id, learner_name) values (${user.id}, ${challenge.parent_name}, ${email}, ${challenge.parent_phone}, ${challenge.learner_ids[0]}, ${learner[0]?.full_name ?? "Learner"})`;
       await tx`update parent_login_codes set consumed_at = now() where id = ${challenge.id}`;
       return { userId: user.id, version: Number(user.session_version) };
     });
@@ -446,6 +451,17 @@ export const verifyParentLoginCode = createServerFn({ method: "POST" })
     await session.update({ userId: signedIn.userId, v: signedIn.version });
     return { ok: true };
   });
+
+export const getParentLoginAudit = createServerFn({ method: "GET" }).handler(async () => {
+  const me = await requireActor();
+  if (me.role !== "super_admin") throw new Error("Only the Super Admin can view successful parent login records.");
+  const sql = await getSql();
+  const [summary, events] = await Promise.all([
+    sql<{ total: number; unique_parents: number }>`select count(*)::int as total, count(distinct parent_email)::int as unique_parents from parent_login_events`,
+    sql<{ id: string; parentName: string; parentEmail: string; parentPhone: string | null; learnerName: string; loggedInAt: string }>`select id, parent_name as "parentName", parent_email as "parentEmail", parent_phone as "parentPhone", learner_name as "learnerName", logged_in_at::text as "loggedInAt" from parent_login_events order by logged_in_at desc limit 500`,
+  ]);
+  return { total: Number(summary[0]?.total ?? 0), uniqueParents: Number(summary[0]?.unique_parents ?? 0), events };
+});
 
 export const logout = createServerFn({ method: "POST" }).handler(async () => {
   const session = await sessionApi();

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { Gate } from "@/components/school/gate";
 import { btnClass, btnGhost, errText, inputClass } from "@/components/school/gate";
 import type { AppearancePalette, Band, MarkControl, Profile } from "@/lib/school/model";
@@ -6,7 +6,7 @@ import { ACCESS_AREAS, ACCESS_GROUPS, type AccessArea, type AccessGroup, type Ro
 import { DEFAULT_APPEARANCE, can, isAdmin } from "@/lib/school/model";
 import { DEFAULT_WELCOME_DISPLAY, hexToRgba, normalizeWelcomeDisplay, type WelcomeDisplayOptions } from "@/lib/school/welcome-display";
 import { DISPLAY_PALETTES } from "@/lib/school/display";
-import { addExam, addSubject, deleteSubject, addYear, changePassword, deleteStream, deleteExam, deleteYear, exportSchoolBackup, getWelcomePage, listBackupSnapshots, restoreSchoolBackup, saveAppearance, saveBands, saveExams, saveProfile, saveReportOptions, saveStream, saveSubjects, saveTermAssessments, saveTermDate, saveWelcomePage, setActivePeriod, getMarkAuditHistory, saveMarkControl, saveRoleAccessPolicy } from "@/lib/school/api";
+import { addExam, addSubject, deleteSubject, addYear, changePassword, deleteStream, deleteExam, deleteYear, exportSchoolBackup, getWelcomePage, listBackupSnapshots, restoreSchoolBackup, saveAppearance, saveBands, saveExams, saveProfile, saveReportOptions, saveStream, saveSubjects, saveTermAssessments, saveTermDate, saveWelcomePage, setActivePeriod, getMarkAuditHistory, saveMarkControl, saveRoleAccessPolicy, getParentLoginAudit } from "@/lib/school/api";
 import { DEFAULT_MUSIC_OPTIONS, formatPlaylistText, normalizeMusicOptions, parseMusicSetting, parsePlaylistText, type MusicOptions } from "@/lib/school/music";
 import { MusicStudioCard } from "@/components/school/music-studio";
 import { AdminAutomationCards } from "@/components/school/admin-automation-cards";
@@ -41,6 +41,7 @@ export function SettingsView({ ws, refresh, flash, onWelcomeChange }: Gate) {
         {ws.me.role === "super_admin" ? <RestoreBackupPanel flash={flash} refresh={refresh} /> : null}
       </section> : null}
       {ws.me.role === "super_admin" ? <RoleAccessCard policy={ws.roleAccess} refresh={refresh} flash={flash} /> : null}
+      {ws.me.role === "super_admin" ? <ParentLoginAuditCard flash={flash} /> : null}
       {ws.me.role === "super_admin" ? <AdmissionNumberFormatCard flash={flash} /> : null}
       {ws.me.role === "super_admin" ? <WelcomePageCard flash={flash} refresh={refresh} onWelcomeChange={onWelcomeChange} /> : null}
       {ws.me.role === "super_admin" ? <AppearanceColorsCard flash={flash} /> : null}
@@ -61,6 +62,34 @@ export function SettingsView({ ws, refresh, flash, onWelcomeChange }: Gate) {
       {can(ws.me, "calendar") ? <CalendarCard ws={ws} flash={flash} refresh={refresh} /> : null}
     </div>
   );
+}
+
+function ParentLoginAuditCard({ flash }: Pick<Gate, "flash">) {
+  const [audit, setAudit] = useState<Awaited<ReturnType<typeof getParentLoginAudit>> | null>(null);
+  const [busy, setBusy] = useState(false);
+  const load = useCallback(async () => {
+    setBusy(true);
+    try { setAudit(await getParentLoginAudit()); }
+    catch (error) { flash(errText(error), true); }
+    finally { setBusy(false); }
+  }, [flash]);
+  useEffect(() => { void load(); }, [load]);
+  return <section className="space-y-4 rounded-2xl border border-cyan-200 bg-gradient-to-br from-cyan-50 via-white to-indigo-50 p-5 shadow-card">
+    <div className="flex flex-wrap items-start justify-between gap-3">
+      <div><p className="text-xs font-bold uppercase tracking-[.18em] text-cyan-800">Super Admin · parent access</p><h2 className="font-serif text-2xl text-navy">Successful parent logins</h2><p className="mt-1 text-sm text-muted">Each row is one verified sign-in. Parent details are supplied by the parent; the school should confirm guardianship separately where required.</p></div>
+      <button className={btnGhost} type="button" onClick={() => void load()} disabled={busy}>{busy ? "Refreshing…" : "Refresh records"}</button>
+    </div>
+    {audit ? <>
+      <div className="grid gap-3 sm:grid-cols-2"><div className="rounded-xl border border-cyan-200 bg-white/80 p-4"><p className="text-xs font-semibold uppercase tracking-wide text-muted">Verified sign-ins recorded</p><p className="mt-1 text-3xl font-bold text-navy">{audit.total}</p></div><div className="rounded-xl border border-indigo-200 bg-white/80 p-4"><p className="text-xs font-semibold uppercase tracking-wide text-muted">Distinct parent email addresses</p><p className="mt-1 text-3xl font-bold text-navy">{audit.uniqueParents}</p></div></div>
+      {audit.events.length ? <div className="space-y-2">{audit.events.map((event) => <article key={event.id} className="grid gap-1 rounded-xl border border-line bg-white/85 p-3 text-sm sm:grid-cols-[1.2fr_1fr_1fr_1fr] sm:items-center">
+        <div><p className="font-semibold text-navy">{event.parentName}</p><p className="break-all text-xs text-muted">{event.parentEmail}</p></div>
+        <p><span className="font-semibold sm:hidden">Contact: </span>{event.parentPhone || "No phone supplied"}</p>
+        <p><span className="font-semibold sm:hidden">Learner: </span>{event.learnerName}</p>
+        <time className="text-xs text-muted" dateTime={event.loggedInAt}>{new Date(event.loggedInAt).toLocaleString()}</time>
+      </article>)}</div> : <p className="rounded-xl border border-dashed border-line bg-white/70 p-5 text-center text-sm text-muted">No successful parent sign-ins have been recorded yet.</p>}
+      {audit.total > audit.events.length ? <p className="text-xs text-muted">Showing the latest {audit.events.length} of {audit.total} recorded sign-ins.</p> : null}
+    </> : <p className="rounded-xl border border-dashed border-line bg-white/70 p-5 text-sm text-muted">{busy ? "Loading parent access records…" : "Parent access records are not available."}</p>}
+  </section>;
 }
 
 

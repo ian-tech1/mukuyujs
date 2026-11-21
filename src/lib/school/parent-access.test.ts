@@ -1,31 +1,43 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { matchLearnerNames, normalizeLearnerName, normalizeParentEmail } from "./parent-access.ts";
+import { isValidParentEmail, matchLearnerName, normalizeLearnerName, normalizeParentEmail } from "./parent-access.ts";
 
 const learners = [
-  { id: "a", fullName: "  Amina   Njeri " },
+  { id: "a", fullName: "Amina Njeri" },
   { id: "b", fullName: "Brian Otieno" },
-  { id: "c", fullName: "Amina Njeri" },
+  { id: "c", fullName: "José Mwangi" },
 ];
 
-test("normalizes email and learner names without loose substring matching", () => {
+test("normalizes parent email and learner case, accents, punctuation, and spacing", () => {
   assert.equal(normalizeParentEmail(" Parent@Example.COM "), "parent@example.com");
-  assert.equal(normalizeLearnerName("  Amina   Njeri "), "amina njeri");
-  assert.deepEqual(matchLearnerNames(["Brian Otieno", "Missing Learner"], learners), []);
+  assert.equal(normalizeLearnerName("  JOSÉ   O’Neil-Mwangi "), "jose o neil mwangi");
+  assert.equal(isValidParentEmail(" parent@example.com "), false);
+  assert.equal(isValidParentEmail("parent@example.com"), true);
 });
 
-test("requires at least two distinct names and rejects ambiguous duplicate names", () => {
-  assert.deepEqual(matchLearnerNames(["Brian Otieno"], learners), []);
-  assert.deepEqual(matchLearnerNames(["Amina Njeri", "Brian Otieno"], learners), []);
-  assert.deepEqual(matchLearnerNames(["Brian Otieno", "Brian Otieno"], learners), []);
+test("matches one full learner name despite a small typo or adjacent transposition", () => {
+  assert.equal(matchLearnerName("Amin Njeri", learners)?.id, "a");
+  assert.equal(matchLearnerName("Biran Otieno", learners)?.id, "b");
 });
 
-test("matches distinct exact names case-insensitively and tolerates spacing differences", () => {
-  assert.deepEqual(
-    matchLearnerNames([" brian   otieno ", "Amina Njeri"], [
-      { id: "b", fullName: "Brian Otieno" },
-      { id: "a", fullName: "Amina Njeri" },
-    ]).map((learner) => learner.id),
-    ["b", "a"],
-  );
+test("matches exact names after accent and punctuation normalization", () => {
+  assert.equal(matchLearnerName("Jose Mwangi", learners)?.id, "c");
+  assert.equal(matchLearnerName("  brian   otieno ", learners)?.id, "b");
+});
+
+test("does not guess on a missing name, short name, partial substring, or tied candidates", () => {
+  assert.equal(matchLearnerName("Missing Learner", learners), null);
+  assert.equal(matchLearnerName("Ami", learners), null);
+  assert.equal(matchLearnerName("Njeri", learners), null);
+  assert.equal(matchLearnerName("Amina Njeri", [
+    { id: "a", fullName: "Amina Njeri" },
+    { id: "duplicate", fullName: "Amina Njeri" },
+  ]), null);
+});
+
+test("rejects close competing candidates instead of linking an uncertain learner", () => {
+  assert.equal(matchLearnerName("Amin Njeri", [
+    { id: "a", fullName: "Amina Njeri" },
+    { id: "b", fullName: "Amin Njeru" },
+  ]), null);
 });

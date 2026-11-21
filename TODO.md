@@ -58,3 +58,10 @@
 - [x] Enforce role/action/deadline rules on the server for manual and spreadsheet writes, preserve Super Admin/deputy override, and explain deadline/lock state and contact instructions in the marks UI.
 - [x] Preserve attribution and timestamp fields on each mark; record entered, edited, manually cleared, spreadsheet, and bulk-clear events with actor, source, learner, subject and old/new score; show last-save attribution and privileged recent history.
 - [ ] Add dedicated regression tests for QR logo fallback and marks role/deadline policy; typecheck and changed-file lint passed, migration 0036 applied twice successfully in isolated PGLite, report-link/spreadsheet tests passed (marklist test could not resolve the repository `@/` alias under direct Node), and development asset build is blocked by a missing platform-specific Rolldown native binding. Refresh and verify the requested ZIP after final changes.
+
+## User-requested parent sign-in and Super Admin access record
+
+- [x] Replace the two-name parent form with one learner full-name field; tolerate common small spelling errors, case/spacing/diacritic differences and adjacent transpositions, but reject uncertain/ambiguous matches and automatically show a clear mismatch message.
+- [x] Verify the parent's own entered email with one short-lived, single-use emailed login password; do not use learner email fields or send a reusable password. Capture parent-supplied name and optional phone, allow the same verified parent email to add another learner through a later sign-in, and explain that email ownership alone does not prove guardianship.
+- [x] Record each successful verified parent login with parent name, verified email, supplied phone, linked learner and timestamp; expose total/distinct counts and recent records only in Super Admin Settings, protected by a server-side Super Admin check.
+- [ ] Add migration-safe schema changes and focused fuzzy matcher tests; run relevant typecheck/tests/lint, inspect the final diff, and push the verified changes to `origin/main`.
