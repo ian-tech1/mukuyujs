@@ -78,6 +78,11 @@ function PortalPage() {
   }, []);
 
   useEffect(() => {
+    setOpen(false);
+    setDisplaySettingsOpen(false);
+  }, [view]);
+
+  useEffect(() => {
     if (!displaySettingsOpen) return;
     const closeOnOutsideTap = (event: PointerEvent) => {
       if (!displayControlsRef.current?.contains(event.target as Node)) setDisplaySettingsOpen(false);
@@ -134,7 +139,7 @@ function PortalPage() {
 
   return (
     <div className="portal-animated-background min-h-screen bg-paper lg:grid lg:grid-cols-[16rem_1fr]">
-      <aside className={`${open ? "fixed inset-0 z-20" : "hidden"} bg-navy text-paper lg:sticky lg:top-0 lg:block lg:h-screen`}>
+      <aside id="portal-navigation" aria-label="Main navigation" className={`${open ? "fixed inset-0 z-20" : "hidden"} bg-navy text-paper lg:sticky lg:top-0 lg:block lg:h-screen`}>
         <div className="flex items-center justify-between px-4 py-4">
           <div className="flex items-center gap-2">
             <SchoolLogo className="size-10" />
@@ -153,9 +158,11 @@ function PortalPage() {
               key={item}
               type="button"
               className={`mb-1 flex h-11 w-full items-center rounded-md px-3 text-left text-sm ${current === item ? "bg-navy-2 text-brass-soft" : "text-paper/85"}`}
+              aria-current={current === item ? "page" : undefined}
               onClick={() => {
                 setOpen(false);
-                navigate({ to: "/portal", search: { view: item } });
+                setDisplaySettingsOpen(false);
+                void navigate({ to: "/portal", search: { view: item } });
               }}
             >
               {LABELS[item] ?? item}
@@ -179,7 +186,7 @@ function PortalPage() {
       </aside>
       <div>
         <header className="relative flex items-center justify-between border-b border-line bg-card px-4 py-3 lg:px-8">
-          <button className="lg:hidden" type="button" onClick={() => setOpen(true)} aria-label="Open menu">
+          <button className="lg:hidden" type="button" onClick={() => setOpen(true)} aria-label="Open menu" aria-expanded={open} aria-controls="portal-navigation">
             <Menu />
           </button>
           <p className="text-sm text-muted">
