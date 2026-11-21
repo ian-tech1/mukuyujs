@@ -69,10 +69,11 @@
 
 ## User-requested parent name matching, contact entry and password reset
 
-- [x] “as long as 60 percent of the letters match the learners name, the system should verify”: accept normalized learner-name similarity of at least 60%, prioritize a unique exact match, permit one first/surname token when it uniquely identifies a learner, and reject equally close or duplicate candidates rather than linking the wrong learner.
+- [x] “as long as 60 percent of the letters match the learners name, the system should verify”: accept normalized learner-name similarity of at least 60%, prioritize a unique exact match, permit uniquely identifying first/surname tokens or exact first-and-surname tokens when a middle name is omitted, and reject equally close or duplicate candidates rather than linking the wrong learner.
 - [x] “the phone number should only be entered, not not to verify”: collect and save the parent-entered contact number as supplied (required at parent sign-in), without SMS or phone-possession verification and without labeling it verified.
 - [x] “parents can reset their own password after after email verification is done”: provide parent self-service password reset through a short-lived email code, permit reset only after successful code verification for an active parent account, and store only a strong password hash.
 - [x] Add an idempotent migration for reset challenges; update parent sign-in/reset copy and audit labeling; add focused matcher tests plus isolated migration/rate-limit checks; inspect changes and prepare a verified ZIP after validation.
-- Validation: 8 focused parent matcher tests pass; `pnpm typecheck` passes; changed-file ESLint has 0 errors and 2 pre-existing warnings; migration 0038 applied twice in isolated PGLite; seven concurrent per-email limiter upserts returned distinct atomic counts.
+- [x] Parent lookup distinguishes missing/unavailable production database, empty active learner register, rate limiting, account conflict, and genuine name mismatch; parent feedback no longer labels all failures as a spelling error.
+- Validation: 9 focused parent matcher tests pass; `pnpm typecheck` passes; changed-file ESLint has 0 errors and 2 pre-existing warnings; migration 0038 applied twice in isolated PGLite; seven concurrent per-email limiter upserts returned distinct atomic counts.
 - Environment limitations: full `pnpm test` remains blocked by unrelated existing Grok/PWA and app-environment assertions; `build:dev` cannot load the sandbox's missing ARM64 Rolldown native binding; live Resend delivery was not tested.
 - Source ZIP `mukuyujs-parent-access-updated.zip` passed `zip -T` and excludes environment files, dependencies, build output and Git metadata.

@@ -84,6 +84,13 @@ export function matchLearnerName(name: string, learners: NamedLearner[]) {
   if (exactMatches.length === 1) return exactMatches[0].learner;
   if (exactMatches.length > 1) return null;
 
+  // Parents may enter the exact first and last names while omitting a middle
+  // name or initial. Accept that only when the supplied tokens identify one
+  // learner in the active roster; duplicates remain ambiguous.
+  const exactTokenSubsets = prepared.filter((entry) => tokens.every((token) => entry.tokens.includes(token)));
+  if (exactTokenSubsets.length === 1) return exactTokenSubsets[0].learner;
+  if (exactTokenSubsets.length > 1) return null;
+
   const scored = prepared.map((entry) => {
     const orderedDistance = damerauLevenshtein(compactKey, entry.compact);
     const reorderedDistance = damerauLevenshtein(sortedKey.replace(/\s/g, ""), entry.sortedCompact);

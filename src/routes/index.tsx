@@ -149,7 +149,17 @@ function LoginPage() {
     try {
       const result = await requestParentLoginCode({ data: { email: parentEmail, learnerName: parentLearnerName, parentName, phoneNumber: parentPhone } });
       if (!result.matched) {
-        setParentError("We could not confidently match that learner. The name must reach at least 60% spelling similarity; a single-name entry must uniquely identify one learner. Check the spelling, try the learner’s full name, or contact the school office.");
+        if (result.reason === "database_unavailable") {
+          setParentError("The school learner records could not be reached. Please ask the school office to check the database connection.");
+        } else if (result.reason === "roster_unavailable") {
+          setParentError("No active learner records are available for parent sign-in. Please ask the school office to check the connected database and learner register.");
+        } else if (result.reason === "rate_limited") {
+          setParentError("Too many parent sign-in requests were made recently. Please wait before trying again, or contact the school office.");
+        } else if (result.reason === "access_unavailable") {
+          setParentError("This email cannot be used for parent access. Please contact the school office.");
+        } else {
+          setParentError("We could not confidently match that learner. The name must reach at least 60% spelling similarity; a single-name entry must uniquely identify one learner. Check the spelling, try the learner’s full name, or contact the school office.");
+        }
         return;
       }
       setParentCodeRequested(true);

@@ -377,16 +377,30 @@ export const requestParentLoginCode = createServerFn({ method: "POST" })
     if (normalizeLearnerName(learnerName).replace(/\s/g, "").length < 2) throw new Error("Enter at least two letters of one learner's name.");
     if (parentName.length < 2) throw new Error("Enter your full name.");
     if (!/^[+()\d .-]{6,40}$/.test(phoneNumber) || phoneNumber.replace(/\D/g, "").length < 6) throw new Error("Enter a valid contact number with at least six digits.");
-    const sql = await getSql();
-    const limit = await sql<{ request_count: number }>`insert into parent_login_rate_limits (email, window_started_at, request_count) values (${email}, now(), 1) on conflict (email) do update set request_count = case when parent_login_rate_limits.window_started_at < now() - interval '1 hour' then 1 else parent_login_rate_limits.request_count + 1 end, window_started_at = case when parent_login_rate_limits.window_started_at < now() - interval '1 hour' then now() else parent_login_rate_limits.window_started_at end returning request_count`;
-    if (Number(limit[0]?.request_count ?? 0) > 5) return { matched: false };
-    const recent = await sql<{ count: number }>`select count(*)::int as count from parent_login_codes where email = ${email} and created_at > now() - interval '1 hour'`;
-    if (Number(recent[0]?.count ?? 0) >= 3) return { matched: false };
-    const accounts = await sql<{ role: string; active: boolean }>`select role, active from users where email = ${email}`;
-    if (accounts[0] && (accounts[0].role !== "parent" || !accounts[0].active)) return { matched: false };
-    const learners = await sql<{ id: string; fullName: string }>`select id, full_name as "fullName" from learners where status = 'active'`;
-    const matched = matchLearnerName(learnerName, learners);
-    if (!matched) return { matched: false };
+    if (process.env.NODE_ENV === "production" && !process.env.DATABASE_URL?.trim()) {
+      return { matched: false, reason: "database_unavailable" as const };
+    }
+    let sql: Sql;
+    try {
+      sql = await getSql();
+    } catch {
+      return { matched: false, reason: "database_unavailable" as const };
+    }
+    let matched: { id: string; fullName: string } | null;
+    try {
+      const limit = await sql<{ request_count: number }>`insert into parent_login_rate_limits (email, window_started_at, request_count) values (${email}, now(), 1) on conflict (email) do update set request_count = case when parent_login_rate_limits.window_started_at < now() - interval '1 hour' then 1 else parent_login_rate_limits.request_count + 1 end, window_started_at = case when parent_login_rate_limits.window_started_at < now() - interval '1 hour' then now() else parent_login_rate_limits.window_started_at end returning request_count`;
+      if (Number(limit[0]?.request_count ?? 0) > 5) return { matched: false, reason: "rate_limited" as const };
+      const recent = await sql<{ count: number }>`select count(*)::int as count from parent_login_codes where email = ${email} and created_at > now() - interval '1 hour'`;
+      if (Number(recent[0]?.count ?? 0) >= 3) return { matched: false, reason: "rate_limited" as const };
+      const accounts = await sql<{ role: string; active: boolean }>`select role, active from users where email = ${email}`;
+      if (accounts[0] && (accounts[0].role !== "parent" || !accounts[0].active)) return { matched: false, reason: "access_unavailable" as const };
+      const learners = await sql<{ id: string; fullName: string }>`select id, full_name as "fullName" from learners where status = 'active'`;
+      if (!learners.length) return { matched: false, reason: "roster_unavailable" as const };
+      matched = matchLearnerName(learnerName, learners);
+    } catch {
+      return { matched: false, reason: "database_unavailable" as const };
+    }
+    if (!matched) return { matched: false, reason: "learner_not_found" as const };
 
     const code = String(randomInt(100000, 1000000));
     const delivery = await sendPasswordEmail(email, "Your one-time Mukuyu parent login code", `Your one-time Mukuyu parent login code is ${code}. Enter it on the parent sign-in page to verify this email and open the portal. It expires in 10 minutes and can be used once. It is not a reusable account password. If you did not request it, ignore this email.`);

@@ -57,6 +57,23 @@ test("matches reordered names and a unique fuzzy name at the 60 percent threshol
   ])?.id, "a");
 });
 
+test("matches exact supplied name tokens when the roster includes an omitted middle name", () => {
+  const roster = [
+    { id: "a", fullName: "Amina Wanjiku Njeri" },
+    { id: "b", fullName: "Brian Otieno" },
+  ];
+  assert.equal(matchLearnerName("Amina Njeri", roster)?.id, "a");
+  assert.equal(matchLearnerName("Njeri Amina", roster)?.id, "a");
+  assert.equal(matchLearnerName("Amina Njeri", [
+    ...roster,
+    { id: "duplicate", fullName: "Amina Njeri" },
+  ])?.id, "duplicate");
+  assert.equal(matchLearnerName("Amina Njeri", [
+    { id: "a", fullName: "Amina Wanjiku Njeri" },
+    { id: "b", fullName: "Amina Wanjiku Njeri" },
+  ]), null);
+});
+
 test("rejects tied fuzzy learner names and common one-token names", () => {
   assert.equal(matchLearnerName("Amin Njer", [
     { id: "a", fullName: "Amina Njeri" },
