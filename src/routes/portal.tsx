@@ -80,6 +80,7 @@ function PortalPage() {
   useEffect(() => {
     setOpen(false);
     setDisplaySettingsOpen(false);
+    window.scrollTo(0, 0);
   }, [view]);
 
   useEffect(() => {
@@ -162,6 +163,7 @@ function PortalPage() {
               onClick={() => {
                 setOpen(false);
                 setDisplaySettingsOpen(false);
+                window.scrollTo(0, 0);
                 void navigate({ to: "/portal", search: { view: item } });
               }}
             >

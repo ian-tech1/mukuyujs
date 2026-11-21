@@ -282,10 +282,6 @@ export function DashboardView({ ws, refresh, flash }: Gate) {
     return () => window.removeEventListener("keydown", onShortcut);
   }, [refreshDashboard]);
 
-  useEffect(() => {
-    document.getElementById("dashboard-active-panel")?.scrollIntoView({ block: "start", behavior: "smooth" });
-  }, [dashboardView]);
-
   function togglePin(id: string) {
     setPinnedLearners((current) => {
       const next = current.includes(id) ? current.filter((item) => item !== id) : [...current, id].slice(-12);
