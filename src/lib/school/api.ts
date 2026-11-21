@@ -364,6 +364,22 @@ export const login = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+export const loginParent = createServerFn({ method: "POST" })
+  .validator((input: { email: string; password: string }) => input)
+  .handler(async ({ data }) => {
+    const email = normalizeParentEmail(data.email ?? "");
+    const password = String(data.password ?? "");
+    if (!isValidParentEmail(email) || !password) throw new Error("Enter your parent email and password.");
+    const sql = await getSql();
+    const rows = await sql<{ id: string; password_hash: string; active: boolean; role: string; session_version: number }>`select id, password_hash, active, role, session_version from users where email = ${email}`;
+    const user = rows[0];
+    if (!user || user.role !== "parent" || !verifyPassword(password, user.password_hash)) throw new Error("Parent email or password is not correct.");
+    if (!user.active) throw new Error("This parent account is disabled. Please contact the school office.");
+    const session = await sessionApi();
+    await session.update({ userId: user.id, v: Number(user.session_version) });
+    return { ok: true };
+  });
+
 function parentCodeDigest(email: string, code: string) {
   const secret = process.env.SESSION_SECRET ?? (process.env.NODE_ENV === "production" ? "" : "mukuyu-local-preview-only-session-secret");
   if (!secret) throw new Error("SESSION_SECRET must be configured before parent sign-in can be used.");
@@ -407,7 +423,7 @@ export const requestParentLoginCode = createServerFn({ method: "POST" })
     if (!matched) return { matched: false, reason: "learner_not_found" as const };
 
     const code = String(randomInt(100000, 1000000));
-    const delivery = await sendPasswordEmail(email, "Your one-time Mukuyu parent login code", `Your one-time Mukuyu parent login code is ${code}. Enter it on the parent sign-in page to verify this email and open the portal. It expires in 10 minutes and can be used once. It is not a reusable account password. If you did not request it, ignore this email.`);
+    const delivery = await sendPasswordEmail(email, "Your Mukuyu parent account code", `Your parent account verification code is ${code}. Enter it on the parent sign-in page within 10 minutes to verify your email and create or access your parent account. After successful verification, this same six-digit code is also your initial parent portal password. Keep it private; you can replace it any time using Forgot or reset parent password. If you did not request it, ignore this email.`);
     if (!delivery.sent) throw new Error("We could not send a verification code to that email. Please try again later or contact the school office.");
     await sql`delete from parent_login_codes where expires_at < now() - interval '1 day'`;
     await sql`update parent_login_codes set consumed_at = now() where email = ${email} and consumed_at is null`;
@@ -439,15 +455,17 @@ export const verifyParentLoginCode = createServerFn({ method: "POST" })
       }
       let users = await tx<{ id: string; role: string; active: boolean; session_version: number }>`select id, role, active, session_version from users where email = ${email} for update`;
       let user = users[0];
+      let sessionVersion: number;
       if (user && (user.role !== "parent" || !user.active)) {
         await tx`update parent_login_codes set consumed_at = now() where id = ${challenge.id}`;
         return null;
       }
       if (!user) {
         const userId = newId("usr");
-        const inserted = await tx<{ id: string }>`insert into users (id, email, password_hash, full_name, role, active) values (${userId}, ${email}, ${hashPassword(randomBytes(32).toString("base64url"))}, ${challenge.parent_name}, 'parent', true) on conflict (email) do nothing returning id`;
+        const inserted = await tx<{ id: string }>`insert into users (id, email, password_hash, full_name, role, active) values (${userId}, ${email}, ${hashPassword(code)}, ${challenge.parent_name}, 'parent', true) on conflict (email) do nothing returning id`;
         if (inserted[0]) {
           user = { id: inserted[0].id, role: "parent", active: true, session_version: 1 };
+          sessionVersion = 1;
         } else {
           users = await tx<{ id: string; role: string; active: boolean; session_version: number }>`select id, role, active, session_version from users where email = ${email} for update`;
           user = users[0];
@@ -455,14 +473,19 @@ export const verifyParentLoginCode = createServerFn({ method: "POST" })
             await tx`update parent_login_codes set consumed_at = now() where id = ${challenge.id}`;
             return null;
           }
+          const updated = await tx<{ session_version: number }>`update users set password_hash = ${hashPassword(code)}, session_version = session_version + 1 where id = ${user.id} returning session_version`;
+          sessionVersion = Number(updated[0]?.session_version ?? Number(user.session_version) + 1);
         }
+      } else {
+        const updated = await tx<{ session_version: number }>`update users set password_hash = ${hashPassword(code)}, session_version = session_version + 1 where id = ${user.id} returning session_version`;
+        sessionVersion = Number(updated[0]?.session_version ?? Number(user.session_version) + 1);
       }
       await tx`update users set full_name = ${challenge.parent_name} where id = ${user.id} and full_name = 'Parent account'`;
       await tx`insert into parent_links (parent_user_id, learner_id) select ${user.id}, learner_id from unnest(${challenge.learner_ids}::text[]) as learner_id on conflict do nothing`;
       const learner = await tx<{ full_name: string }>`select full_name from learners where id = ${challenge.learner_ids[0]}`;
       await tx`insert into parent_login_events (parent_user_id, parent_name, parent_email, parent_phone, learner_id, learner_name) values (${user.id}, ${challenge.parent_name}, ${email}, ${challenge.parent_phone}, ${challenge.learner_ids[0]}, ${learner[0]?.full_name ?? "Learner"})`;
       await tx`update parent_login_codes set consumed_at = now() where id = ${challenge.id}`;
-      return { userId: user.id, version: Number(user.session_version) };
+      return { userId: user.id, version: sessionVersion };
     });
     if (!signedIn) throw new Error("That email or code is not valid. Request a new code and try again.");
     const session = await sessionApi();

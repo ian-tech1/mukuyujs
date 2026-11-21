@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { SchoolLogo } from "@/components/school/logo";
 import { PublicReport } from "@/components/school/public-report";
 import { btnClass, errText, inputClass } from "@/components/school/gate";
-import { getWorkspace, getWelcomePage, login, portalStatus, requestParentLoginCode, requestParentPasswordResetCode, resetParentPassword, verifyParentLoginCode } from "@/lib/school/api";
+import { getWorkspace, getWelcomePage, login, loginParent, portalStatus, requestParentLoginCode, requestParentPasswordResetCode, resetParentPassword, verifyParentLoginCode } from "@/lib/school/api";
 import { applyDisplayPreferences, DEFAULT_DISPLAY_PREFERENCES, DISPLAY_PALETTES, readDisplayPreferences, saveDisplayPreferences, type LocalDisplayPreferences } from "@/lib/school/display";
 import { DEFAULT_WELCOME_DISPLAY, hexToRgba, normalizeWelcomeDisplay, type WelcomeDisplayOptions } from "@/lib/school/welcome-display";
 
@@ -29,7 +29,10 @@ function LoginPage() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [parentOpen, setParentOpen] = useState(false);
+  const [parentPasswordLoginOpen, setParentPasswordLoginOpen] = useState(true);
   const [parentEmail, setParentEmail] = useState("");
+  const [parentPassword, setParentPassword] = useState("");
+  const [parentPasswordVisible, setParentPasswordVisible] = useState(false);
   const [parentName, setParentName] = useState("");
   const [parentPhone, setParentPhone] = useState("");
   const [parentLearnerName, setParentLearnerName] = useState("");
@@ -163,7 +166,7 @@ function LoginPage() {
         return;
       }
       setParentCodeRequested(true);
-      setParentNotice("A one-time login code has been sent to your email. It expires in 10 minutes and can only be used once.");
+      setParentNotice("A verification code has been sent to your email. It expires in 10 minutes. After verification, use that code as your initial password whenever you sign in to the parent portal.");
     } catch (reason) {
       setParentError(errText(reason));
     } finally {
@@ -177,6 +180,21 @@ function LoginPage() {
     setParentError("");
     try {
       await verifyParentLoginCode({ data: { email: parentEmail, code: parentCode } });
+      navigate({ to: "/portal", search: { view: "results" } });
+    } catch (reason) {
+      setParentError(errText(reason));
+    } finally {
+      setParentBusy(false);
+    }
+  }
+
+  async function onParentPasswordLogin(event: React.FormEvent) {
+    event.preventDefault();
+    setParentBusy(true);
+    setParentError("");
+    setParentNotice("");
+    try {
+      await loginParent({ data: { email: parentEmail, password: parentPassword } });
       navigate({ to: "/portal", search: { view: "results" } });
     } catch (reason) {
       setParentError(errText(reason));
@@ -292,34 +310,40 @@ function LoginPage() {
             Sign in as PARENTS <span className="float-right" aria-hidden="true">{parentOpen ? "−" : "+"}</span>
           </button>
           {parentOpen ? <section id="parent-sign-in-panel" className="mt-3 rounded-2xl border border-line bg-card/90 p-4 shadow-card" aria-label="Parent sign in">
-            <h3 className="font-serif text-xl text-navy">{parentPasswordResetOpen ? "Reset parent password" : "Parent portal"}</h3>
+            <h3 className="font-serif text-xl text-navy">{parentPasswordResetOpen ? "Reset parent password" : parentPasswordLoginOpen ? "Parent portal sign in" : "Create a parent account"}</h3>
             <p className="mt-1 text-sm text-muted">{parentPasswordResetOpen
               ? "Enter the email address on your active parent account. We’ll send a short-lived code to verify access to that email before allowing a new password."
-              : "Enter your email, contact number, and one learner’s name. A first name or surname can work if it uniquely identifies the learner. Spelling match is at least 60%; equally close candidates are not auto-linked. We’ll email a one-time code to verify your email."}</p>
+              : parentPasswordLoginOpen
+                ? "Sign in with the email address you verified and your parent portal password. If you just created your account, your verification code is your initial password; reset it any time to choose a longer one."
+                : "Enter your email, contact number, and Learner’s Name. A first name or surname can work if it uniquely identifies the learner. Spelling match is at least 60%; equally close candidates are not auto-linked. We’ll email a verification code to confirm your email and create your account."}</p>
             <form className="mt-4 space-y-3" onSubmit={parentPasswordResetOpen
               ? (parentResetCodeRequested ? onResetParentPassword : onRequestParentResetCode)
-              : (parentCodeRequested ? onVerifyParentCode : onRequestParentCode)}>
-              <label className="block text-sm font-medium">Your email address<input className={`${inputClass} mt-1.5`} type="email" autoComplete="email" value={parentEmail} onChange={(event) => setParentEmail(event.target.value)} disabled={parentPasswordResetOpen ? parentResetCodeRequested : parentCodeRequested} required /></label>
+              : parentPasswordLoginOpen ? onParentPasswordLogin : (parentCodeRequested ? onVerifyParentCode : onRequestParentCode)}>
+              <label className="block text-sm font-medium">Your email address<input className={`${inputClass} mt-1.5`} type="email" autoComplete="email" value={parentEmail} onChange={(event) => setParentEmail(event.target.value)} disabled={parentPasswordResetOpen ? parentResetCodeRequested : (!parentPasswordLoginOpen && parentCodeRequested)} required /></label>
               {parentPasswordResetOpen ? <>
                 {parentResetCodeRequested ? <>
                   <label className="block text-sm font-medium">Reset code from your email<input className={`${inputClass} mt-1.5 tracking-[0.3em]`} type="text" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} value={parentResetCode} onChange={(event) => setParentResetCode(event.target.value.replace(/\D/g, "").slice(0, 6))} required /></label>
                   <label className="block text-sm font-medium">New password (12–128 characters)<input className={`${inputClass} mt-1.5`} type="password" autoComplete="new-password" minLength={12} maxLength={128} value={parentNewPassword} onChange={(event) => setParentNewPassword(event.target.value)} required /></label>
                   <label className="block text-sm font-medium">Confirm new password<input className={`${inputClass} mt-1.5`} type="password" autoComplete="new-password" minLength={12} maxLength={128} value={parentConfirmPassword} onChange={(event) => setParentConfirmPassword(event.target.value)} required /></label>
                 </> : null}
-              </> : parentCodeRequested ? <label className="block text-sm font-medium">One-time login code from your email<input className={`${inputClass} mt-1.5 tracking-[0.3em]`} type="text" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} value={parentCode} onChange={(event) => setParentCode(event.target.value.replace(/\D/g, "").slice(0, 6))} required /></label> : <>
+              </> : parentPasswordLoginOpen ? <label className="block text-sm font-medium">Parent portal password<span className="mt-1.5 flex gap-2"><input className={inputClass + " min-w-0 flex-1"} type={parentPasswordVisible ? "text" : "password"} autoComplete="current-password" value={parentPassword} onChange={(event) => setParentPassword(event.target.value)} required /><button type="button" className="shrink-0 rounded-md border border-line px-3 text-xs font-semibold text-navy" aria-label={parentPasswordVisible ? "Hide parent password" : "Show parent password"} aria-pressed={parentPasswordVisible} onClick={() => setParentPasswordVisible((visible) => !visible)}>{parentPasswordVisible ? "Hide" : "Show"}</button></span></label> : parentCodeRequested ? <label className="block text-sm font-medium">Verification code from your email<input className={`${inputClass} mt-1.5 tracking-[0.3em]`} type="text" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} value={parentCode} onChange={(event) => setParentCode(event.target.value.replace(/\D/g, "").slice(0, 6))} required /></label> : <>
                 <label className="block text-sm font-medium">Your full name<input className={`${inputClass} mt-1.5`} autoComplete="name" value={parentName} onChange={(event) => setParentName(event.target.value)} maxLength={120} required /></label>
                 <label className="block text-sm font-medium">Contact number <span className="font-normal text-muted">(required; entered but not verified)</span><input className={`${inputClass} mt-1.5`} type="tel" autoComplete="tel" value={parentPhone} onChange={(event) => setParentPhone(event.target.value)} maxLength={40} required /></label>
-                <label className="block text-sm font-medium">One learner’s name<input className={`${inputClass} mt-1.5`} autoComplete="off" value={parentLearnerName} onChange={(event) => setParentLearnerName(event.target.value)} maxLength={160} required /></label>
+                <label className="block text-sm font-medium">Learner’s Name<input className={`${inputClass} mt-1.5`} autoComplete="off" value={parentLearnerName} onChange={(event) => setParentLearnerName(event.target.value)} maxLength={160} required /></label>
                 <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-muted">Email verification confirms access to the email address, not guardianship by itself. The contact number is recorded as entered and is not phone-verified. For learner-record corrections or access concerns, contact the school office. To add another learner later, sign in again with the same parent email and that learner’s name.</p>
               </>}
               {parentError ? <p className="text-sm text-bad" role="alert">{parentError}</p> : null}
               {parentNotice ? <p className="text-sm text-good" role="status">{parentNotice}</p> : null}
               <button className={`${btnClass} w-full`} style={{ backgroundColor: welcomeDisplay.accentColor }} disabled={parentBusy} type="submit">{parentBusy ? "Please wait…" : parentPasswordResetOpen
                 ? (parentResetCodeRequested ? "Verify email and set new password" : "Email me a reset code")
-                : (parentCodeRequested ? "Verify email and open parent portal" : "Match learner and email me a login code")}</button>
+                : parentPasswordLoginOpen ? "Sign in to parent portal"
+                  : (parentCodeRequested ? "Verify email and open parent portal" : "Match learner and email me a verification code")}</button>
               {parentPasswordResetOpen
-                ? <button type="button" className="w-full text-sm font-semibold text-info" onClick={() => { setParentPasswordResetOpen(false); setParentResetCodeRequested(false); setParentResetCode(""); setParentNewPassword(""); setParentConfirmPassword(""); setParentNotice(""); setParentError(""); }}>Back to parent sign in</button>
-                : <button type="button" className="w-full text-sm font-semibold text-info" onClick={() => { setParentPasswordResetOpen(true); setParentCodeRequested(false); setParentCode(""); setParentResetCodeRequested(false); setParentResetCode(""); setParentNewPassword(""); setParentConfirmPassword(""); setParentNotice(""); setParentError(""); }}>Forgot or reset parent password?</button>}
+                ? <button type="button" className="w-full text-sm font-semibold text-info" onClick={() => { setParentPasswordResetOpen(false); setParentPasswordLoginOpen(true); setParentResetCodeRequested(false); setParentResetCode(""); setParentNewPassword(""); setParentConfirmPassword(""); setParentNotice(""); setParentError(""); }}>Back to parent sign in</button>
+                : <>
+                  {!parentCodeRequested ? <button type="button" className="w-full text-sm font-semibold text-info" onClick={() => { setParentPasswordLoginOpen((value) => !value); setParentPassword(""); setParentNotice(""); setParentError(""); }}>{parentPasswordLoginOpen ? "Create a parent account" : "Already have an account? Sign in"}</button> : null}
+                  <button type="button" className="w-full text-sm font-semibold text-info" onClick={() => { setParentPasswordResetOpen(true); setParentPasswordLoginOpen(false); setParentCodeRequested(false); setParentCode(""); setParentResetCodeRequested(false); setParentResetCode(""); setParentNewPassword(""); setParentConfirmPassword(""); setParentNotice(""); setParentError(""); }}>Forgot or reset parent password?</button>
+                </>}
               {parentCodeRequested && !parentPasswordResetOpen ? <button type="button" className="w-full text-sm font-semibold text-info" onClick={() => { setParentCodeRequested(false); setParentCode(""); setParentNotice(""); setParentError(""); }}>Use different details</button> : null}
             </form>
           </section> : null}
