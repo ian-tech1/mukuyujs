@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { SchoolLogo } from "@/components/school/logo";
 import { PublicReport } from "@/components/school/public-report";
 import { btnClass, errText, inputClass } from "@/components/school/gate";
-import { getWorkspace, getWelcomePage, login, portalStatus, requestParentLoginCode, verifyParentLoginCode } from "@/lib/school/api";
+import { getWorkspace, getWelcomePage, login, portalStatus, requestParentLoginCode, requestParentPasswordResetCode, resetParentPassword, verifyParentLoginCode } from "@/lib/school/api";
 import { applyDisplayPreferences, DEFAULT_DISPLAY_PREFERENCES, DISPLAY_PALETTES, readDisplayPreferences, saveDisplayPreferences, type LocalDisplayPreferences } from "@/lib/school/display";
 import { DEFAULT_WELCOME_DISPLAY, hexToRgba, normalizeWelcomeDisplay, type WelcomeDisplayOptions } from "@/lib/school/welcome-display";
 
@@ -35,6 +35,11 @@ function LoginPage() {
   const [parentLearnerName, setParentLearnerName] = useState("");
   const [parentCode, setParentCode] = useState("");
   const [parentCodeRequested, setParentCodeRequested] = useState(false);
+  const [parentPasswordResetOpen, setParentPasswordResetOpen] = useState(false);
+  const [parentResetCodeRequested, setParentResetCodeRequested] = useState(false);
+  const [parentResetCode, setParentResetCode] = useState("");
+  const [parentNewPassword, setParentNewPassword] = useState("");
+  const [parentConfirmPassword, setParentConfirmPassword] = useState("");
   const [parentBusy, setParentBusy] = useState(false);
   const [parentError, setParentError] = useState("");
   const [parentNotice, setParentNotice] = useState("");
@@ -144,11 +149,11 @@ function LoginPage() {
     try {
       const result = await requestParentLoginCode({ data: { email: parentEmail, learnerName: parentLearnerName, parentName, phoneNumber: parentPhone } });
       if (!result.matched) {
-        setParentError("That learner name does not match our school records. Check the spelling and try again. If it still does not match, contact the school office to verify the learner record.");
+        setParentError("We could not confidently match that learner. The name must reach at least 60% spelling similarity; a single-name entry must uniquely identify one learner. Check the spelling, try the learner’s full name, or contact the school office.");
         return;
       }
       setParentCodeRequested(true);
-      setParentNotice("A one-time login password has been sent to your email. It expires in 10 minutes and can only be used once.");
+      setParentNotice("A one-time login code has been sent to your email. It expires in 10 minutes and can only be used once.");
     } catch (reason) {
       setParentError(errText(reason));
     } finally {
@@ -163,6 +168,48 @@ function LoginPage() {
     try {
       await verifyParentLoginCode({ data: { email: parentEmail, code: parentCode } });
       navigate({ to: "/portal", search: { view: "results" } });
+    } catch (reason) {
+      setParentError(errText(reason));
+    } finally {
+      setParentBusy(false);
+    }
+  }
+
+  async function onRequestParentResetCode(event: React.FormEvent) {
+    event.preventDefault();
+    setParentBusy(true);
+    setParentError("");
+    setParentNotice("");
+    try {
+      await requestParentPasswordResetCode({ data: { email: parentEmail } });
+      setParentResetCodeRequested(true);
+      setParentNotice("If an active parent account uses this email, a one-time reset code will be sent. If none arrives, check your spam folder or contact the school office.");
+    } catch (reason) {
+      setParentError(errText(reason));
+    } finally {
+      setParentBusy(false);
+    }
+  }
+
+  async function onResetParentPassword(event: React.FormEvent) {
+    event.preventDefault();
+    if (parentNewPassword !== parentConfirmPassword) {
+      setParentError("The new passwords do not match.");
+      return;
+    }
+    setParentBusy(true);
+    setParentError("");
+    setParentNotice("");
+    try {
+      await resetParentPassword({ data: { email: parentEmail, code: parentResetCode, password: parentNewPassword } });
+      setParentPasswordResetOpen(false);
+      setParentResetCodeRequested(false);
+      setParentResetCode("");
+      setParentNewPassword("");
+      setParentConfirmPassword("");
+      setParentCodeRequested(false);
+      setParentCode("");
+      setParentNotice("Your password has been reset. Use your email and new password in the main sign-in form above, or continue with parent email-code sign-in.");
     } catch (reason) {
       setParentError(errText(reason));
     } finally {
@@ -235,20 +282,35 @@ function LoginPage() {
             Sign in as PARENTS <span className="float-right" aria-hidden="true">{parentOpen ? "−" : "+"}</span>
           </button>
           {parentOpen ? <section id="parent-sign-in-panel" className="mt-3 rounded-2xl border border-line bg-card/90 p-4 shadow-card" aria-label="Parent sign in">
-            <h3 className="font-serif text-xl text-navy">Parent portal</h3>
-            <p className="mt-1 text-sm text-muted">Enter your own email and one learner’s full name. The name matcher allows small spelling differences and rejects ambiguous matches. We’ll send one one-time login password to verify your email.</p>
-            <form className="mt-4 space-y-3" onSubmit={parentCodeRequested ? onVerifyParentCode : onRequestParentCode}>
-              <label className="block text-sm font-medium">Your email address<input className={`${inputClass} mt-1.5`} type="email" autoComplete="email" value={parentEmail} onChange={(event) => setParentEmail(event.target.value)} required /></label>
-              {!parentCodeRequested ? <>
+            <h3 className="font-serif text-xl text-navy">{parentPasswordResetOpen ? "Reset parent password" : "Parent portal"}</h3>
+            <p className="mt-1 text-sm text-muted">{parentPasswordResetOpen
+              ? "Enter the email address on your active parent account. We’ll send a short-lived code to verify access to that email before allowing a new password."
+              : "Enter your email, contact number, and one learner’s name. A first name or surname can work if it uniquely identifies the learner. Spelling match is at least 60%; equally close candidates are not auto-linked. We’ll email a one-time code to verify your email."}</p>
+            <form className="mt-4 space-y-3" onSubmit={parentPasswordResetOpen
+              ? (parentResetCodeRequested ? onResetParentPassword : onRequestParentResetCode)
+              : (parentCodeRequested ? onVerifyParentCode : onRequestParentCode)}>
+              <label className="block text-sm font-medium">Your email address<input className={`${inputClass} mt-1.5`} type="email" autoComplete="email" value={parentEmail} onChange={(event) => setParentEmail(event.target.value)} disabled={parentPasswordResetOpen ? parentResetCodeRequested : parentCodeRequested} required /></label>
+              {parentPasswordResetOpen ? <>
+                {parentResetCodeRequested ? <>
+                  <label className="block text-sm font-medium">Reset code from your email<input className={`${inputClass} mt-1.5 tracking-[0.3em]`} type="text" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} value={parentResetCode} onChange={(event) => setParentResetCode(event.target.value.replace(/\D/g, "").slice(0, 6))} required /></label>
+                  <label className="block text-sm font-medium">New password (12–128 characters)<input className={`${inputClass} mt-1.5`} type="password" autoComplete="new-password" minLength={12} maxLength={128} value={parentNewPassword} onChange={(event) => setParentNewPassword(event.target.value)} required /></label>
+                  <label className="block text-sm font-medium">Confirm new password<input className={`${inputClass} mt-1.5`} type="password" autoComplete="new-password" minLength={12} maxLength={128} value={parentConfirmPassword} onChange={(event) => setParentConfirmPassword(event.target.value)} required /></label>
+                </> : null}
+              </> : parentCodeRequested ? <label className="block text-sm font-medium">One-time login code from your email<input className={`${inputClass} mt-1.5 tracking-[0.3em]`} type="text" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} value={parentCode} onChange={(event) => setParentCode(event.target.value.replace(/\D/g, "").slice(0, 6))} required /></label> : <>
                 <label className="block text-sm font-medium">Your full name<input className={`${inputClass} mt-1.5`} autoComplete="name" value={parentName} onChange={(event) => setParentName(event.target.value)} maxLength={120} required /></label>
-                <label className="block text-sm font-medium">Contact number <span className="font-normal text-muted">(optional)</span><input className={`${inputClass} mt-1.5`} type="tel" autoComplete="tel" value={parentPhone} onChange={(event) => setParentPhone(event.target.value)} maxLength={40} /></label>
-                <label className="block text-sm font-medium">One learner’s full name<input className={`${inputClass} mt-1.5`} autoComplete="off" value={parentLearnerName} onChange={(event) => setParentLearnerName(event.target.value)} maxLength={160} required /></label>
-                <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-muted">Email verification confirms access to the email address, not guardianship by itself. For learner-record corrections or access concerns, contact the school office. To add another learner later, sign in again with the same parent email and that learner’s name.</p>
-              </> : <label className="block text-sm font-medium">One-time login password from your email<input className={`${inputClass} mt-1.5 tracking-[0.3em]`} type="text" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} value={parentCode} onChange={(event) => setParentCode(event.target.value.replace(/\D/g, "").slice(0, 6))} required /></label>}
+                <label className="block text-sm font-medium">Contact number <span className="font-normal text-muted">(required; entered but not verified)</span><input className={`${inputClass} mt-1.5`} type="tel" autoComplete="tel" value={parentPhone} onChange={(event) => setParentPhone(event.target.value)} maxLength={40} required /></label>
+                <label className="block text-sm font-medium">One learner’s name<input className={`${inputClass} mt-1.5`} autoComplete="off" value={parentLearnerName} onChange={(event) => setParentLearnerName(event.target.value)} maxLength={160} required /></label>
+                <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-muted">Email verification confirms access to the email address, not guardianship by itself. The contact number is recorded as entered and is not phone-verified. For learner-record corrections or access concerns, contact the school office. To add another learner later, sign in again with the same parent email and that learner’s name.</p>
+              </>}
               {parentError ? <p className="text-sm text-bad" role="alert">{parentError}</p> : null}
               {parentNotice ? <p className="text-sm text-good" role="status">{parentNotice}</p> : null}
-              <button className={`${btnClass} w-full`} style={{ backgroundColor: welcomeDisplay.accentColor }} disabled={parentBusy} type="submit">{parentBusy ? "Please wait…" : parentCodeRequested ? "Verify email and open parent portal" : "Match learner and email me a login password"}</button>
-              {parentCodeRequested ? <button type="button" className="w-full text-sm font-semibold text-info" onClick={() => { setParentCodeRequested(false); setParentCode(""); setParentNotice(""); setParentError(""); }}>Use different details</button> : null}
+              <button className={`${btnClass} w-full`} style={{ backgroundColor: welcomeDisplay.accentColor }} disabled={parentBusy} type="submit">{parentBusy ? "Please wait…" : parentPasswordResetOpen
+                ? (parentResetCodeRequested ? "Verify email and set new password" : "Email me a reset code")
+                : (parentCodeRequested ? "Verify email and open parent portal" : "Match learner and email me a login code")}</button>
+              {parentPasswordResetOpen
+                ? <button type="button" className="w-full text-sm font-semibold text-info" onClick={() => { setParentPasswordResetOpen(false); setParentResetCodeRequested(false); setParentResetCode(""); setParentNewPassword(""); setParentConfirmPassword(""); setParentNotice(""); setParentError(""); }}>Back to parent sign in</button>
+                : <button type="button" className="w-full text-sm font-semibold text-info" onClick={() => { setParentPasswordResetOpen(true); setParentCodeRequested(false); setParentCode(""); setParentResetCodeRequested(false); setParentResetCode(""); setParentNewPassword(""); setParentConfirmPassword(""); setParentNotice(""); setParentError(""); }}>Forgot or reset parent password?</button>}
+              {parentCodeRequested && !parentPasswordResetOpen ? <button type="button" className="w-full text-sm font-semibold text-info" onClick={() => { setParentCodeRequested(false); setParentCode(""); setParentNotice(""); setParentError(""); }}>Use different details</button> : null}
             </form>
           </section> : null}
         </div>

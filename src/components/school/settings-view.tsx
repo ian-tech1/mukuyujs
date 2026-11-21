@@ -76,14 +76,14 @@ function ParentLoginAuditCard({ flash }: Pick<Gate, "flash">) {
   useEffect(() => { void load(); }, [load]);
   return <section className="space-y-4 rounded-2xl border border-cyan-200 bg-gradient-to-br from-cyan-50 via-white to-indigo-50 p-5 shadow-card">
     <div className="flex flex-wrap items-start justify-between gap-3">
-      <div><p className="text-xs font-bold uppercase tracking-[.18em] text-cyan-800">Super Admin · parent access</p><h2 className="font-serif text-2xl text-navy">Successful parent logins</h2><p className="mt-1 text-sm text-muted">Each row is one verified sign-in. Parent details are supplied by the parent; the school should confirm guardianship separately where required.</p></div>
+      <div><p className="text-xs font-bold uppercase tracking-[.18em] text-cyan-800">Super Admin · parent access</p><h2 className="font-serif text-2xl text-navy">Successful parent logins</h2><p className="mt-1 text-sm text-muted">Each row is one email-verified sign-in. Parent name and phone are supplied by the parent; phone ownership is not verified, and the school should confirm guardianship separately where required.</p></div>
       <button className={btnGhost} type="button" onClick={() => void load()} disabled={busy}>{busy ? "Refreshing…" : "Refresh records"}</button>
     </div>
     {audit ? <>
-      <div className="grid gap-3 sm:grid-cols-2"><div className="rounded-xl border border-cyan-200 bg-white/80 p-4"><p className="text-xs font-semibold uppercase tracking-wide text-muted">Verified sign-ins recorded</p><p className="mt-1 text-3xl font-bold text-navy">{audit.total}</p></div><div className="rounded-xl border border-indigo-200 bg-white/80 p-4"><p className="text-xs font-semibold uppercase tracking-wide text-muted">Distinct parent email addresses</p><p className="mt-1 text-3xl font-bold text-navy">{audit.uniqueParents}</p></div></div>
+      <div className="grid gap-3 sm:grid-cols-2"><div className="rounded-xl border border-cyan-200 bg-white/80 p-4"><p className="text-xs font-semibold uppercase tracking-wide text-muted">Email-verified sign-ins recorded</p><p className="mt-1 text-3xl font-bold text-navy">{audit.total}</p></div><div className="rounded-xl border border-indigo-200 bg-white/80 p-4"><p className="text-xs font-semibold uppercase tracking-wide text-muted">Distinct parent email addresses</p><p className="mt-1 text-3xl font-bold text-navy">{audit.uniqueParents}</p></div></div>
       {audit.events.length ? <div className="space-y-2">{audit.events.map((event) => <article key={event.id} className="grid gap-1 rounded-xl border border-line bg-white/85 p-3 text-sm sm:grid-cols-[1.2fr_1fr_1fr_1fr] sm:items-center">
         <div><p className="font-semibold text-navy">{event.parentName}</p><p className="break-all text-xs text-muted">{event.parentEmail}</p></div>
-        <p><span className="font-semibold sm:hidden">Contact: </span>{event.parentPhone || "No phone supplied"}</p>
+        <p><span className="font-semibold sm:hidden">Phone entered: </span>{event.parentPhone || "No phone supplied"}</p>
         <p><span className="font-semibold sm:hidden">Learner: </span>{event.learnerName}</p>
         <time className="text-xs text-muted" dateTime={event.loggedInAt}>{new Date(event.loggedInAt).toLocaleString()}</time>
       </article>)}</div> : <p className="rounded-xl border border-dashed border-line bg-white/70 p-5 text-center text-sm text-muted">No successful parent sign-ins have been recorded yet.</p>}

@@ -367,16 +367,16 @@ function parentCodeDigest(email: string, code: string) {
 }
 
 export const requestParentLoginCode = createServerFn({ method: "POST" })
-  .validator((input: { email: string; learnerName: string; parentName: string; phoneNumber?: string }) => input)
+  .validator((input: { email: string; learnerName: string; parentName: string; phoneNumber: string }) => input)
   .handler(async ({ data }) => {
     const email = normalizeParentEmail(data.email ?? "");
     if (!isValidParentEmail(email)) throw new Error("Enter a valid email address.");
     const learnerName = String(data.learnerName ?? "").trim().slice(0, 160);
     const parentName = String(data.parentName ?? "").trim().replace(/\s+/g, " ").slice(0, 120);
     const phoneNumber = String(data.phoneNumber ?? "").trim().replace(/\s+/g, " ").slice(0, 40);
-    if (normalizeLearnerName(learnerName).replace(/\s/g, "").length < 4) throw new Error("Enter one learner's full name (at least four letters).");
+    if (normalizeLearnerName(learnerName).replace(/\s/g, "").length < 2) throw new Error("Enter at least two letters of one learner's name.");
     if (parentName.length < 2) throw new Error("Enter your full name.");
-    if (phoneNumber && !/^[+()\d .-]{6,40}$/.test(phoneNumber)) throw new Error("Enter a valid contact number or leave it blank.");
+    if (!/^[+()\d .-]{6,40}$/.test(phoneNumber) || phoneNumber.replace(/\D/g, "").length < 6) throw new Error("Enter a valid contact number with at least six digits.");
     const sql = await getSql();
     const limit = await sql<{ request_count: number }>`insert into parent_login_rate_limits (email, window_started_at, request_count) values (${email}, now(), 1) on conflict (email) do update set request_count = case when parent_login_rate_limits.window_started_at < now() - interval '1 hour' then 1 else parent_login_rate_limits.request_count + 1 end, window_started_at = case when parent_login_rate_limits.window_started_at < now() - interval '1 hour' then now() else parent_login_rate_limits.window_started_at end returning request_count`;
     if (Number(limit[0]?.request_count ?? 0) > 5) return { matched: false };
@@ -389,7 +389,7 @@ export const requestParentLoginCode = createServerFn({ method: "POST" })
     if (!matched) return { matched: false };
 
     const code = String(randomInt(100000, 1000000));
-    const delivery = await sendPasswordEmail(email, "Your one-time Mukuyu parent login password", `Your one-time Mukuyu parent login password is ${code}. Enter it on the parent sign-in page to verify this email and open the portal. It expires in 10 minutes and can be used once. It is not a reusable account password. If you did not request it, ignore this email.`);
+    const delivery = await sendPasswordEmail(email, "Your one-time Mukuyu parent login code", `Your one-time Mukuyu parent login code is ${code}. Enter it on the parent sign-in page to verify this email and open the portal. It expires in 10 minutes and can be used once. It is not a reusable account password. If you did not request it, ignore this email.`);
     if (!delivery.sent) throw new Error("We could not send a verification code to that email. Please try again later or contact the school office.");
     await sql`delete from parent_login_codes where expires_at < now() - interval '1 day'`;
     await sql`update parent_login_codes set consumed_at = now() where email = ${email} and consumed_at is null`;
@@ -449,6 +449,74 @@ export const verifyParentLoginCode = createServerFn({ method: "POST" })
     if (!signedIn) throw new Error("That email or code is not valid. Request a new code and try again.");
     const session = await sessionApi();
     await session.update({ userId: signedIn.userId, v: signedIn.version });
+    return { ok: true };
+  });
+
+function parentPasswordResetDigest(email: string, code: string) {
+  const secret = process.env.SESSION_SECRET ?? (process.env.NODE_ENV === "production" ? "" : "mukuyu-local-preview-only-session-secret");
+  if (!secret) throw new Error("SESSION_SECRET must be configured before parent password reset can be used.");
+  return createHmac("sha256", secret).update(`parent-password-reset:${email}:${code}`).digest("hex");
+}
+
+export const requestParentPasswordResetCode = createServerFn({ method: "POST" })
+  .validator((input: { email: string }) => input)
+  .handler(async ({ data }) => {
+    const email = normalizeParentEmail(data.email ?? "");
+    if (!isValidParentEmail(email)) throw new Error("Enter a valid email address.");
+    const sql = await getSql();
+    const limit = await sql<{ request_count: number }>`insert into parent_login_rate_limits (email, window_started_at, request_count) values (${email}, now(), 1) on conflict (email) do update set request_count = case when parent_login_rate_limits.window_started_at < now() - interval '1 hour' then 1 else parent_login_rate_limits.request_count + 1 end, window_started_at = case when parent_login_rate_limits.window_started_at < now() - interval '1 hour' then now() else parent_login_rate_limits.window_started_at end returning request_count`;
+    if (Number(limit[0]?.request_count ?? 0) > 5) return { ok: true };
+    const users = await sql<{ id: string }>`select id from users where email = ${email} and role = 'parent' and active = true`;
+    if (!users[0]) return { ok: true };
+
+    const code = String(randomInt(100000, 1000000));
+    await sql`delete from parent_password_reset_codes where expires_at < now() - interval '1 day'`;
+    await sql`update parent_password_reset_codes set consumed_at = now() where email = ${email} and consumed_at is null`;
+    await sql`insert into parent_password_reset_codes (id, email, code_hash, expires_at)
+      values (${newId("ppr")}, ${email}, ${parentPasswordResetDigest(email, code)}, now() + interval '10 minutes')`;
+    const delivery = await sendPasswordEmail(
+      email,
+      "Your Mukuyu parent password reset code",
+      `Your one-time password reset code is ${code}. Enter it on the parent sign-in page and choose a new password. It expires in 10 minutes and can be used once. If you did not request a reset, ignore this email.`,
+    );
+    if (!delivery.sent) {
+      await sql`update parent_password_reset_codes set consumed_at = now() where email = ${email} and consumed_at is null`;
+    }
+    // Use the same response for unknown accounts, throttled requests and delivery failures.
+    return { ok: true };
+  });
+
+export const resetParentPassword = createServerFn({ method: "POST" })
+  .validator((input: { email: string; code: string; password: string }) => input)
+  .handler(async ({ data }) => {
+    const email = normalizeParentEmail(data.email ?? "");
+    const code = String(data.code ?? "").trim();
+    const password = String(data.password ?? "");
+    if (!isValidParentEmail(email) || !/^\d{6}$/.test(code)) throw new Error("That email or code is not valid. Request a new reset code and try again.");
+    if (password.length < 12 || password.length > 128) throw new Error("New password must be between 12 and 128 characters.");
+    const sql = await getSql();
+    const reset = await sql.transaction(async (tx) => {
+      const challenges = await tx<{ id: string; code_hash: string }>`select id, code_hash from parent_password_reset_codes where email = ${email} and consumed_at is null and expires_at > now() and attempts < 5 order by created_at desc limit 1 for update`;
+      const challenge = challenges[0];
+      if (!challenge) return null;
+      const expected = Buffer.from(challenge.code_hash, "hex");
+      const actual = Buffer.from(parentPasswordResetDigest(email, code), "hex");
+      if (expected.length !== actual.length || !timingSafeEqual(expected, actual)) {
+        await tx`update parent_password_reset_codes set attempts = attempts + 1, consumed_at = case when attempts + 1 >= 5 then now() else consumed_at end where id = ${challenge.id}`;
+        return null;
+      }
+      const users = await tx<{ id: string; role: string; active: boolean; session_version: number }>`select id, role, active, session_version from users where email = ${email} for update`;
+      const user = users[0];
+      if (!user || user.role !== "parent" || !user.active) {
+        await tx`update parent_password_reset_codes set consumed_at = now() where id = ${challenge.id}`;
+        return null;
+      }
+      const sessionVersion = Number(user.session_version) + 1;
+      await tx`update users set password_hash = ${hashPassword(password)}, session_version = ${sessionVersion} where id = ${user.id}`;
+      await tx`update parent_password_reset_codes set consumed_at = now() where id = ${challenge.id}`;
+      return { userId: user.id, sessionVersion };
+    });
+    if (!reset) throw new Error("That email or code is not valid. Request a new reset code and try again.");
     return { ok: true };
   });
 

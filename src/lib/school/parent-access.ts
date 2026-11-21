@@ -37,26 +37,65 @@ function damerauLevenshtein(left: string, right: string) {
 }
 
 /**
- * Return one high-confidence full-name match. Accept small spelling mistakes,
- * accents, punctuation and spacing changes; reject ties and short-name guesses.
+ * Match one learner conservatively. Similarity is 1 - edit distance / longest
+ * name length. Unique exact names/tokens win first; fuzzy matches require 60%
+ * similarity, and equally close candidates are not auto-linked.
  */
 export function matchLearnerName(name: string, learners: NamedLearner[]) {
   const normalized = normalizeLearnerName(name);
-  const compact = normalized.replace(/\s/g, "");
-  if (compact.length < 4) return null;
-  const scored = learners.map((learner) => {
-    const candidate = normalizeLearnerName(learner.fullName);
-    const candidateCompact = candidate.replace(/\s/g, "");
-    const edits = damerauLevenshtein(compact, candidateCompact);
-    const maxLength = Math.max(compact.length, candidateCompact.length);
-    const maxEdits = maxLength < 6 ? 1 : maxLength < 13 ? 1 : Math.min(3, Math.floor(maxLength * 0.12));
+  const tokens = normalized.split(" ").filter(Boolean);
+  const compact = tokens.join("");
+  if (compact.length < 2) return null;
+
+  const prepared = learners.map((learner) => {
+    const learnerTokens = normalizeLearnerName(learner.fullName).split(" ").filter(Boolean);
+    return {
+      learner,
+      tokens: learnerTokens,
+      compact: learnerTokens.join(""),
+      sortedTokens: [...learnerTokens].sort().join(" "),
+      sortedCompact: [...learnerTokens].sort().join(""),
+    };
+  });
+
+  if (tokens.length === 1) {
+    const exactTokenMatches = prepared.filter((entry) => entry.tokens.includes(tokens[0]) || entry.compact === tokens[0]);
+    if (exactTokenMatches.length === 1) return exactTokenMatches[0].learner;
+    if (exactTokenMatches.length > 1) return null;
+
+    const tokenScores = prepared.map((entry) => {
+      const candidates = entry.tokens.map((token) => {
+        const length = Math.max(tokens[0].length, token.length);
+        const edits = damerauLevenshtein(tokens[0], token);
+        return { edits, score: length ? 1 - edits / length : 0 };
+      }).sort((a, b) => b.score - a.score);
+      return candidates[0] ? { learner: entry.learner, ...candidates[0] } : null;
+    }).filter((entry): entry is NonNullable<typeof entry> => Boolean(entry)).sort((a, b) => b.score - a.score);
+    const best = tokenScores[0];
+    if (!best || best.score < 0.6) return null;
+    const second = tokenScores[1];
+    if (second && second.score === best.score) return null;
+    return best.learner;
+  }
+
+  const sortedKey = [...tokens].sort().join(" ");
+  const compactKey = tokens.join("");
+  const exactMatches = prepared.filter((entry) => entry.sortedTokens === sortedKey || entry.compact === compactKey);
+  if (exactMatches.length === 1) return exactMatches[0].learner;
+  if (exactMatches.length > 1) return null;
+
+  const scored = prepared.map((entry) => {
+    const orderedDistance = damerauLevenshtein(compactKey, entry.compact);
+    const reorderedDistance = damerauLevenshtein(sortedKey.replace(/\s/g, ""), entry.sortedCompact);
+    const edits = Math.min(orderedDistance, reorderedDistance);
+    const maxLength = Math.max(compactKey.length, entry.compact.length);
     const score = maxLength ? 1 - edits / maxLength : 0;
-    return { learner, edits, score, maxEdits };
+    return { learner: entry.learner, edits, score };
   }).sort((a, b) => b.score - a.score);
   const best = scored[0];
-  if (!best || best.edits > best.maxEdits || best.score < 0.74) return null;
+  if (!best || best.score < 0.6) return null;
   const second = scored[1];
-  if (second && (second.edits === best.edits || best.score - second.score < 0.08)) return null;
+  if (second && second.score === best.score) return null;
   return best.learner;
 }
 
