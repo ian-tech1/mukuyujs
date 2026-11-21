@@ -5,6 +5,7 @@ import type { Gate } from "@/components/school/gate";
 import { buildBoards, decorate, fmt, isAdmin, meanOf, periodMarks } from "@/lib/school/model";
 
 export function DashboardView({ ws, refresh, flash }: Gate) {
+  const [dashboardView, setDashboardView] = useState<"overview" | "performance" | "quality" | "interventions">("overview");
   const [focusOpen, setFocusOpen] = useState(true);
   const [focusSearch, setFocusSearch] = useState("");
   const [focusGradeFilter, setFocusGradeFilter] = useState("all");
@@ -281,6 +282,10 @@ export function DashboardView({ ws, refresh, flash }: Gate) {
     return () => window.removeEventListener("keydown", onShortcut);
   }, [refreshDashboard]);
 
+  useEffect(() => {
+    document.getElementById("dashboard-active-panel")?.scrollIntoView({ block: "start", behavior: "smooth" });
+  }, [dashboardView]);
+
   function togglePin(id: string) {
     setPinnedLearners((current) => {
       const next = current.includes(id) ? current.filter((item) => item !== id) : [...current, id].slice(-12);
@@ -334,12 +339,13 @@ export function DashboardView({ ws, refresh, flash }: Gate) {
         })()}</p>
       </header>
       {(ws.me.role === "teacher" || (ws.me.role === "admin" && !ws.me.isDeputy)) ? <p role="status" className="rounded-xl border border-info/25 bg-info/5 px-4 py-3 text-sm text-muted">Dashboard result summaries use only marks your account is allowed to view. Teacher results follow your class/subject assignments and the Super Admin’s marks-view controls. If expected results are missing, ask the Super Admin to check your assignment and the selected year, term and CAT permissions.</p> : null}
-      <nav className="sticky top-0 z-20 -mx-1 flex min-w-0 items-center gap-2 overflow-x-auto rounded-xl border border-line bg-paper/95 p-2 shadow-sm backdrop-blur" aria-label="Dashboard sections">
-        <span className="shrink-0 px-1 text-xs font-semibold uppercase tracking-wide text-muted">Jump to</span>
-        <a className="shrink-0 rounded-full bg-navy px-3 py-2 text-xs font-semibold text-paper" href="#dashboard-summary">Overview</a>
-        <a className="shrink-0 rounded-full bg-card px-3 py-2 text-xs font-semibold text-navy" href="#dashboard-performance">Performance</a>
-        <a className="shrink-0 rounded-full bg-card px-3 py-2 text-xs font-semibold text-navy" href="#dashboard-quality">Data quality</a>
-        <a className="shrink-0 rounded-full bg-card px-3 py-2 text-xs font-semibold text-navy" href="#dashboard-interventions">Interventions</a>
+      <nav className="sticky top-0 z-20 -mx-1 flex min-w-0 gap-2 overflow-x-auto rounded-xl border border-line bg-paper/95 p-2 shadow-sm backdrop-blur" aria-label="Dashboard views">
+        {([
+          ["overview", "Overview"],
+          ["performance", "Performance"],
+          ["quality", "Data quality"],
+          ["interventions", "Interventions"],
+        ] as const).map(([view, label]) => <button key={view} type="button" className={`shrink-0 rounded-full px-4 py-2.5 text-sm font-semibold transition-colors ${dashboardView === view ? "bg-navy text-paper shadow-sm" : "bg-paper text-navy hover:bg-info/10"}`} aria-pressed={dashboardView === view} onClick={() => setDashboardView(view)}>{label}</button>)}
       </nav>
       <section className="dashboard-command-center rounded-2xl border border-line bg-card p-4 shadow-card" aria-labelledby="dashboard-command-title">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -363,6 +369,7 @@ export function DashboardView({ ws, refresh, flash }: Gate) {
           <div className="flex flex-wrap items-center gap-2 text-xs"><button type="button" className={`rounded-full border px-3 py-2 font-semibold ${incompleteOnly ? "border-warn bg-warn/10 text-warn" : "border-line text-navy"}`} aria-pressed={incompleteOnly} onClick={() => setIncompleteOnly((value) => !value)}>Incomplete marks only {incompleteOnly ? "✓" : ""}</button><span className="rounded-full bg-paper px-3 py-2 text-muted">Pinned learners: {pinnedLearners.length}</span><button type="button" className="rounded-full border border-line px-3 py-2 font-semibold text-navy" onClick={() => setPinnedLearners([])}>Clear pins</button><span className="ml-auto text-muted">{focusRows.length} records match all filters</span></div>
         </div> : null}
       </section>
+      {dashboardView === "overview" ? <section id="dashboard-active-panel" role="region" aria-label="Overview dashboard" tabIndex={-1} className="scroll-mt-24 space-y-6">
       <SchoolIntelligenceCenter ws={ws} refresh={refresh} flash={flash} />
       <section className="dashboard-focus-board rounded-2xl border border-info/20 bg-gradient-to-br from-card via-card to-info/5 p-4 shadow-card" aria-labelledby="dashboard-focus-title">
         <div className="flex flex-wrap items-start justify-between gap-3">
@@ -383,7 +390,7 @@ export function DashboardView({ ws, refresh, flash }: Gate) {
               {!focusRows.length ? <p className="rounded-xl border border-dashed border-line p-6 text-center text-sm text-muted">No learners match these filters.</p> : null}
               {displayedFocusRows.length < focusRows.length ? <p className="pt-2 text-xs text-muted">Showing {displayedFocusRows.length} of {focusRows.length} matches. Increase rows or narrow the search.</p> : null}
             </div></div>
-            <div className="rounded-xl border border-line bg-card p-4">{selectedFocusRow ? <><div className="flex items-start justify-between gap-3"><div><p className="text-xs font-semibold uppercase tracking-wide text-info">Selected learner</p><h3 className="mt-1 font-serif text-xl text-navy">{selectedFocusRow.learner.fullName}</h3><p className="text-xs text-muted">{selectedFocusRow.learner.admissionNumber || "No admission number"} · {selectedFocusRow.level || "Result level pending"}</p></div><span className="rounded-full bg-info/10 px-3 py-1 text-sm font-bold text-info">{fmt(selectedFocusRow.avgMean)}</span></div><div className="mt-4 grid grid-cols-2 gap-2 text-sm"><div className="rounded-lg border border-line p-2"><p className="text-xs text-muted">Position</p><p className="font-semibold text-navy">{selectedFocusRow.overall.position} / {selectedFocusRow.overall.outOf}</p></div><div className="rounded-lg border border-line p-2"><p className="text-xs text-muted">Mark coverage</p><p className="font-semibold text-navy">{selectedCoverage?.percent ?? 0}%</p></div></div><div className="mt-4 space-y-2 text-sm"><p><span className="text-muted">Strongest:</span> <strong>{selectedStrength?.strongest?.name ?? "Not enough marks"}</strong>{selectedStrength ? ` · ${fmt(selectedStrength.strongestAvg)}` : ""}</p><p><span className="text-muted">Focus next:</span> <strong>{selectedStrength?.weakest?.name ?? "Complete more marks"}</strong>{selectedStrength ? ` · ${fmt(selectedStrength.weakestAvg)}` : ""}</p></div><div className="mt-4 flex flex-wrap gap-2"><button type="button" className="rounded-full border border-line px-3 py-2 text-xs font-semibold text-navy" onClick={() => void copySelectedSummary()}>Copy summary</button><a className="rounded-full border border-line px-3 py-2 text-xs font-semibold text-navy" href="#dashboard-performance">View performance</a><a className="rounded-full border border-line px-3 py-2 text-xs font-semibold text-navy" href="#dashboard-quality">View data quality</a></div></> : <p className="text-sm text-muted">Select a learner to see their focus summary.</p>}</div>
+            <div className="rounded-xl border border-line bg-card p-4">{selectedFocusRow ? <><div className="flex items-start justify-between gap-3"><div><p className="text-xs font-semibold uppercase tracking-wide text-info">Selected learner</p><h3 className="mt-1 font-serif text-xl text-navy">{selectedFocusRow.learner.fullName}</h3><p className="text-xs text-muted">{selectedFocusRow.learner.admissionNumber || "No admission number"} · {selectedFocusRow.level || "Result level pending"}</p></div><span className="rounded-full bg-info/10 px-3 py-1 text-sm font-bold text-info">{fmt(selectedFocusRow.avgMean)}</span></div><div className="mt-4 grid grid-cols-2 gap-2 text-sm"><div className="rounded-lg border border-line p-2"><p className="text-xs text-muted">Position</p><p className="font-semibold text-navy">{selectedFocusRow.overall.position} / {selectedFocusRow.overall.outOf}</p></div><div className="rounded-lg border border-line p-2"><p className="text-xs text-muted">Mark coverage</p><p className="font-semibold text-navy">{selectedCoverage?.percent ?? 0}%</p></div></div><div className="mt-4 space-y-2 text-sm"><p><span className="text-muted">Strongest:</span> <strong>{selectedStrength?.strongest?.name ?? "Not enough marks"}</strong>{selectedStrength ? ` · ${fmt(selectedStrength.strongestAvg)}` : ""}</p><p><span className="text-muted">Focus next:</span> <strong>{selectedStrength?.weakest?.name ?? "Complete more marks"}</strong>{selectedStrength ? ` · ${fmt(selectedStrength.weakestAvg)}` : ""}</p></div><div className="mt-4 flex flex-wrap gap-2"><button type="button" className="rounded-full border border-line px-3 py-2 text-xs font-semibold text-navy" onClick={() => void copySelectedSummary()}>Copy summary</button><button type="button" className="rounded-full border border-line px-3 py-2 text-xs font-semibold text-navy" onClick={() => setDashboardView("performance")}>View performance</button><button type="button" className="rounded-full border border-line px-3 py-2 text-xs font-semibold text-navy" onClick={() => setDashboardView("quality")}>View data quality</button></div></> : <p className="text-sm text-muted">Select a learner to see their focus summary.</p>}</div>
           </div>
           {compareRows.length ? <div className="mt-4 rounded-xl border border-info/20 bg-info/5 p-4"><div className="flex flex-wrap items-center justify-between gap-2"><div><p className="text-xs font-semibold uppercase tracking-wide text-info">Side-by-side comparison</p><p className="text-sm text-muted">Select up to two learner rows using ⇄.</p></div><button type="button" className="rounded-full border border-line px-3 py-2 text-xs font-semibold text-navy" onClick={() => setCompareIds([])}>Clear comparison</button></div><div className="mt-3 grid gap-2 sm:grid-cols-2">{compareRows.map((row) => <div key={row.learner.id} className="rounded-lg border border-line bg-card p-3"><p className="font-semibold text-navy">{row.learner.fullName}</p><div className="mt-2 grid grid-cols-3 gap-2 text-center text-xs"><span><strong className="block text-lg text-info">{fmt(row.avgMean)}</strong>Mean</span><span><strong className="block text-lg text-navy">{row.overall.position}</strong>Position</span><span><strong className="block text-lg text-navy">{learnerCoverage.find((item) => item.learner.id === row.learner.id)?.percent ?? 0}%</strong>Coverage</span></div></div>)}</div></div> : null}
         </> : null}
@@ -412,6 +419,9 @@ export function DashboardView({ ws, refresh, flash }: Gate) {
         <p><strong>Best girl North:</strong> {displayNames(bestGirlNorth)}</p><p><strong>Best girl South:</strong> {displayNames(bestGirlSouth)}</p><p><strong>Best girl overall:</strong> {displayNames(bestGirls)}</p><p><strong>Best student overall:</strong> {displayNames(bestOverall)}</p>
         {bestSubjectLeaders.map((item) => <p key={item.subject.id}><strong>Best in {item.subject.name}:</strong> {item.names}{item.score == null ? "" : ` (${fmt(item.score)})`}</p>)}
       </div><p className="mt-2 text-xs text-muted">All ties are included. North/South awards are based on stream names containing “North” or “South”.</p></section>
+      <MarkProgress ws={ws} marks={marks} subjects={subjects} exams={exams} />
+      </section> : null}
+      {dashboardView === "performance" ? <section id="dashboard-active-panel" role="region" aria-label="Performance dashboard" tabIndex={-1} className="scroll-mt-24 space-y-6">
       <section id="dashboard-performance" className="scroll-mt-24 grid gap-4 lg:grid-cols-[1.3fr_0.7fr]">
         <article className="rounded-md border border-line bg-card p-4 shadow-card">
           <h2 className="font-serif text-xl text-navy">{focusGrade?.grade.name ?? "Grade"} subject means</h2>
@@ -451,6 +461,8 @@ export function DashboardView({ ws, refresh, flash }: Gate) {
         />
         <List title="Needs support (mean under 41)" rows={concern.map((row) => `${row.learner.fullName}  ·  ${fmt(row.avgMean)} ${row.level ?? ""}`)} empty="Nobody is under 41." />
       </section>
+      </section> : null}
+      {dashboardView === "quality" ? <section id="dashboard-active-panel" role="region" aria-label="Data quality dashboard" tabIndex={-1} className="scroll-mt-24 space-y-6">
       <section id="dashboard-quality" className="scroll-mt-24 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Tile label="Learners with marks" value={`${learnersWithMarks.size}/${ws.learners.length}`} hint="Learners with at least one recorded score" />
         <Tile label="Learners awaiting marks" value={String(learnersWithoutMarks.length)} hint="No recorded score in the selected period" />
@@ -578,7 +590,9 @@ export function DashboardView({ ws, refresh, flash }: Gate) {
           {biggestSubjectGaps.length ? <ul className="mt-3 space-y-2 text-sm">{biggestSubjectGaps.map((row) => <li key={row.learner.id} className="border-b border-line/70 pb-2"><p className="font-medium">{row.learner.fullName} · {(row.strongestAvg - row.weakestAvg).toFixed(1)} pts</p><p className="text-xs text-muted">{row.strongest.name}: {fmt(row.strongestAvg)} · {row.weakest.name}: {fmt(row.weakestAvg)}</p></li>)}</ul> : <p className="mt-3 text-sm text-muted">Not enough subject results yet.</p>}
         </article>
       </section>
-      <section id="dashboard-interventions" className="scroll-mt-24 space-y-4">
+      </section> : null}
+      {dashboardView === "interventions" ? <section id="dashboard-active-panel" role="region" aria-label="Interventions dashboard" tabIndex={-1} className="scroll-mt-24 space-y-6">
+      <section id="dashboard-interventions" className="space-y-4">
         <div>
           <h2 className="font-serif text-2xl text-navy">Advanced school intelligence & governance</h2>
           <p className="mt-1 text-sm text-muted">Ten additional insights based on the active academic year and term. These are advisory alerts; they do not change marks or learner records.</p>
@@ -648,7 +662,7 @@ export function DashboardView({ ws, refresh, flash }: Gate) {
           <div className="mt-3 grid gap-3 sm:grid-cols-3">{roleCoverage.map((row) => <div key={row.label} className="rounded-md border border-line p-3"><p className="text-xs text-muted">{row.label}</p><p className="mt-1 font-serif text-2xl text-navy">{Math.max(0, row.total - row.missing)}/{row.total}</p><p className="text-xs text-muted">{row.missing} missing</p></div>)}</div>
         </article>
       </section>
-      <MarkProgress ws={ws} marks={marks} subjects={subjects} exams={exams} />
+      </section> : null}
     </div>
   );
 }
