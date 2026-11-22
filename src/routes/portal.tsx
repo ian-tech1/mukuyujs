@@ -141,7 +141,7 @@ function PortalPage() {
   const gate = { ws, refresh, flash, onWelcomeChange: (settings: { enabled: boolean; url: string }) => setStaffMusic({ ...settings, options: parseMusicSetting(settings.url || "").options }) };
 
   return (
-    <div className="portal-animated-background min-h-screen bg-paper lg:grid lg:grid-cols-[16rem_1fr]">
+    <div className="portal-animated-background min-h-screen bg-paper lg:grid lg:grid-cols-[16rem_1fr]" data-portal-section={current}>
       <aside id="portal-navigation" aria-label="Main navigation" className={`${open ? "fixed inset-0 z-20" : "hidden"} bg-navy text-paper lg:sticky lg:top-0 lg:block lg:h-screen`}>
         <div className="flex items-center justify-between px-4 py-4">
           <div className="flex items-center gap-2">

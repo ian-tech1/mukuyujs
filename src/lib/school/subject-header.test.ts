@@ -20,6 +20,8 @@ test("resolves the requested full-name and common short-header subjects", () => 
   assert.equal(resolveSubjectHeader("Creative Arts", subjects)?.id, "creative");
   assert.equal(resolveSubjectHeader("Creative Arts and Sports", subjects)?.id, "creative");
   assert.equal(resolveSubjectHeader("C/A", subjects)?.id, "creative");
+  assert.equal(resolveSubjectHeader("Science and Technology", subjects)?.id, "scie");
+  assert.equal(resolveSubjectHeader("Creative & Sports", subjects)?.id, "creative");
 });
 
 test("normalizes common spelling, punctuation and marks suffix variations", () => {

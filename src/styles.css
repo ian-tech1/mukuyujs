@@ -335,3 +335,152 @@ html[data-portal-accent-motion="off"] .portal-page-content :is(article, section,
 html[data-portal-motion="reduced"] .portal-loading, html[data-portal-motion="reduced"] .portal-loading::before, html[data-portal-motion="reduced"] .portal-loading::after, html[data-portal-motion="reduced"] .portal-loading-orbit, html[data-portal-motion="reduced"] .portal-loading-track span { animation: none !important; }
 @media (prefers-reduced-motion: reduce) { .portal-loading, .portal-loading::before, .portal-loading::after, .portal-loading-orbit, .portal-loading-track span { animation: none !important; } }
 @media print { .portal-loading, .portal-loading::before, .portal-loading::after, .portal-loading-orbit, .portal-loading-track span { animation: none !important; } }
+
+
+/* Mukuyu Junior School cosmic backdrop: deep ink, drifting nebulae, pin stars and fine orbit paths. */
+.portal-animated-background {
+  --portal-glow-a: rgba(37, 177, 220, .2);
+  --portal-glow-b: rgba(91, 104, 227, .17);
+  --portal-glow-c: rgba(210, 95, 177, .12);
+  --portal-glow-d: rgba(239, 172, 75, .11);
+  position: relative;
+  isolation: isolate;
+  color: #eaf1fc;
+  background: #050812;
+  transition: background-color 1.2s ease;
+}
+.portal-animated-background[data-portal-section="home"] { --portal-glow-a: rgba(47, 202, 222, .21); --portal-glow-b: rgba(59, 129, 220, .17); --portal-glow-c: rgba(123, 91, 210, .12); --portal-glow-d: rgba(244, 186, 85, .11); }
+.portal-animated-background[data-portal-section="learners"] { --portal-glow-a: rgba(44, 201, 178, .2); --portal-glow-b: rgba(64, 137, 222, .16); --portal-glow-c: rgba(132, 94, 210, .12); --portal-glow-d: rgba(245, 188, 80, .12); }
+.portal-animated-background[data-portal-section="marks"] { --portal-glow-a: rgba(48, 194, 234, .22); --portal-glow-b: rgba(75, 112, 229, .19); --portal-glow-c: rgba(131, 91, 208, .1); --portal-glow-d: rgba(239, 174, 67, .1); }
+.portal-animated-background[data-portal-section="analysis"] { --portal-glow-a: rgba(94, 156, 237, .17); --portal-glow-b: rgba(142, 93, 224, .22); --portal-glow-c: rgba(225, 92, 176, .15); --portal-glow-d: rgba(242, 185, 76, .09); }
+.portal-animated-background[data-portal-section="reports"] { --portal-glow-a: rgba(83, 154, 229, .17); --portal-glow-b: rgba(128, 91, 225, .23); --portal-glow-c: rgba(203, 95, 190, .14); --portal-glow-d: rgba(249, 190, 82, .12); }
+.portal-animated-background[data-portal-section="marklists"] { --portal-glow-a: rgba(49, 193, 201, .2); --portal-glow-b: rgba(67, 133, 222, .17); --portal-glow-c: rgba(139, 102, 210, .11); --portal-glow-d: rgba(232, 181, 75, .12); }
+.portal-animated-background[data-portal-section="staff"] { --portal-glow-a: rgba(45, 166, 225, .2); --portal-glow-b: rgba(97, 105, 218, .18); --portal-glow-c: rgba(172, 102, 194, .13); --portal-glow-d: rgba(246, 190, 83, .13); }
+.portal-animated-background[data-portal-section="mail"] { --portal-glow-a: rgba(46, 185, 222, .18); --portal-glow-b: rgba(114, 98, 224, .2); --portal-glow-c: rgba(222, 90, 182, .17); --portal-glow-d: rgba(242, 178, 83, .09); }
+.portal-animated-background[data-portal-section="timetable"] { --portal-glow-a: rgba(45, 205, 197, .2); --portal-glow-b: rgba(59, 139, 228, .18); --portal-glow-c: rgba(130, 91, 207, .11); --portal-glow-d: rgba(246, 184, 77, .1); }
+.portal-animated-background[data-portal-section="services"] { --portal-glow-a: rgba(39, 194, 185, .17); --portal-glow-b: rgba(71, 128, 222, .17); --portal-glow-c: rgba(143, 91, 201, .13); --portal-glow-d: rgba(250, 166, 69, .16); }
+.portal-animated-background[data-portal-section="parent-feedback"] { --portal-glow-a: rgba(46, 190, 217, .18); --portal-glow-b: rgba(111, 103, 225, .19); --portal-glow-c: rgba(222, 94, 172, .18); --portal-glow-d: rgba(244, 183, 82, .1); }
+.portal-animated-background[data-portal-section="settings"] { --portal-glow-a: rgba(55, 174, 218, .17); --portal-glow-b: rgba(99, 105, 217, .17); --portal-glow-c: rgba(162, 96, 202, .15); --portal-glow-d: rgba(244, 188, 77, .15); }
+.portal-animated-background[data-portal-section="results"] { --portal-glow-a: rgba(44, 186, 221, .2); --portal-glow-b: rgba(91, 109, 230, .2); --portal-glow-c: rgba(174, 92, 201, .14); --portal-glow-d: rgba(247, 184, 79, .1); }
+.portal-animated-background::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 1;
+  background-image:
+    radial-gradient(1px 1px at 8% 15%, rgba(255,255,255,.78) 50%, transparent 100%),
+    radial-gradient(1px 1px at 19% 72%, rgba(203,229,255,.72) 50%, transparent 100%),
+    radial-gradient(1.2px 1.2px at 34% 31%, rgba(255,255,255,.74) 50%, transparent 100%),
+    radial-gradient(1px 1px at 46% 83%, rgba(193,226,255,.65) 50%, transparent 100%),
+    radial-gradient(1.2px 1.2px at 63% 18%, rgba(255,255,255,.72) 50%, transparent 100%),
+    radial-gradient(1px 1px at 75% 59%, rgba(199,224,255,.75) 50%, transparent 100%),
+    radial-gradient(1px 1px at 89% 30%, rgba(255,255,255,.7) 50%, transparent 100%),
+    radial-gradient(1.2px 1.2px at 94% 85%, rgba(218,230,255,.72) 50%, transparent 100%),
+    radial-gradient(ellipse at 14% 23%, var(--portal-glow-a), transparent 42%),
+    radial-gradient(ellipse at 78% 20%, var(--portal-glow-b), transparent 40%),
+    radial-gradient(ellipse at 61% 76%, var(--portal-glow-c), transparent 38%),
+    radial-gradient(ellipse at 96% 88%, var(--portal-glow-d), transparent 34%),
+    linear-gradient(140deg, #040711 0%, #09101f 48%, #060914 100%);
+  background-size: 100% 100%;
+  animation: mukuyu-nebula-drift 62s ease-in-out infinite alternate;
+}
+.portal-animated-background::after {
+  content: "";
+  position: fixed;
+  inset: -12%;
+  z-index: -1;
+  pointer-events: none;
+  opacity: .52;
+  background-image:
+    radial-gradient(ellipse 49% 30% at 48% 48%, transparent 94.8%, rgba(123,196,255,.18) 95.1%, transparent 95.5%),
+    radial-gradient(ellipse 35% 53% at 55% 50%, transparent 95%, rgba(209,169,255,.12) 95.3%, transparent 95.7%),
+    radial-gradient(ellipse 63% 44% at 50% 47%, transparent 97%, rgba(255,204,127,.1) 97.2%, transparent 97.6%);
+  animation: mukuyu-orbit-drift 78s ease-in-out infinite alternate;
+}
+.portal-page-content { position: relative; min-width: 0; color: #eaf1fc; background: linear-gradient(180deg, rgba(5,9,20,.12), rgba(5,9,20,.04)); }
+.portal-page-content :is(h1, h2, h3, h4), .portal-page-content .text-navy, .portal-page-content .text-ink { color: #edf4ff; }
+.portal-page-content .text-muted { color: #c5d1e2; }
+.portal-page-content .text-info { color: #9ed5ff; }
+.portal-page-content .text-good { color: #a4edc1; }
+.portal-page-content .text-warn { color: #ffd18a; }
+.portal-page-content .text-bad { color: #ffb9bd; }
+.portal-page-content :is([class*="bg-card"], [class*="bg-white"], [class*="bg-paper"]) :is(h1, h2, h3, h4, .text-navy, .text-ink) { color: #102b49; }
+.portal-page-content :is([class*="bg-card"], [class*="bg-white"], [class*="bg-paper"]) .text-muted { color: #625b53; }
+.portal-page-content :is([class*="bg-card"], [class*="bg-white"], [class*="bg-paper"]) .text-info { color: #1d4e89; }
+.portal-page-content :is([class*="bg-card"], [class*="bg-white"], [class*="bg-paper"]) .text-good { color: #1f7a4d; }
+.portal-page-content :is([class*="bg-card"], [class*="bg-white"], [class*="bg-paper"]) .text-warn { color: #8b4a0d; }
+.portal-page-content :is([class*="bg-card"], [class*="bg-white"], [class*="bg-paper"]) .text-bad { color: #9f2d2d; }
+.portal-page-content :is(input, select, textarea) { color: #1c1915; }
+.portal-page-content :is(input, textarea)::placeholder { color: #777066; }
+.portal-page-content .marks-import-panel { color: #16364d; }
+.portal-page-content .marks-import-panel :is(h1, h2, h3, h4, .text-navy, .text-ink) { color: #123451; }
+.portal-page-content .marks-import-panel .text-muted { color: #536879; }
+.portal-page-content .marks-import-panel .text-info { color: #17577f; }
+.portal-animated-background > div > header { border-color: rgba(184,205,235,.16); }
+.portal-loading {
+  color: #edf4ff;
+  background-color: #050812;
+  background-image: radial-gradient(1px 1px at 14% 22%, rgba(255,255,255,.8) 50%, transparent), radial-gradient(1px 1px at 72% 68%, rgba(218,233,255,.75) 50%, transparent), radial-gradient(ellipse at 17% 28%, rgba(36,190,221,.21), transparent 42%), radial-gradient(ellipse at 80% 27%, rgba(117,93,225,.22), transparent 42%), radial-gradient(ellipse at 58% 83%, rgba(211,83,173,.13), transparent 38%), radial-gradient(ellipse at 91% 87%, rgba(237,173,71,.14), transparent 32%), linear-gradient(140deg,#040711,#09101f 48%,#060914);
+}
+.portal-loading-card { border-color: rgba(190,216,255,.2); background: rgba(8,16,33,.75); box-shadow: 0 24px 80px rgba(0,0,0,.38), inset 0 1px rgba(255,255,255,.08); }
+.portal-loading-card .text-navy { color: #edf4ff; }
+.portal-loading-card .text-muted { color: #c3d2e8; }
+.portal-loading-orbit { background: linear-gradient(rgba(7,14,29,.92),rgba(7,14,29,.92)) padding-box, conic-gradient(from 0deg,#41d4e5,#4d8ee8,#9169e5,#e668aa,#efb55b,#41d4e5) border-box; }
+.portal-loading-track { background: rgba(202,222,255,.11); }
+.portal-loading-track span { box-shadow: 0 0 16px rgba(99,181,255,.55); }
+.welcome-shell { background: #040710; animation: none; }
+.welcome-shell::before, .welcome-shell::after { opacity: .07; }
+.welcome-hero {
+  background-color: #050914;
+  background-image:
+    radial-gradient(1px 1px at 7% 17%, rgba(255,255,255,.77) 50%, transparent 100%),
+    radial-gradient(1.2px 1.2px at 17% 74%, rgba(206,227,255,.7) 50%, transparent 100%),
+    radial-gradient(1px 1px at 39% 26%, rgba(255,255,255,.74) 50%, transparent 100%),
+    radial-gradient(1px 1px at 68% 15%, rgba(225,236,255,.76) 50%, transparent 100%),
+    radial-gradient(1px 1px at 87% 67%, rgba(255,255,255,.72) 50%, transparent 100%),
+    radial-gradient(ellipse 48% 29% at 52% 49%, transparent 94.8%, rgba(118,192,255,.16) 95.1%, transparent 95.5%),
+    radial-gradient(ellipse 35% 52% at 52% 49%, transparent 95%, rgba(202,166,255,.11) 95.3%, transparent 95.7%),
+    radial-gradient(ellipse at 18% 25%, rgba(39,181,216,.2), transparent 43%),
+    radial-gradient(ellipse at 82% 18%, rgba(110,84,208,.18), transparent 42%),
+    radial-gradient(ellipse at 66% 81%, rgba(205,79,164,.12), transparent 38%),
+    radial-gradient(ellipse at 94% 87%, rgba(234,168,66,.12), transparent 34%),
+    linear-gradient(140deg,#040711 0%,#09101f 48%,#060914 100%);
+  background-size: 100% 100%;
+}
+.welcome-ribbon-field { opacity: .28; }
+.welcome-ribbon { filter: blur(5px) saturate(.9); }
+.welcome-login-panel {
+  background-color: #060a16;
+  background-image:
+    radial-gradient(1px 1px at 12% 18%, rgba(255,255,255,.75) 50%, transparent 100%),
+    radial-gradient(1px 1px at 75% 32%, rgba(213,231,255,.7) 50%, transparent 100%),
+    radial-gradient(ellipse 50% 30% at 52% 52%, transparent 94.8%, rgba(112,184,255,.14) 95.1%, transparent 95.5%),
+    radial-gradient(ellipse at 13% 82%, rgba(37,178,207,.17), transparent 40%),
+    radial-gradient(ellipse at 83% 16%, var(--welcome-panel-accent, rgba(119,104,229,.22)), transparent 38%),
+    radial-gradient(ellipse at 80% 82%, rgba(221,83,170,.1), transparent 36%),
+    radial-gradient(ellipse at 47% 48%, var(--welcome-panel-tint, rgba(255,255,255,.08)), transparent 72%),
+    linear-gradient(140deg,#050812 0%,#0a1020 54%,#060914 100%);
+  background-size: 100% 100%;
+}
+.welcome-login-panel::before { border-color: rgba(159,201,255,.17); box-shadow: inset 0 0 90px rgba(104,165,255,.06); }
+.welcome-login-panel::after { opacity: .5; }
+.welcome-login-panel > form {
+  border-color: rgba(184,211,255,.25);
+  background: rgba(249,251,255,.94);
+  box-shadow: 0 28px 85px rgba(0,0,0,.4), inset 0 1px rgba(255,255,255,.9);
+}
+.welcome-login-panel > form:hover { border-color: rgba(147,205,255,.55); box-shadow: 0 34px 95px rgba(0,0,0,.45), inset 0 1px white; }
+.welcome-login-panel input { background-color: rgba(255,255,255,.96); }
+@keyframes mukuyu-nebula-drift { 0% { background-position: 0 0; filter: saturate(.96); } 50% { background-position: 2% -1%; filter: saturate(1.08); } 100% { background-position: -1% 2%; filter: saturate(1); } }
+@keyframes mukuyu-orbit-drift { from { transform: translate3d(-.45%, .2%, 0) rotate(-1deg); } to { transform: translate3d(.45%, -.2%, 0) rotate(1deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .portal-animated-background, .portal-animated-background::before, .portal-animated-background::after, .portal-loading, .portal-loading::before, .portal-loading::after, .portal-loading-orbit, .portal-loading-track span, .welcome-shell, .welcome-hero, .welcome-login-panel { animation: none !important; }
+}
+html[data-portal-motion="reduced"] .portal-animated-background, html[data-portal-motion="reduced"] .portal-animated-background::before, html[data-portal-motion="reduced"] .portal-animated-background::after { animation: none !important; }
+@media print {
+  .portal-animated-background::before, .portal-animated-background::after, .portal-loading::before, .portal-loading::after { display: none !important; }
+  .portal-animated-background, .portal-page-content { background: #fff !important; color: #111827 !important; }
+  .portal-page-content :is(h1, h2, h3, h4, .text-navy, .text-ink, .text-muted, .text-info) { color: #111827 !important; }
+}

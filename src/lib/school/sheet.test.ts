@@ -25,6 +25,19 @@ test("mark import retains every subject and converts obtained/maximum scores", (
   });
 });
 
+test("mark import finds the learner header below a school title and retains common subject columns", () => {
+  const rows = marksFromMatrix([
+    ["Mukuyu Junior School — End Term Marks"],
+    ["Admission No.", "Learner Name", "English", "Science", "Creative Arts", "Agriculture", "Pretech"],
+    ["MKS-2026-12345", "Amina Yusuf", "81", "76", "84", "73", "79"],
+  ]);
+  assert.deepEqual(rows[0], {
+    admissionNumber: "MKS-2026-12345",
+    fullName: "Amina Yusuf",
+    scores: { English: 81, Science: 76, "Creative Arts": 84, Agriculture: 73, Pretech: 79 },
+  });
+});
+
 test("mark-list matrix exports as an Excel workbook with requested orientation and escaped cells", () => {
   const bytes = writeXlsxFromMatrix([
     ["School & Trust"],

@@ -81,15 +81,25 @@ function isIdentifierHeader(label: string) {
   return /^(admission|adm(?:ission)?\s*(?:no|number)?|learner|student)?\s*(?:name|number|no\.?|id)?$|^(roll\s*(?:no|number)?|name|learner\s*name|student\s*name|adm(?:ission)?\s*(?:no|number)|gender|sex|stream|class|grade|total|average|mean|position|rank|remarks?|comment|teacher|signature|out\s*of)$/i.test(label.trim());
 }
 
+function isLearnerIdentifierHeader(label: string) {
+  return /admission|\badm\b|\blearner\b|\bstudent\b|\bname\b|\broll\b/i.test(label);
+}
+
 export function marksFromMatrix(matrix: string[][]): MarkSheetRow[] {
   const cleaned = matrix.map((line) => line.map((cell) => cell.trim())).filter((line) => line.some(Boolean));
   if (cleaned.length < 2) return [];
-  const header = cleaned[0];
+  const headerIndex = cleaned.slice(0, 12).findIndex((row) => {
+    const hasLearnerIdentifier = row.some(isLearnerIdentifierHeader);
+    const hasSubjectColumn = row.some((label) => label && !isLearnerIdentifierHeader(label) && !isIdentifierHeader(label));
+    return hasLearnerIdentifier && hasSubjectColumn;
+  });
+  const headerAt = headerIndex < 0 ? 0 : headerIndex;
+  const header = cleaned[headerAt];
   const lower = header.map((cell) => cell.toLowerCase());
   const admissionAt = lower.findIndex((cell) => /admission|adm(?:ission)?\s*(?:no|number)?/.test(cell));
   const nameAt = lower.findIndex((cell) => /name|learner|student/.test(cell));
   if (admissionAt < 0 && nameAt < 0) throw new Error("The spreadsheet must have an Admission Number or Learner Name column.");
-  return cleaned.slice(1).map((cells) => {
+  return cleaned.slice(headerAt + 1).map((cells) => {
     const scores: Record<string, number | null> = {};
     header.forEach((label, index) => {
       if (index === admissionAt || index === nameAt || !label || isIdentifierHeader(label)) return;

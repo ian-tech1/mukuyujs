@@ -5,7 +5,8 @@ const SUBJECT_FAMILIES: Record<string, string[]> = {
   integratedScience: [
     "integrated science", "integrated sci", "int science", "int sci", "integr sci", "sci", "science",
     "intergrated science", "intergrate science", "intergrated sci", "intergrate sci",
-    "integration science", "integrated sciences",
+    "integration science", "integrated sciences", "general science", "science and technology",
+    "integrated science and technology", "science technology", "science and tech",
   ],
   agriculture: [
     "agriculture", "agri", "agric", "agr", "agriculture and nutrition", "agricultural studies",
@@ -16,7 +17,9 @@ const SUBJECT_FAMILIES: Record<string, string[]> = {
     "pretechnical studies", "pre technical studies", "pretechnical studies and skills", "pre tech studies and skills",
   ],
   creativeArts: [
-    "creative arts and sports", "creative arts", "creative arts sports", "creative", "c a", "ca",
+    "creative arts and sports", "creative arts", "creative arts sports", "creative", "creative art",
+    "creative and sports", "creative sports", "creative arts and physical education", "sports and creative arts",
+    "c a", "ca", "c a s", "cas",
   ],
 };
 

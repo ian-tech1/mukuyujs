@@ -280,7 +280,7 @@ function LoginPage() {
         </div>
         <div className="relative z-10 flex items-center gap-2 text-[10px] uppercase tracking-[0.28em] text-paper/55"><span className="welcome-status-line" /><span>Secure school office</span></div>
       </section>
-      <section className="welcome-login-panel flex flex-col items-center justify-center px-6 py-12" style={{ background: `radial-gradient(circle at 88% 12%, ${hexToRgba(welcomeDisplay.accentAltColor, 0.18)}, transparent 26%), ${hexToRgba(welcomeDisplay.panelColor, welcomeDisplay.panelOpacity)}` }}>
+      <section className="welcome-login-panel flex flex-col items-center justify-center px-6 py-12" style={{ "--welcome-panel-tint": hexToRgba(welcomeDisplay.panelColor, Math.min(0.18, welcomeDisplay.panelOpacity * 0.12)), "--welcome-panel-accent": hexToRgba(welcomeDisplay.accentAltColor, 0.22) } as React.CSSProperties}>
         <form onSubmit={onSubmit} className="w-full max-w-sm">
           <h2 className="font-serif text-3xl text-navy">Sign in</h2>
           <p className="mt-2 text-sm text-muted">Use the email and password issued by the school. Super admins, admins, teachers and student accounts can sign in here.</p>
