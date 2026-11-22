@@ -370,7 +370,7 @@ export function DashboardView({ ws, refresh, flash }: Gate) {
           const mean = meanOf(buildBoards(ws.learners, yearMarks, subjects, exams, ws.bands).map((board) => board.avgMean));
           const open = year.id === ws.profile.activeYearId;
           return (
-            <div key={year.id} className={`rounded-md border px-3 py-2 ${open ? "border-navy bg-navy text-paper" : "border-line bg-card"}`}>
+            <div key={year.id} className={`rounded-md border px-3 py-2 ${open ? "border-navy bg-navy text-paper" : "border-line bg-card dashboard-panel-color-cycle"}`}>
               <p className="text-xs uppercase tracking-wide opacity-70">{year.name} · {ws.profile.termName}</p>
               <p className="font-serif text-2xl">{fmt(mean)}</p>
             </div>

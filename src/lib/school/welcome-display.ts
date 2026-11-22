@@ -14,6 +14,7 @@ export type WelcomeDisplayOptions = {
   titleShadow: boolean;
   showRibbons: boolean;
   animatedWordingPanels: boolean;
+  dashboardPanelColorsEnabled: boolean;
 };
 
 export const DEFAULT_WELCOME_DISPLAY: WelcomeDisplayOptions = {
@@ -32,6 +33,7 @@ export const DEFAULT_WELCOME_DISPLAY: WelcomeDisplayOptions = {
   titleShadow: true,
   showRibbons: true,
   animatedWordingPanels: true,
+  dashboardPanelColorsEnabled: true,
 };
 
 const HEX_COLOR = /^#[0-9a-f]{6}$/i;
@@ -66,6 +68,7 @@ export function normalizeWelcomeDisplay(value: unknown): WelcomeDisplayOptions {
     titleShadow: typeof source.titleShadow === "boolean" ? source.titleShadow : DEFAULT_WELCOME_DISPLAY.titleShadow,
     showRibbons: typeof source.showRibbons === "boolean" ? source.showRibbons : DEFAULT_WELCOME_DISPLAY.showRibbons,
     animatedWordingPanels: typeof source.animatedWordingPanels === "boolean" ? source.animatedWordingPanels : DEFAULT_WELCOME_DISPLAY.animatedWordingPanels,
+    dashboardPanelColorsEnabled: typeof source.dashboardPanelColorsEnabled === "boolean" ? source.dashboardPanelColorsEnabled : DEFAULT_WELCOME_DISPLAY.dashboardPanelColorsEnabled,
   };
 }
 

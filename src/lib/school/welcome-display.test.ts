@@ -2,12 +2,14 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { DEFAULT_WELCOME_DISPLAY, hexToRgba, normalizeWelcomeDisplay } from "./welcome-display.ts";
 
-test("the welcome designer exposes exactly 15 shared display and colour controls", () => {
-  assert.equal(Object.keys(DEFAULT_WELCOME_DISPLAY).length, 15);
+test("the welcome designer exposes exactly 16 shared display and colour controls", () => {
+  assert.equal(Object.keys(DEFAULT_WELCOME_DISPLAY).length, 16);
   assert.equal(DEFAULT_WELCOME_DISPLAY.contentAlignment, "left");
   assert.equal(DEFAULT_WELCOME_DISPLAY.showRibbons, true);
   assert.equal(DEFAULT_WELCOME_DISPLAY.animatedWordingPanels, true);
-  assert.equal(normalizeWelcomeDisplay({}).animatedWordingPanels, true, "legacy saved display settings keep panels enabled");
+  assert.equal(DEFAULT_WELCOME_DISPLAY.dashboardPanelColorsEnabled, true);
+  assert.equal(normalizeWelcomeDisplay({}).animatedWordingPanels, true, "legacy saved display settings keep wording panels enabled");
+  assert.equal(normalizeWelcomeDisplay({}).dashboardPanelColorsEnabled, true, "legacy saved display settings keep dashboard panel colors enabled");
 });
 
 test("welcome display values are validated and bounded before saving or rendering", () => {
@@ -22,6 +24,7 @@ test("welcome display values are validated and bounded before saving or renderin
     titleShadow: false,
     showRibbons: false,
     animatedWordingPanels: false,
+    dashboardPanelColorsEnabled: false,
   });
   assert.equal(normalized.titleColor, DEFAULT_WELCOME_DISPLAY.titleColor);
   assert.equal(normalized.subtitleColor, "#123abc");
@@ -33,6 +36,7 @@ test("welcome display values are validated and bounded before saving or renderin
   assert.equal(normalized.titleShadow, false);
   assert.equal(normalized.showRibbons, false);
   assert.equal(normalized.animatedWordingPanels, false);
+  assert.equal(normalized.dashboardPanelColorsEnabled, false);
 });
 
 test("hex opacity helper clamps opacity and rejects unsafe colours", () => {

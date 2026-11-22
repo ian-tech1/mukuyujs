@@ -19,6 +19,7 @@ import { StaffMusicDock } from "@/components/school/music-dock";
 import { getWorkspace, getWelcomePage, logout } from "@/lib/school/api";
 import { visibleViews, type Workspace } from "@/lib/school/model";
 import { parseMusicSetting, type MusicOptions } from "@/lib/school/music";
+import { normalizeWelcomeDisplay } from "@/lib/school/welcome-display";
 import { applyDisplayPreferences, DEFAULT_DISPLAY_PREFERENCES, DISPLAY_PALETTES, readDisplayPreferences, saveDisplayPreferences, type LocalDisplayPreferences } from "@/lib/school/display";
 
 const LABELS: Record<string, string> = {
@@ -53,6 +54,7 @@ function PortalPage() {
   const [open, setOpen] = useState(false);
   const [staffMusic, setStaffMusic] = useState<{ enabled: boolean; url: string; options?: Partial<MusicOptions> }>({ enabled: false, url: "" });
   const [display, setDisplay] = useState<LocalDisplayPreferences>(DEFAULT_DISPLAY_PREFERENCES);
+  const [dashboardPanelColorsEnabled, setDashboardPanelColorsEnabled] = useState(true);
   const [displaySettingsOpen, setDisplaySettingsOpen] = useState(false);
   const displayControlsRef = useRef<HTMLDivElement>(null);
 
@@ -65,6 +67,7 @@ function PortalPage() {
     refresh().catch(() => navigate({ to: "/", search: { c: undefined } }));
     getWelcomePage().then((settings) => {
       const music = parseMusicSetting(settings.musicUrl || "");
+      setDashboardPanelColorsEnabled(normalizeWelcomeDisplay(settings.display).dashboardPanelColorsEnabled);
       setStaffMusic({ enabled: Boolean(settings.musicEnabled), url: settings.musicUrl || "", options: music.options });
       document.documentElement.dataset.schoolAppearance = JSON.stringify(settings.appearance);
       applyDisplayPreferences(readDisplayPreferences());
@@ -240,11 +243,11 @@ function PortalPage() {
                 <button type="button" className="rounded-xl border border-line px-3 py-2 text-left text-xs font-semibold" aria-pressed={display.density === "compact"} onClick={() => updateDisplay({ density: display.density === "compact" ? "comfortable" : "compact" })}>{display.density === "compact" ? "Compact spacing ✓" : "Comfortable spacing"}</button>
                 <button type="button" className="rounded-xl border border-line px-3 py-2 text-left text-xs font-semibold" aria-pressed={display.accentMotion} onClick={() => updateDisplay({ accentMotion: !display.accentMotion })}>{display.accentMotion ? "Moving colours: on" : "Moving colours: off"}</button><button type="button" className="rounded-xl border border-line px-3 py-2 text-left text-xs font-semibold" aria-pressed={display.motion} onClick={() => updateDisplay({ motion: !display.motion })}>{display.motion ? "Colour motion: on" : "Colour motion: off"}</button>
               </div>
-              <div className="mt-4 border-t border-line pt-3"><h3 className="text-xs font-bold uppercase tracking-wide text-navy">Welcome page design</h3><p className="mt-1 text-xs text-muted">The 14 shared welcome-page display and colour controls are saved centrally by the Super Admin.</p>{ws.me.role === "super_admin" ? <button type="button" className="mt-2 w-full rounded-xl border border-line px-3 py-2 text-xs font-semibold text-navy" onClick={() => { setDisplaySettingsOpen(false); navigate({ to: "/portal", search: { view: "settings" } }); }}>Open welcome screen designer</button> : <p className="mt-2 text-xs text-muted">Your colour, font, size and spacing choices above remain private to this device.</p>}</div><button type="button" className="mt-3 w-full rounded-xl border border-line px-3 py-2 text-xs font-semibold text-navy" onClick={() => updateDisplay(DEFAULT_DISPLAY_PREFERENCES)}>Reset display and follow school defaults</button>
+              <div className="mt-4 border-t border-line pt-3"><h3 className="text-xs font-bold uppercase tracking-wide text-navy">Welcome page design</h3><p className="mt-1 text-xs text-muted">The 16 shared welcome and dashboard display controls are saved centrally by the Super Admin.</p>{ws.me.role === "super_admin" ? <button type="button" className="mt-2 w-full rounded-xl border border-line px-3 py-2 text-xs font-semibold text-navy" onClick={() => { setDisplaySettingsOpen(false); navigate({ to: "/portal", search: { view: "settings" } }); }}>Open welcome screen designer</button> : <p className="mt-2 text-xs text-muted">Your colour, font, size and spacing choices above remain private to this device.</p>}</div><button type="button" className="mt-3 w-full rounded-xl border border-line px-3 py-2 text-xs font-semibold text-navy" onClick={() => updateDisplay(DEFAULT_DISPLAY_PREFERENCES)}>Reset display and follow school defaults</button>
             </section> : null}
           </div>
         </header>
-        <div className="portal-page-content w-full min-w-0 max-w-none px-4 py-6 lg:px-8">
+        <div className={`portal-page-content w-full min-w-0 max-w-none px-4 py-6 lg:px-8 ${dashboardPanelColorsEnabled && display.motion && display.accentMotion ? "portal-panel-color-motion" : ""}`}>
           {error ? <p className="mb-4 rounded-md border border-bad/30 bg-card px-3 py-2 text-sm text-bad">{error}</p> : null}
           {notice ? <p className="mb-4 rounded-md border border-good/30 bg-card px-3 py-2 text-sm text-good">{notice}</p> : null}
           {current === "home" ? <DashboardView {...gate} /> : null}

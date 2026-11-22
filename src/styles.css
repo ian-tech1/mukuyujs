@@ -305,6 +305,31 @@ html[data-portal-motion="reduced"] .welcome-word-panel, html[data-portal-motion=
 html[data-portal-motion="reduced"] .welcome-features-button, html[data-portal-motion="reduced"] .welcome-features-overlay, html[data-portal-motion="reduced"] .welcome-features-dialog, html[data-portal-motion="reduced"] .welcome-feature-card, html[data-portal-motion="reduced"] .portal-page-content :is(article, section, form)[class~="bg-card"] { animation: none !important; }
 html[data-portal-motion="reduced"] .portal-page-content :is(article, section)[class~="bg-card"][class~="shadow-card"]:hover { transform: none !important; }
 html[data-portal-accent-motion="off"] .portal-page-content :is(article, section, form)[class~="bg-card"] { animation: none !important; }
+/* Dashboard card surfaces softly cycle through near-white colours; tables and form controls are excluded. */
+.portal-page-content.portal-panel-color-motion :is(article, section, form)[class~="bg-card"],
+.portal-page-content.portal-panel-color-motion div[class~="bg-card"][class~="shadow-card"],
+.portal-page-content.portal-panel-color-motion .dashboard-panel-color-cycle,
+.portal-page-content.portal-panel-color-motion .marks-import-panel { background-color:var(--color-card); animation: mukuyu-dashboard-panel-colors 5.4s ease-in-out infinite; }
+.portal-page-content.portal-panel-color-motion :is(article, section, form)[class~="bg-card"]:nth-of-type(3n + 2),
+.portal-page-content.portal-panel-color-motion div[class~="bg-card"][class~="shadow-card"]:nth-of-type(3n + 2),
+.portal-page-content.portal-panel-color-motion .dashboard-panel-color-cycle:nth-of-type(3n + 2),
+.portal-page-content.portal-panel-color-motion .marks-import-panel:nth-of-type(3n + 2) { animation-delay: -1.8s; }
+.portal-page-content.portal-panel-color-motion :is(article, section, form)[class~="bg-card"]:nth-of-type(3n),
+.portal-page-content.portal-panel-color-motion div[class~="bg-card"][class~="shadow-card"]:nth-of-type(3n),
+.portal-page-content.portal-panel-color-motion .dashboard-panel-color-cycle:nth-of-type(3n),
+.portal-page-content.portal-panel-color-motion .marks-import-panel:nth-of-type(3n) { animation-delay: -3.6s; }
+@keyframes mukuyu-dashboard-panel-colors { 0%,100% { background-color:#fffefa; } 33% { background-color:#f1f9ff; } 66% { background-color:#fff7e9; } }
+@media (prefers-reduced-motion: reduce) {
+  .portal-page-content.portal-panel-color-motion :is(article, section, form)[class~="bg-card"], .portal-page-content.portal-panel-color-motion div[class~="bg-card"][class~="shadow-card"], .portal-page-content.portal-panel-color-motion .dashboard-panel-color-cycle, .portal-page-content.portal-panel-color-motion .marks-import-panel { animation:none !important; }
+}
+html[data-portal-motion="reduced"] .portal-page-content.portal-panel-color-motion :is(article, section, form)[class~="bg-card"],
+html[data-portal-accent-motion="off"] .portal-page-content.portal-panel-color-motion :is(article, section, form)[class~="bg-card"],
+html[data-portal-motion="reduced"] .portal-page-content.portal-panel-color-motion div[class~="bg-card"][class~="shadow-card"],
+html[data-portal-accent-motion="off"] .portal-page-content.portal-panel-color-motion div[class~="bg-card"][class~="shadow-card"],
+html[data-portal-motion="reduced"] .portal-page-content.portal-panel-color-motion .dashboard-panel-color-cycle,
+html[data-portal-accent-motion="off"] .portal-page-content.portal-panel-color-motion .dashboard-panel-color-cycle,
+html[data-portal-motion="reduced"] .portal-page-content.portal-panel-color-motion .marks-import-panel,
+html[data-portal-accent-motion="off"] .portal-page-content.portal-panel-color-motion .marks-import-panel { animation:none !important; }
 
 /* School-branded rainbow loading state: a slow spectrum, never a flashing spinner. */
 .portal-loading { position: relative; isolation: isolate; overflow: hidden; background: linear-gradient(125deg, #f4f0e6, #edf7fb, #fff3df, #f3eafb, #f4f0e6); background-size: 320% 320%; animation: portal-loading-spectrum 18s ease-in-out infinite; }
