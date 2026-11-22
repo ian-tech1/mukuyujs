@@ -128,13 +128,13 @@ function PortalPage() {
       <main className="portal-loading grid min-h-screen place-items-center bg-paper px-6">
         <div className="portal-loading-stars" aria-hidden="true" />
         <div className="portal-loading-card text-center" role="status" aria-live="polite">
-          <p className="portal-loading-kicker">MUKUYU JUNIOR SCHOOL · LEARNING PORTAL</p>
+          <p className="portal-loading-kicker portal-loading-box portal-loading-box-kicker">MUKUYU JUNIOR SCHOOL · LEARNING PORTAL</p>
           <span className="portal-loading-orbit" aria-hidden="true"><SchoolLogo className="size-20" /></span>
-          <h1 className="portal-loading-title mt-5">Mukuyu Junior School</h1>
-          <p className="portal-loading-tagline mt-2">Learn with purpose. Grow with confidence.</p>
-          <p className="portal-loading-message mt-4 text-sm">Opening your school office and getting everything ready…</p>
+          <h1 className="portal-loading-title portal-loading-box portal-loading-box-title mt-5">Mukuyu Junior School</h1>
+          <p className="portal-loading-tagline portal-loading-box portal-loading-box-tagline mt-2">Learn with purpose. Grow with confidence.</p>
+          <p className="portal-loading-message portal-loading-box portal-loading-box-message mt-4 text-sm">Opening your school office and getting everything ready…</p>
           <div className="portal-loading-track mt-6" aria-hidden="true"><span /></div>
-          <div className="portal-loading-footnote mt-3"><span>Preparing your learning space</span><span className="portal-loading-live"><i aria-hidden="true" /> IN MOTION</span></div>
+          <div className="portal-loading-footnote portal-loading-box portal-loading-box-footnote mt-3"><span>Preparing your learning space</span><span className="portal-loading-live"><i aria-hidden="true" /> IN MOTION</span></div>
         </div>
       </main>
     );
