@@ -3201,11 +3201,23 @@ export const importMarksExcel = createServerFn({ method: "POST" })
     const activeLearners = await sql<{ id: string; full_name: string; admission_number: string | null; grade_id: string; stream_id: string }>`select id, full_name, admission_number, grade_id, stream_id from learners where status = 'active'`;
     const normalizeName = (value: string) => value.trim().toUpperCase().replace(/\s+/g, " ");
     const byAdmission = new Map(activeLearners.flatMap((learner) => learner.admission_number?.trim() ? [[learner.admission_number.trim().toUpperCase(), learner] as const] : []));
+    const byId = new Map(activeLearners.map((learner) => [learner.id, learner] as const));
+    const namedLearners = activeLearners.map((learner) => ({ id: learner.id, fullName: learner.full_name }));
     const byName = new Map<string, typeof activeLearners>();
     activeLearners.forEach((learner) => {
       const key = normalizeName(learner.full_name);
       byName.set(key, [...(byName.get(key) ?? []), learner]);
     });
+    const fuzzyNameCache = new Map<string, string | null>();
+    const findFuzzyLearner = (name: string) => {
+      const key = normalizeName(name);
+      if (!fuzzyNameCache.has(key)) {
+        const matched = matchLearnerName(name, namedLearners, { minimumSimilarity: 0.65, ambiguityMargin: 0.08 });
+        fuzzyNameCache.set(key, matched?.id ?? null);
+      }
+      const learnerId = fuzzyNameCache.get(key);
+      return learnerId ? byId.get(learnerId) : undefined;
+    };
     let saved = 0;
     const errors: string[] = [];
     const seen = new Set<string>();
@@ -3218,16 +3230,17 @@ export const importMarksExcel = createServerFn({ method: "POST" })
       const score = Number(row.score);
       if (!Number.isFinite(score) || score < 0 || score > 100) { errors.push(`Row ${line}: score must be between 0 and 100.`); continue; }
       const nameMatches = fullName ? (byName.get(fullName) ?? []) : [];
-      const found = admission ? byAdmission.get(admission) : nameMatches.length === 1 ? nameMatches[0] : undefined;
+      const found = admission ? byAdmission.get(admission) : nameMatches.length === 1 ? nameMatches[0] : nameMatches.length > 1 ? undefined : fullName ? findFuzzyLearner(row.fullName ?? "") : undefined;
       if (!found) {
         if (nameMatches.length > 1) errors.push(`Row ${line}: learner name '${row.fullName}' matches more than one active learner; use an admission number.`);
-        else errors.push(`Row ${line}: ${admission ? `admission number ${admission}` : `learner name '${row.fullName}'`} was not found.`);
+        else if (admission) errors.push(`Row ${line}: admission number ${admission} was not found.`);
+        else errors.push(`Row ${line}: learner name '${row.fullName}' did not uniquely match an active learner at the 65% spelling threshold. Check the spelling or provide an admission number.`);
         continue;
       }
       const at = placedAtYear.get(found.id);
       const learner = at ? { ...found, grade_id: at.gradeId, stream_id: at.streamId } : found;
-      if (fullName && fullName !== normalizeName(learner.full_name)) {
-        errors.push(`Row ${line}: name does not match admission ${admission}; verify the learner.`); continue;
+      if (admission && fullName && fullName !== normalizeName(learner.full_name) && !matchLearnerName(row.fullName ?? "", [{ id: learner.id, fullName: learner.full_name }], { minimumSimilarity: 0.65 })) {
+        errors.push(`Row ${line}: learner name does not match admission ${admission} by at least 65%; verify both fields.`); continue;
       }
       const subjectName = row.subject.trim();
       const matchedSubject = resolveSubjectHeader(subjectName, availableSubjects.map((subject) => ({ id: subject.id, name: subject.name, shortName: subject.short_name })));

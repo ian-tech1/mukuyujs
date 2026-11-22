@@ -1,4 +1,5 @@
 export type NamedLearner = { id: string; fullName: string };
+export type LearnerNameMatchOptions = { minimumSimilarity?: number; ambiguityMargin?: number };
 
 export function normalizeParentEmail(value: string) {
   return value.trim().toLowerCase();
@@ -40,9 +41,12 @@ function damerauLevenshtein(left: string, right: string) {
  * Match one learner conservatively. Exact names/tokens win first; fuzzy input
  * tokens are compared with distinct roster tokens and weighted by entered
  * letters, so an omitted middle name does not count as a spelling error.
- * Fuzzy matches require 60% similarity, and equally close candidates are not auto-linked.
+ * Fuzzy matches use the configured similarity threshold (60% by default), and
+ * close candidates inside the configured margin are not auto-linked.
  */
-export function matchLearnerName(name: string, learners: NamedLearner[]) {
+export function matchLearnerName(name: string, learners: NamedLearner[], options: LearnerNameMatchOptions = {}) {
+  const minimumSimilarity = Math.max(0, Math.min(1, options.minimumSimilarity ?? 0.6));
+  const ambiguityMargin = Math.max(0, Math.min(1, options.ambiguityMargin ?? 0));
   const normalized = normalizeLearnerName(name);
   const tokens = normalized.split(" ").filter(Boolean);
   const compact = tokens.join("");
@@ -73,9 +77,9 @@ export function matchLearnerName(name: string, learners: NamedLearner[]) {
       return candidates[0] ? { learner: entry.learner, ...candidates[0] } : null;
     }).filter((entry): entry is NonNullable<typeof entry> => Boolean(entry)).sort((a, b) => b.score - a.score);
     const best = tokenScores[0];
-    if (!best || best.score < 0.6) return null;
+    if (!best || best.score < minimumSimilarity) return null;
     const second = tokenScores[1];
-    if (second && second.score === best.score) return null;
+    if (second && best.score - second.score <= ambiguityMargin) return null;
     return best.learner;
   }
 
@@ -111,9 +115,9 @@ export function matchLearnerName(name: string, learners: NamedLearner[]) {
     return { learner: entry.learner, score };
   }).sort((a, b) => b.score - a.score);
   const best = scored[0];
-  if (!best || best.score < 0.6) return null;
+  if (!best || best.score < minimumSimilarity) return null;
   const second = scored[1];
-  if (second && second.score === best.score) return null;
+  if (second && best.score - second.score <= ambiguityMargin) return null;
   return best.learner;
 }
 

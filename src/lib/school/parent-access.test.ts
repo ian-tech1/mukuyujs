@@ -48,6 +48,20 @@ test("matches a unique first or last name, including a one-token entry", () => {
   assert.equal(matchLearnerName("B", [{ id: "bo", fullName: "Bo" }]), null);
 });
 
+test("supports a 65 percent marks-import threshold and rejects scores below it", () => {
+  const roster = [{ id: "long", fullName: "abcdefghijklmnopqrst" }];
+  const marksImport = { minimumSimilarity: 0.65, ambiguityMargin: 0.08 };
+  assert.equal(matchLearnerName("abcdefghijklm", roster, marksImport)?.id, "long");
+  assert.equal(matchLearnerName("abcdefghijkl", roster, marksImport), null);
+});
+
+test("rejects similarly close fuzzy learner candidates inside the configured safety margin", () => {
+  assert.equal(matchLearnerName("Amin Njer", [
+    { id: "a", fullName: "Amina Njeri" },
+    { id: "b", fullName: "Amina Njeru" },
+  ], { minimumSimilarity: 0.65, ambiguityMargin: 0.08 }), null);
+});
+
 test("matches reordered names and a unique fuzzy name at the 60 percent threshold", () => {
   assert.equal(matchLearnerName("Njeri Amina", learners)?.id, "a");
   assert.equal(matchLearnerName("Ami", [{ id: "a", fullName: "Amina Njeri" }])?.id, "a");
