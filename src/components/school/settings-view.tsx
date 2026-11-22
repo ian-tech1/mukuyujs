@@ -5,7 +5,7 @@ import type { AppearancePalette, Band, MarkControl, Profile } from "@/lib/school
 import { ACCESS_AREAS, ACCESS_GROUPS, type AccessArea, type AccessGroup, type RoleAccessPolicy } from "@/lib/school/role-access";
 import { DEFAULT_APPEARANCE, can, isAdmin } from "@/lib/school/model";
 import { DEFAULT_WELCOME_DISPLAY, hexToRgba, normalizeWelcomeDisplay, type WelcomeDisplayOptions } from "@/lib/school/welcome-display";
-import { DISPLAY_PALETTES } from "@/lib/school/display";
+import { applyPortalBackdropColors, DISPLAY_PALETTES } from "@/lib/school/display";
 import { addExam, addSubject, deleteSubject, addYear, changePassword, deleteStream, deleteExam, deleteYear, exportSchoolBackup, getWelcomePage, listBackupSnapshots, restoreSchoolBackup, saveAppearance, saveBands, saveExams, saveProfile, saveReportOptions, saveStream, saveSubjects, saveTermAssessments, saveTermDate, saveWelcomePage, setActivePeriod, getMarkAuditHistory, saveMarkControl, saveRoleAccessPolicy, getParentLoginAudit } from "@/lib/school/api";
 import { DEFAULT_MUSIC_OPTIONS, formatPlaylistText, normalizeMusicOptions, parseMusicSetting, parsePlaylistText, type MusicOptions } from "@/lib/school/music";
 import { MusicStudioCard } from "@/components/school/music-studio";
@@ -264,31 +264,16 @@ function WelcomeDisplayControls({ value, onChange }: { value: WelcomeDisplayOpti
 }
 
 const APPEARANCE_LABELS: Array<{ key: keyof AppearancePalette; label: string; description: string }> = [
-  { key: "navy", label: "Main brand / headings", description: "Navigation, headings and primary actions" },
-  { key: "navy2", label: "Active navigation", description: "Selected sidebar item and secondary navy surfaces" },
-  { key: "brass", label: "Secondary / highlight", description: "Highlights and secondary accents" },
-  { key: "brassSoft", label: "Soft highlight", description: "Light accent text and badges" },
-  { key: "paper", label: "Page background", description: "Main page background" },
-  { key: "card", label: "Cards and panels", description: "Content panels and cards" },
-  { key: "ink", label: "Main text", description: "Primary text colour" },
-  { key: "muted", label: "Muted text", description: "Supporting labels and hints" },
-  { key: "line", label: "Borders", description: "Panel and table borders" },
-  { key: "good", label: "Success colour", description: "Positive status indicators" },
-  { key: "warn", label: "Warning colour", description: "Warnings and attention indicators" },
-  { key: "bad", label: "Error colour", description: "Errors and critical indicators" },
-  { key: "info", label: "Information colour", description: "Information indicators and progress bars" },
+  { key: "navy", label: "Backdrop glow 1", description: "Decorative canvas only" },
+  { key: "info", label: "Backdrop glow 2", description: "Decorative canvas only" },
+  { key: "brass", label: "Backdrop glow 3", description: "Decorative canvas only" },
+  { key: "good", label: "Backdrop glow 4", description: "Decorative canvas only" },
 ];
 
 function applyAppearance(colors: AppearancePalette) {
   if (typeof document === "undefined") return;
-  const root = document.documentElement;
-  const cssNames: Record<keyof AppearancePalette, string> = {
-    navy: "--color-navy", navy2: "--color-navy-2", brass: "--color-brass", brassSoft: "--color-brass-soft", paper: "--color-paper", card: "--color-card",
-    ink: "--color-ink", muted: "--color-muted", line: "--color-line", good: "--color-good",
-    warn: "--color-warn", bad: "--color-bad", info: "--color-info",
-  };
-  (Object.keys(cssNames) as Array<keyof AppearancePalette>).forEach((key) => root.style.setProperty(cssNames[key], colors[key]));
-  root.dataset.schoolAppearance = JSON.stringify(colors);
+  applyPortalBackdropColors(colors);
+  document.documentElement.dataset.schoolAppearance = JSON.stringify(colors);
 }
 
 function AppearanceColorsCard({ flash }: Pick<Gate, "flash">) {
@@ -316,7 +301,7 @@ function AppearanceColorsCard({ flash }: Pick<Gate, "flash">) {
   async function saveColors() {
     try {
       await saveAppearance({ data: { appearance: colors } });
-      flash("Display colours saved centrally for the whole school.");
+      flash("Backdrop colours saved for the whole school. Cards, tables, controls and report cards keep their readable colours.");
     } catch (error) {
       flash(errText(error), true);
     }
@@ -327,7 +312,7 @@ function AppearanceColorsCard({ flash }: Pick<Gate, "flash">) {
     applyAppearance(preset);
     try {
       await saveAppearance({ data: { appearance: preset } });
-      flash("Display colour preset applied and saved for the whole school.");
+      flash("Backdrop colour preset applied and saved. Content surfaces and text colours remain unchanged.");
     } catch (error) {
       flash(errText(error), true);
     }
@@ -335,8 +320,8 @@ function AppearanceColorsCard({ flash }: Pick<Gate, "flash">) {
 
   return <section className="rounded-md border border-line bg-card p-4 space-y-4">
     <div>
-      <h2 className="font-serif text-xl text-navy">Display colours and appearance</h2>
-      <p className="mt-1 text-sm text-muted">Super admin only. Choose a preset or change each colour with the colour picker. Changes apply immediately and are saved centrally for the welcome page, portal, and every staff device.</p>
+      <h2 className="font-serif text-xl text-navy">Portal backdrop colours</h2>
+      <p className="mt-1 text-sm text-muted">Super admin only. Choose a preset or adjust the decorative backdrop glows. These colours appear behind the large portal page area only; cards, tables, controls, text and report cards keep their existing high-contrast surfaces and colours.</p>
     </div>
     <div className="flex flex-wrap gap-2">{DISPLAY_PALETTES.map((preset) => <button key={preset.id} type="button" className={btnGhost} onClick={() => choosePreset(preset.colors)}>{preset.name}</button>)}</div>
     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{APPEARANCE_LABELS.map(({ key, label, description }) => <label key={key} className="flex items-center gap-3 rounded-md border border-line p-3 text-sm">
@@ -345,10 +330,9 @@ function AppearanceColorsCard({ flash }: Pick<Gate, "flash">) {
     </label>)}</div>
     <button className={btnClass} type="button" onClick={saveColors} disabled={!loaded}>Save colour changes</button>
     <div className="flex flex-wrap items-center gap-3 rounded-md border border-line p-3">
-      <span className="text-sm font-semibold">Live preview</span>
-      <span className="rounded px-3 py-2 text-sm font-semibold text-white" style={{ backgroundColor: colors.navy }}>Main colour</span>
-      <span className="rounded px-3 py-2 text-sm font-semibold" style={{ backgroundColor: colors.brass, color: colors.card }}>Highlight</span>
-      <span className="rounded border px-3 py-2 text-sm" style={{ backgroundColor: colors.card, borderColor: colors.line, color: colors.ink }}>Card and text</span>
+      <span className="text-sm font-semibold">Backdrop preview</span>
+      <span className="h-9 w-36 rounded-full" aria-hidden="true" style={{ background: `linear-gradient(110deg, ${colors.navy}, ${colors.info}, ${colors.brass}, ${colors.good})` }} />
+      <span className="rounded border border-line bg-card px-3 py-2 text-sm text-ink">Text and content surfaces stay unchanged</span>
     </div>
     <button className={btnGhost} type="button" onClick={() => choosePreset(DEFAULT_APPEARANCE)}>Reset to Mukuyu classic</button>
   </section>;

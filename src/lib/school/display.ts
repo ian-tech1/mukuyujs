@@ -28,6 +28,16 @@ export const DISPLAY_PALETTES: Array<{ id: DisplayThemeId; name: string; colors:
   { id: "burgundy", name: "Burgundy", colors: { ...DEFAULT_APPEARANCE, navy: "#67243b", brass: "#c28a45", paper: "#f8eff2", card: "#ffffff", line: "#ead5dd", info: "#7252a3" } },
 ];
 
+export function applyPortalBackdropColors(colors: Partial<AppearancePalette> = DEFAULT_APPEARANCE) {
+  if (typeof document === "undefined") return;
+  const root = document.documentElement;
+  ["--color-navy", "--color-navy-2", "--color-brass", "--color-brass-soft", "--color-paper", "--color-card", "--color-ink", "--color-muted", "--color-line", "--color-good", "--color-warn", "--color-bad", "--color-info"].forEach((name) => root.style.removeProperty(name));
+  root.style.setProperty("--portal-user-glow-a", colors.navy || DEFAULT_APPEARANCE.navy);
+  root.style.setProperty("--portal-user-glow-b", colors.info || DEFAULT_APPEARANCE.info);
+  root.style.setProperty("--portal-user-glow-c", colors.brass || DEFAULT_APPEARANCE.brass);
+  root.style.setProperty("--portal-user-glow-d", colors.good || DEFAULT_APPEARANCE.good);
+}
+
 export function normalizeDisplayPreferences(value: unknown): LocalDisplayPreferences {
   const source = value && typeof value === "object" ? value as Record<string, unknown> : {};
   const theme = source.theme === null || DISPLAY_PALETTES.some((palette) => palette.id === source.theme)
@@ -77,12 +87,7 @@ export function applyDisplayPreferences(value: LocalDisplayPreferences) {
       return null;
     }
   })();
-  const cssNames: Record<keyof AppearancePalette, string> = {
-    navy: "--color-navy", navy2: "--color-navy-2", brass: "--color-brass", brassSoft: "--color-brass-soft",
-    paper: "--color-paper", card: "--color-card", ink: "--color-ink", muted: "--color-muted", line: "--color-line",
-    good: "--color-good", warn: "--color-warn", bad: "--color-bad", info: "--color-info",
-  };
-  if (colors) (Object.keys(cssNames) as Array<keyof AppearancePalette>).forEach((key) => root.style.setProperty(cssNames[key], colors[key]));
+  applyPortalBackdropColors(colors ?? DEFAULT_APPEARANCE);
   root.dataset.portalDensity = preferences.density;
   root.dataset.portalMotion = preferences.motion ? "full" : "reduced";
   root.dataset.portalAccentMotion = preferences.accentMotion ? "on" : "off";
