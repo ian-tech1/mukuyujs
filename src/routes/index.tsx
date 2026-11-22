@@ -252,27 +252,27 @@ function LoginPage() {
         <div className="relative z-10 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
           <SchoolLogo src={welcome?.logoData || undefined} className="size-16" />
-          <p className="welcome-eyebrow text-xs tracking-[0.22em]" style={{ color: welcomeDisplay.eyebrowColor }}>JUNIOR SECONDARY</p>
+          <p className="welcome-eyebrow welcome-word-panel welcome-word-panel-eyebrow text-xs tracking-[0.22em]" style={{ color: welcomeDisplay.eyebrowColor }}>JUNIOR SECONDARY</p>
           </div>
           <button type="button" className="welcome-display-switch" style={{ borderColor: welcomeDisplay.accentAltColor }} onClick={cycleWelcomeColour} title="Tap once to change welcome colours on this device" aria-label="Change welcome page colours">
             <span className="welcome-display-dot" style={{ background: `linear-gradient(135deg, ${welcomeDisplay.accentColor}, ${welcomeDisplay.accentAltColor})` }} aria-hidden="true" /> Change colours
           </button>
         </div>
         <div className="welcome-content relative z-10 py-12">
-          <h1 className="welcome-title mt-3 font-serif font-black leading-tight" style={{ letterSpacing: `${welcomeDisplay.titleLetterSpacing}em`, textShadow: welcomeDisplay.titleShadow ? "0 3px 22px rgba(4,16,35,.42)" : "none", maxWidth: "var(--welcome-content-width)" }} aria-label={welcome?.title || status?.schoolName || "Mukuyu Junior School"}>{Array.from(welcome?.title || status?.schoolName || "Mukuyu Junior School").map((letter, index) => <span key={`${letter}-${index}`} className={letter === " " ? "welcome-title-space" : "welcome-title-letter"} style={{ "--letter-index": index, color: welcomeDisplay.titleColor } as React.CSSProperties}>{letter === " " ? "\u00a0" : letter}</span>)}</h1>
-          <p className="welcome-subtitle mt-3 text-sm font-semibold" style={{ color: welcomeDisplay.subtitleColor }}>{welcome?.subtitle || "Exam portal for Grade 7, Grade 8 and Grade 9"}</p>
+          <h1 className="welcome-title welcome-word-panel welcome-word-panel-title mt-3 font-serif font-black leading-tight" style={{ letterSpacing: `${welcomeDisplay.titleLetterSpacing}em`, textShadow: welcomeDisplay.titleShadow ? "0 3px 22px rgba(4,16,35,.42)" : "none", maxWidth: "var(--welcome-content-width)" }} aria-label={welcome?.title || status?.schoolName || "Mukuyu Junior School"}>{Array.from(welcome?.title || status?.schoolName || "Mukuyu Junior School").map((letter, index) => <span key={`${letter}-${index}`} className={letter === " " ? "welcome-title-space" : "welcome-title-letter"} style={{ "--letter-index": index, color: welcomeDisplay.titleColor } as React.CSSProperties}>{letter === " " ? "\u00a0" : letter}</span>)}</h1>
+          <p className="welcome-subtitle welcome-word-panel welcome-word-panel-subtitle mt-3 text-sm font-semibold" style={{ color: welcomeDisplay.subtitleColor }}>{welcome?.subtitle || "Exam portal for Grade 7, Grade 8 and Grade 9"}</p>
           <div className="welcome-heading-rule" aria-hidden="true"><span style={{ backgroundColor: welcomeDisplay.accentColor }} /><span style={{ backgroundColor: welcomeDisplay.accentAltColor }} /><span style={{ backgroundColor: welcomeDisplay.titleColor }} /></div>
           <div className="mt-5 max-w-md space-y-3" aria-labelledby="welcome-overview-heading">
-            <h2 id="welcome-overview-heading" className="welcome-section-heading" style={{ color: welcomeDisplay.accentColor }}>A brighter school day starts here</h2>
+            <h2 id="welcome-overview-heading" className="welcome-section-heading welcome-word-panel welcome-word-panel-heading" style={{ color: welcomeDisplay.accentColor }}>A brighter school day starts here</h2>
             <div className="mt-4 max-w-md space-y-3">
             {(welcome?.announcement || "Marks, streams, merit lists and report cards stay in one office.").split(/\n\n+/).map((para, i) => (
-              <p key={i} className="welcome-copy text-base" style={{ fontFamily: welcome?.fontFamily || "inherit", maxWidth: "var(--welcome-content-width)" }}>{colouredLines(para, 40 + i * 17, welcome?.titleSize ? `${Math.max(14, Math.min(welcome.titleSize * 0.4, 22))}px` : undefined)}</p>
+              <p key={i} className="welcome-copy welcome-word-panel welcome-word-panel-copy text-base" style={{ fontFamily: welcome?.fontFamily || "inherit", maxWidth: "var(--welcome-content-width)" }}>{colouredLines(para, 40 + i * 17, welcome?.titleSize ? `${Math.max(14, Math.min(welcome.titleSize * 0.4, 22))}px` : undefined)}</p>
             ))}
             </div>
             <button type="button" className="welcome-features-button" onClick={() => setFeaturesOpen(true)} aria-haspopup="dialog">Explore portal features</button>
           </div>
           {welcome?.contact ? <p className="mt-4 whitespace-pre-wrap text-sm" style={{ color: welcomeDisplay.bodyTextColor }}>{welcome.contact}</p> : null}
-          {welcome?.highlights ? <div className="welcome-highlights mt-6 space-y-2" style={{ borderColor: hexToRgba(welcomeDisplay.accentAltColor, 0.45) }} aria-labelledby="welcome-highlights-heading"><h2 id="welcome-highlights-heading" className="welcome-section-heading" style={{ color: welcomeDisplay.accentAltColor }}>What your school office can see</h2>{welcome.highlights.split(/\n\n+/).map((para, i) => <p key={i} className="welcome-copy text-sm" style={{ fontFamily: welcome?.fontFamily || "inherit" }}>{colouredLines(para, 180 + i * 17)}</p>)}</div> : null}
+          {welcome?.highlights ? <div className="welcome-highlights welcome-word-panel welcome-word-panel-highlights mt-6 space-y-2" style={{ borderColor: hexToRgba(welcomeDisplay.accentAltColor, 0.45) }} aria-labelledby="welcome-highlights-heading"><h2 id="welcome-highlights-heading" className="welcome-section-heading welcome-word-panel welcome-word-panel-heading" style={{ color: welcomeDisplay.accentAltColor }}>What your school office can see</h2>{welcome.highlights.split(/\n\n+/).map((para, i) => <p key={i} className="welcome-copy welcome-word-panel welcome-word-panel-copy text-sm" style={{ fontFamily: welcome?.fontFamily || "inherit" }}>{colouredLines(para, 180 + i * 17)}</p>)}</div> : null}
           <p className="mt-8 font-serif text-lg" style={{ color: welcomeDisplay.accentColor }}>Motto · {status?.motto || "Hard Work Pays"}</p>
           {status?.poBox ? <p className="mt-2 text-sm text-paper/70">P.O. Box {status.poBox}</p> : null}
           {welcome?.footerText ? <p className="mt-3 whitespace-pre-wrap text-xs" style={{ color: welcomeDisplay.bodyTextColor }}>{welcome.footerText}</p> : null}
@@ -282,8 +282,10 @@ function LoginPage() {
       </section>
       <section className="welcome-login-panel flex flex-col items-center justify-center px-6 py-12" style={{ "--welcome-panel-tint": hexToRgba(welcomeDisplay.panelColor, Math.min(0.18, welcomeDisplay.panelOpacity * 0.12)), "--welcome-panel-accent": hexToRgba(welcomeDisplay.accentAltColor, 0.22) } as React.CSSProperties}>
         <form onSubmit={onSubmit} className="w-full max-w-sm">
-          <h2 className="font-serif text-3xl text-navy">Sign in</h2>
-          <p className="mt-2 text-sm text-muted">Use the email and password issued by the school. Super admins, admins, teachers and student accounts can sign in here.</p>
+          <div className="welcome-word-panel welcome-word-panel-signin-intro">
+            <h2 className="font-serif text-3xl text-navy">Sign in</h2>
+            <p className="mt-2 text-sm text-muted">Use the email and password issued by the school. Super admins, admins, teachers and student accounts can sign in here.</p>
+          </div>
           <label className="mt-8 block text-sm font-medium">
             Email
             <input className={`${inputClass} mt-1.5`} type="email" autoComplete="username" value={email} onChange={(event) => setEmail(event.target.value)} required />
@@ -306,16 +308,18 @@ function LoginPage() {
           ) : null}
         </form>
         <div className="mt-5 w-full max-w-sm border-t border-line pt-4">
-          <button type="button" className="w-full rounded-xl border border-line bg-card px-4 py-3 text-left text-sm font-semibold text-navy shadow-sm transition hover:border-info" aria-expanded={parentOpen} aria-controls="parent-sign-in-panel" onClick={() => { setParentOpen((value) => !value); setParentError(""); setParentNotice(""); }}>
+          <button type="button" className="welcome-parent-toggle w-full rounded-xl border border-line bg-card px-4 py-3 text-left text-sm font-semibold text-navy shadow-sm transition hover:border-info" aria-expanded={parentOpen} aria-controls="parent-sign-in-panel" onClick={() => { setParentOpen((value) => !value); setParentError(""); setParentNotice(""); }}>
             Sign in as PARENTS <span className="float-right" aria-hidden="true">{parentOpen ? "−" : "+"}</span>
           </button>
           {parentOpen ? <section id="parent-sign-in-panel" className="mt-3 rounded-2xl border border-line bg-card/90 p-4 shadow-card" aria-label="Parent sign in">
-            <h3 className="font-serif text-xl text-navy">{parentPasswordResetOpen ? "Reset parent password" : parentPasswordLoginOpen ? "Parent portal sign in" : "Create a parent account"}</h3>
-            <p className="mt-1 text-sm text-muted">{parentPasswordResetOpen
+            <div className="welcome-word-panel welcome-word-panel-parent-intro">
+              <h3 className="font-serif text-xl text-navy">{parentPasswordResetOpen ? "Reset parent password" : parentPasswordLoginOpen ? "Parent portal sign in" : "Create a parent account"}</h3>
+              <p className="mt-1 text-sm text-muted">{parentPasswordResetOpen
               ? "Enter the email address on your active parent account. We’ll send a short-lived code to verify access to that email before allowing a new password."
               : parentPasswordLoginOpen
                 ? "Sign in with the email address you verified and your parent portal password. If you just created your account, your verification code is your initial password; reset it any time to choose a longer one."
                 : "Enter your email, contact number, and Learner’s Name. A first name or surname can work if it uniquely identifies the learner. Spelling match is at least 60%; equally close candidates are not auto-linked. We’ll email a verification code to confirm your email and create your account."}</p>
+            </div>
             <form className="mt-4 space-y-3" onSubmit={parentPasswordResetOpen
               ? (parentResetCodeRequested ? onResetParentPassword : onRequestParentResetCode)
               : parentPasswordLoginOpen ? onParentPasswordLogin : (parentCodeRequested ? onVerifyParentCode : onRequestParentCode)}>
@@ -330,7 +334,7 @@ function LoginPage() {
                 <label className="block text-sm font-medium">Your full name<input className={`${inputClass} mt-1.5`} autoComplete="name" value={parentName} onChange={(event) => setParentName(event.target.value)} maxLength={120} required /></label>
                 <label className="block text-sm font-medium">Contact number <span className="font-normal text-muted">(required; entered but not verified)</span><input className={`${inputClass} mt-1.5`} type="tel" autoComplete="tel" value={parentPhone} onChange={(event) => setParentPhone(event.target.value)} maxLength={40} required /></label>
                 <label className="block text-sm font-medium">Learner’s Name<input className={`${inputClass} mt-1.5`} autoComplete="off" value={parentLearnerName} onChange={(event) => setParentLearnerName(event.target.value)} maxLength={160} required /></label>
-                <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-muted">Email verification confirms access to the email address, not guardianship by itself. The contact number is recorded as entered and is not phone-verified. For learner-record corrections or access concerns, contact the school office. To add another learner later, sign in again with the same parent email and that learner’s name.</p>
+                <p className="welcome-parent-safety-note rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-muted">Email verification confirms access to the email address, not guardianship by itself. The contact number is recorded as entered and is not phone-verified. For learner-record corrections or access concerns, contact the school office. To add another learner later, sign in again with the same parent email and that learner’s name.</p>
               </>}
               {parentError ? <p className="text-sm text-bad" role="alert">{parentError}</p> : null}
               {parentNotice ? <p className="text-sm text-good" role="status">{parentNotice}</p> : null}
@@ -356,7 +360,7 @@ function LoginPage() {
             <button type="button" className="welcome-features-close" autoFocus onClick={() => setFeaturesOpen(false)} aria-label="Close portal features">Close</button>
           </div>
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
-            {PUBLIC_PORTAL_FEATURES.map((feature, index) => <article key={feature.title} className="welcome-feature-card" style={{ "--feature-index": index } as React.CSSProperties}>
+            {PUBLIC_PORTAL_FEATURES.map((feature, index) => <article key={feature.title} className="welcome-feature-card welcome-word-panel welcome-word-panel-feature" style={{ "--feature-index": index } as React.CSSProperties}>
               <span className="welcome-feature-number" aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
               <h3 className="font-semibold text-navy">{feature.title}</h3><p className="mt-1 text-sm text-muted">{feature.description}</p>
             </article>)}
