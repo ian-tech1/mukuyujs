@@ -72,9 +72,9 @@ main:has(.report-print-area) > div > p:first-child { padding: .8rem 1rem; border
 /* 34 · Subheadings get improved rhythm and spacing. */
 .portal-page-content h2 { text-wrap: balance; line-height: 1.2; }
 /* 35 · Glass panels receive translucent, multi-hue surfaces. */
-.portal-page-content :is(article, section, form)[class~="bg-card"] { border-color: color-mix(in srgb, var(--color-line) 82%, rgba(29,78,137,.25)); background-color: rgba(255,252,247,.91); backdrop-filter: blur(8px); }
+.portal-page-content :is(article, section, form)[class~="bg-card"]:not(.report-print-area) { border-color: color-mix(in srgb, var(--color-line) 82%, rgba(29,78,137,.25)); background-color: rgba(255,252,247,.91); backdrop-filter: blur(8px); }
 /* 36 · Hoverable panels rise without affecting report print sheets. */
-@media (hover: hover) and (prefers-reduced-motion: no-preference) { html:not([data-portal-motion="reduced"]) .portal-page-content :is(article, section)[class~="bg-card"]:hover { box-shadow: 0 18px 44px rgba(14,42,74,.11), 0 2px 0 rgba(255,255,255,.75) inset; } }
+@media (hover: hover) and (prefers-reduced-motion: no-preference) { html:not([data-portal-motion="reduced"]) .portal-page-content :is(article, section)[class~="bg-card"]:not(.report-print-area):hover { box-shadow: 0 18px 44px rgba(14,42,74,.11), 0 2px 0 rgba(255,255,255,.75) inset; } }
 /* 37 · Primary actions receive a subtle color depth and shine. */
 .portal-page-content button.bg-navy { background-image: linear-gradient(115deg, #0e2a4a, #17466d 58%, #1a5362); box-shadow: 0 7px 18px rgba(14,42,74,.14), inset 0 1px rgba(255,255,255,.13); }
 /* 38 · Ghost actions lift a little on hover. */
@@ -170,7 +170,7 @@ html[data-portal-motion="reduced"] .welcome-title, html[data-portal-motion="redu
 /* 68 · Give panels refined edges and preserve their existing content layout. */
 .portal-page-content :is(article, section, form)[class~="bg-card"] { box-shadow: 0 1px 0 rgba(255,255,255,.8) inset, 0 10px 28px rgba(14,42,74,.045); }
 /* 69 · Hoverable cards lift with smoother shadow interpolation. */
-@media (hover: hover) and (prefers-reduced-motion: no-preference) { html:not([data-portal-motion="reduced"]) .portal-page-content :is(article, section)[class~="bg-card"] { transition: transform .32s cubic-bezier(.2,.75,.25,1), box-shadow .38s ease, border-color .32s ease; } }
+@media (hover: hover) and (prefers-reduced-motion: no-preference) { html:not([data-portal-motion="reduced"]) .portal-page-content :is(article, section)[class~="bg-card"]:not(.report-print-area) { transition: transform .32s cubic-bezier(.2,.75,.25,1), box-shadow .38s ease, border-color .32s ease; } }
 /* 70 · Focused cards have a keyboard-visible perimeter. */
 .portal-page-content :is(article, section, form)[class~="bg-card"]:focus-within { border-color: color-mix(in srgb, var(--color-info) 32%, var(--color-line)); }
 /* 71 · Standard action buttons gain a coordinated tactile press state. */
