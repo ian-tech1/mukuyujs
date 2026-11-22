@@ -2,10 +2,12 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { DEFAULT_WELCOME_DISPLAY, hexToRgba, normalizeWelcomeDisplay } from "./welcome-display.ts";
 
-test("the welcome designer exposes exactly 14 shared display and colour controls", () => {
-  assert.equal(Object.keys(DEFAULT_WELCOME_DISPLAY).length, 14);
+test("the welcome designer exposes exactly 15 shared display and colour controls", () => {
+  assert.equal(Object.keys(DEFAULT_WELCOME_DISPLAY).length, 15);
   assert.equal(DEFAULT_WELCOME_DISPLAY.contentAlignment, "left");
   assert.equal(DEFAULT_WELCOME_DISPLAY.showRibbons, true);
+  assert.equal(DEFAULT_WELCOME_DISPLAY.animatedWordingPanels, true);
+  assert.equal(normalizeWelcomeDisplay({}).animatedWordingPanels, true, "legacy saved display settings keep panels enabled");
 });
 
 test("welcome display values are validated and bounded before saving or rendering", () => {
@@ -19,6 +21,7 @@ test("welcome display values are validated and bounded before saving or renderin
     titleLetterSpacing: 2,
     titleShadow: false,
     showRibbons: false,
+    animatedWordingPanels: false,
   });
   assert.equal(normalized.titleColor, DEFAULT_WELCOME_DISPLAY.titleColor);
   assert.equal(normalized.subtitleColor, "#123abc");
@@ -29,6 +32,7 @@ test("welcome display values are validated and bounded before saving or renderin
   assert.equal(normalized.titleLetterSpacing, 0.12);
   assert.equal(normalized.titleShadow, false);
   assert.equal(normalized.showRibbons, false);
+  assert.equal(normalized.animatedWordingPanels, false);
 });
 
 test("hex opacity helper clamps opacity and rejects unsafe colours", () => {

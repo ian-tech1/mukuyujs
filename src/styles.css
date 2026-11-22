@@ -236,15 +236,29 @@ html[data-portal-motion="reduced"] .welcome-shell, html[data-portal-motion="redu
 .welcome-word-panel-subtitle { --welcome-word-a:#512942; --welcome-word-b:#71431d; --welcome-word-c:#3e315d; width:fit-content; color:#fff7e6 !important; }
 .welcome-word-panel-heading { --welcome-word-a:#123b59; --welcome-word-b:#224b65; --welcome-word-c:#3c315c; width:fit-content; color:#fff !important; border-color:rgba(139,213,255,.35); }
 .welcome-word-panel-copy { --welcome-word-a:#102e49; --welcome-word-b:#183f55; --welcome-word-c:#292b58; width:fit-content; max-width:min(100%,36rem); color:#fff !important; }
-.welcome-word-panel-copy > span { color:#f7f8ff !important; }
 .welcome-word-panel-copy:nth-of-type(2n) { --welcome-word-a:#173751; --welcome-word-b:#26465e; --welcome-word-c:#45315d; animation-delay:-.65s; }
 .welcome-word-panel-copy:nth-of-type(3n) { --welcome-word-a:#10433e; --welcome-word-b:#184b60; --welcome-word-c:#263865; animation-delay:-1.2s; }
 .welcome-word-panel-highlights { --welcome-word-a:#102f49; --welcome-word-b:#1c4258; --welcome-word-c:#382e58; border-color:rgba(255,255,255,.32) !important; }
 .welcome-word-panel-highlights .welcome-section-heading { color:#fff !important; }
-.welcome-word-panel-highlights .welcome-copy > span { color:#f7f8ff !important; }
 .welcome-word-panel-signin-intro, .welcome-word-panel-parent-intro { --welcome-word-a:#132c50; --welcome-word-b:#264b62; --welcome-word-c:#49315b; padding:1rem 1.05rem; border-color:rgba(92,195,227,.34); }
 .welcome-word-panel-signin-intro h2, .welcome-word-panel-signin-intro p, .welcome-word-panel-parent-intro h3, .welcome-word-panel-parent-intro p { color:#fff !important; }
 .welcome-parent-toggle { --welcome-word-a:#103a52; --welcome-word-b:#1b5260; --welcome-word-c:#352f5d; color:#fff !important; border-color:rgba(99,209,229,.45) !important; background-image:linear-gradient(115deg,var(--welcome-word-a),var(--welcome-word-b),var(--welcome-word-c),var(--welcome-word-a)) !important; background-size:260% 260% !important; animation:welcome-word-panel-flow 1.8s ease-in-out infinite alternate; }
+.welcome-word-panels-toggle { flex:0 0 auto; min-height:2.7rem; padding:.65rem 1rem; border:1px solid rgba(29,78,137,.3); border-radius:.8rem; color:#fff; background:linear-gradient(115deg,#30384e,#48506b); font-size:.78rem; font-weight:800; letter-spacing:.03em; box-shadow:0 8px 20px rgba(14,42,74,.12); }
+.welcome-word-panels-toggle.is-enabled { border-color:#59cce3; background:linear-gradient(115deg,#0c4558,#17616a,#49315e); }
+.welcome-word-panels-disabled .welcome-word-panel { animation:none !important; background-image:none !important; background-size:auto !important; box-shadow:none !important; text-shadow:none; border-color:transparent !important; padding:0 !important; }
+.welcome-word-panels-disabled .welcome-word-panel-eyebrow { color:var(--welcome-eyebrow-color,#f3e6c4) !important; }
+.welcome-word-panels-disabled .welcome-word-panel-title .welcome-title-letter { color:var(--welcome-title-color,#fffdf5) !important; }
+.welcome-word-panels-disabled .welcome-word-panel-subtitle { color:var(--welcome-subtitle-color,#f3e6c4) !important; }
+.welcome-word-panels-disabled .welcome-word-panel-heading { color:var(--welcome-accent-color,#f4ca72) !important; }
+.welcome-word-panels-disabled .welcome-word-panel-highlights { padding:.9rem 1rem !important; border-color:rgba(255,255,255,.16) !important; background:linear-gradient(135deg,rgba(255,255,255,.1),rgba(255,255,255,.03)) !important; backdrop-filter:blur(8px); }
+.welcome-word-panels-disabled .welcome-word-panel-signin-intro h2, .welcome-word-panels-disabled .welcome-word-panel-parent-intro h3 { color:var(--color-navy) !important; }
+.welcome-word-panels-disabled .welcome-word-panel-signin-intro p, .welcome-word-panels-disabled .welcome-word-panel-parent-intro p { color:var(--color-muted) !important; }
+.welcome-word-panels-disabled .welcome-parent-toggle { color:var(--color-navy) !important; background:var(--color-card) !important; border-color:var(--color-line) !important; }
+.welcome-word-panels-disabled .welcome-parent-toggle, .welcome-word-panels-disabled .welcome-parent-safety-note { animation:none !important; }
+.welcome-word-panels-disabled .welcome-word-panel-feature { min-height:7.4rem; padding:1rem 1rem 1rem 3.4rem !important; border-color:color-mix(in srgb,var(--color-info) 19%,var(--color-line)) !important; color:var(--color-navy) !important; background:linear-gradient(125deg,rgba(255,255,255,.86),color-mix(in srgb,var(--color-info) 5%,white),color-mix(in srgb,var(--color-brass) 8%,white)) !important; }
+.welcome-word-panels-disabled .welcome-word-panel-feature h3 { color:var(--color-navy) !important; }
+.welcome-word-panels-disabled .welcome-word-panel-feature p { color:var(--color-muted) !important; }
+.welcome-word-panels-disabled .welcome-parent-safety-note { color:var(--color-muted) !important; border-color:#fde68a !important; background:#fffbeb !important; }
 .welcome-word-panel-feature { --welcome-word-a:#132c50; --welcome-word-b:#244b63; --welcome-word-c:#49315b; border-color:rgba(171,216,255,.32); color:#fff !important; }
 .welcome-word-panel-feature h3, .welcome-word-panel-feature p { color:#f7f8ff !important; }
 .welcome-word-panel-feature:nth-child(2n) { --welcome-word-a:#123c3c; --welcome-word-b:#1d4f59; --welcome-word-c:#303566; --welcome-word-delay:-.6s; }

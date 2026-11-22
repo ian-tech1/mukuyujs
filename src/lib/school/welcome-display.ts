@@ -13,6 +13,7 @@ export type WelcomeDisplayOptions = {
   titleLetterSpacing: number;
   titleShadow: boolean;
   showRibbons: boolean;
+  animatedWordingPanels: boolean;
 };
 
 export const DEFAULT_WELCOME_DISPLAY: WelcomeDisplayOptions = {
@@ -30,6 +31,7 @@ export const DEFAULT_WELCOME_DISPLAY: WelcomeDisplayOptions = {
   titleLetterSpacing: -0.035,
   titleShadow: true,
   showRibbons: true,
+  animatedWordingPanels: true,
 };
 
 const HEX_COLOR = /^#[0-9a-f]{6}$/i;
@@ -63,6 +65,7 @@ export function normalizeWelcomeDisplay(value: unknown): WelcomeDisplayOptions {
     titleLetterSpacing: boundedNumber(source.titleLetterSpacing, -0.08, 0.12, DEFAULT_WELCOME_DISPLAY.titleLetterSpacing, 3),
     titleShadow: typeof source.titleShadow === "boolean" ? source.titleShadow : DEFAULT_WELCOME_DISPLAY.titleShadow,
     showRibbons: typeof source.showRibbons === "boolean" ? source.showRibbons : DEFAULT_WELCOME_DISPLAY.showRibbons,
+    animatedWordingPanels: typeof source.animatedWordingPanels === "boolean" ? source.animatedWordingPanels : DEFAULT_WELCOME_DISPLAY.animatedWordingPanels,
   };
 }
 

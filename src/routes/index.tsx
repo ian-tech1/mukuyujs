@@ -109,7 +109,7 @@ function LoginPage() {
   }, [welcome?.paragraphColoursEnabled, welcome?.paragraphColourInterval]);
 
   function paragraphColour(index: number, sectionOffset: number) {
-    if (welcome?.paragraphColoursEnabled === false) return welcomeDisplay.bodyTextColor;
+    if (welcome?.paragraphColoursEnabled === false) return welcomeDisplay.animatedWordingPanels ? "#f7f8ff" : welcomeDisplay.bodyTextColor;
     const hue = (sectionOffset + index * 47 + paragraphColourTick * 31) % 360;
     return `hsl(${hue}, 72%, 86%)`;
   }
@@ -246,7 +246,7 @@ function LoginPage() {
   }
 
   return (
-    <main className="welcome-shell grid min-h-screen lg:grid-cols-[1.1fr_0.9fr]" style={welcomeHeroStyle}>
+    <main className={`welcome-shell grid min-h-screen lg:grid-cols-[1.1fr_0.9fr] ${welcomeDisplay.animatedWordingPanels ? "" : "welcome-word-panels-disabled"}`} style={welcomeHeroStyle}>
       <section className={`welcome-hero relative flex flex-col justify-between px-6 py-8 text-paper sm:px-12 ${welcome?.animated === false || welcome?.animationStyle === "none" ? "welcome-static" : `welcome-animated welcome-animation-${welcome?.animationStyle || "aurora"}`} ${welcomeDisplay.showRibbons ? "" : "welcome-no-ribbons"} ${welcomeDisplay.titleShadow ? "" : "welcome-title-shadow-disabled"} ${welcomeDisplay.contentAlignment === "center" ? "welcome-content-centered" : ""}`}>
         <div className="welcome-ribbon-field" aria-hidden="true"><span className="welcome-ribbon welcome-ribbon-one" /><span className="welcome-ribbon welcome-ribbon-two" /><span className="welcome-ribbon welcome-ribbon-three" /><span className="welcome-ribbon welcome-ribbon-four" /><span className="welcome-ribbon-orb welcome-ribbon-orb-one" /><span className="welcome-ribbon-orb welcome-ribbon-orb-two" /></div>
         <div className="relative z-10 flex items-center justify-between gap-4">

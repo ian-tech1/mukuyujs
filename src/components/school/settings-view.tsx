@@ -250,7 +250,7 @@ function WelcomeDisplayControls({ value, onChange }: { value: WelcomeDisplayOpti
     ["titleColor", "Title colour"], ["subtitleColor", "Subtitle colour"], ["eyebrowColor", "Top label colour"], ["bodyTextColor", "Paragraph colour when auto-cycling is off"], ["accentColor", "Primary accent colour"], ["accentAltColor", "Secondary accent colour"], ["panelColor", "Sign-in panel colour"],
   ];
   return <section className="space-y-3 rounded-lg border border-line bg-paper p-3" aria-labelledby="welcome-display-controls-title">
-    <div><h3 id="welcome-display-controls-title" className="font-semibold text-navy">14 welcome-page display and colour controls</h3><p className="mt-1 text-xs text-muted">These saved controls apply to the public welcome screen for everyone. Use the preview below before publishing.</p></div>
+    <div><h3 id="welcome-display-controls-title" className="font-semibold text-navy">15 welcome-page display and colour controls</h3><p className="mt-1 text-xs text-muted">These saved controls apply to the public welcome screen for everyone. Use the preview below before publishing.</p></div>
     <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">{colorControls.map(([key, label]) => <label key={key} className="flex items-center gap-3 rounded-lg border border-line bg-card p-2 text-xs font-semibold">{label}<input className="ml-auto h-9 w-11 cursor-pointer rounded border-0 bg-transparent p-0" type="color" value={value[key]} onChange={(event) => onChange({ [key]: event.target.value })} /></label>)}</div>
     <div className="grid gap-3 sm:grid-cols-2">
       <label className="block text-sm">Sign-in panel opacity · {Math.round(value.panelOpacity * 100)}%<input className="mt-2 w-full" type="range" min={0.55} max={1} step={0.01} value={value.panelOpacity} onChange={(event) => onChange({ panelOpacity: Number(event.target.value) })} /></label>
@@ -259,6 +259,10 @@ function WelcomeDisplayControls({ value, onChange }: { value: WelcomeDisplayOpti
       <label className="block text-sm">Welcome content width<select className={inputClass + " mt-1"} value={value.contentWidth} onChange={(event) => onChange({ contentWidth: event.target.value as WelcomeDisplayOptions["contentWidth"] })}><option value="narrow">Narrow</option><option value="standard">Standard</option><option value="wide">Wide</option></select></label>
       <label className="block text-sm">Title letter spacing · {value.titleLetterSpacing.toFixed(2)}em<input className="mt-2 w-full" type="range" min={-0.08} max={0.12} step={0.005} value={value.titleLetterSpacing} onChange={(event) => onChange({ titleLetterSpacing: Number(event.target.value) })} /></label>
       <div className="space-y-2 pt-1"><label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={value.titleShadow} onChange={(event) => onChange({ titleShadow: event.target.checked })} /> Add shadow behind the main title</label><label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={value.showRibbons} onChange={(event) => onChange({ showRibbons: event.target.checked })} /> Show decorative colour ribbons</label></div>
+    </div>
+    <div className="flex flex-col gap-3 rounded-lg border border-line bg-card p-3 sm:flex-row sm:items-center sm:justify-between">
+      <div><p className="text-sm font-semibold text-navy">Animated wording panels</p><p className="mt-1 text-xs text-muted">Show or hide the 1.8-second mixed-colour rectangles around welcome and sign-in wording. Text and login fields remain available. Publish the welcome design to save the choice.</p></div>
+      <button type="button" className={`welcome-word-panels-toggle ${value.animatedWordingPanels ? "is-enabled" : ""}`} aria-pressed={value.animatedWordingPanels} onClick={() => onChange({ animatedWordingPanels: !value.animatedWordingPanels })}>Animated wording panels: {value.animatedWordingPanels ? "ON" : "OFF"}</button>
     </div>
   </section>;
 }
