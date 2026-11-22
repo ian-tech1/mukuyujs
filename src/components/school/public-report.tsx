@@ -45,6 +45,8 @@ export function PublicReport({ code }: { code: string }) {
     return (
       <main className="portal-loading grid min-h-screen place-items-center bg-paper px-6">
         <div className="portal-loading-aurora" aria-hidden="true" />
+        <div className="portal-loading-rays" aria-hidden="true" />
+        <div className="portal-loading-atom" aria-hidden="true" />
         <div className="portal-loading-stars" aria-hidden="true" />
         <div className="portal-loading-dust" aria-hidden="true" />
         <div className="portal-loading-card text-center" role="status" aria-live="polite">
