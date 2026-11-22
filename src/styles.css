@@ -288,23 +288,26 @@ html[data-portal-motion="reduced"] .portal-loading, html[data-portal-motion="red
   --portal-glow-b: rgba(91, 104, 227, .24);
   --portal-glow-c: rgba(210, 95, 177, .18);
   --portal-glow-d: rgba(239, 172, 75, .16);
+  --portal-beam-a: #19c4e7;
+  --portal-beam-b: #cf4fd2;
+  --portal-beam-c: #416ce5;
   position: relative;
   isolation: isolate;
   background: #f4f0e6;
 }
- .portal-animated-background[data-portal-section="home"] { --portal-glow-a: rgba(47, 202, 222, .24); --portal-glow-b: rgba(59, 129, 220, .22); --portal-glow-c: rgba(123, 91, 210, .17); --portal-glow-d: rgba(244, 186, 85, .15); }
-.portal-animated-background[data-portal-section="learners"] { --portal-glow-a: rgba(30, 190, 137, .22); --portal-glow-b: rgba(31, 166, 210, .2); --portal-glow-c: rgba(111, 101, 220, .15); --portal-glow-d: rgba(230, 202, 87, .14); }
-.portal-animated-background[data-portal-section="marks"] { --portal-glow-a: rgba(35, 191, 235, .24); --portal-glow-b: rgba(56, 104, 239, .22); --portal-glow-c: rgba(138, 91, 222, .17); --portal-glow-d: rgba(236, 173, 71, .14); }
-.portal-animated-background[data-portal-section="analysis"] { --portal-glow-a: rgba(95, 139, 244, .19); --portal-glow-b: rgba(164, 91, 237, .22); --portal-glow-c: rgba(238, 93, 177, .18); --portal-glow-d: rgba(244, 185, 76, .13); }
-.portal-animated-background[data-portal-section="reports"] { --portal-glow-a: rgba(48, 142, 229, .23); --portal-glow-b: rgba(119, 91, 229, .22); --portal-glow-c: rgba(206, 95, 190, .17); --portal-glow-d: rgba(249, 190, 82, .16); }
-.portal-animated-background[data-portal-section="marklists"] { --portal-glow-a: rgba(32, 194, 185, .22); --portal-glow-b: rgba(58, 157, 218, .2); --portal-glow-c: rgba(131, 100, 222, .15); --portal-glow-d: rgba(232, 181, 75, .15); }
-.portal-animated-background[data-portal-section="staff"] { --portal-glow-a: rgba(34, 159, 235, .23); --portal-glow-b: rgba(99, 100, 224, .21); --portal-glow-c: rgba(181, 100, 200, .17); --portal-glow-d: rgba(246, 190, 83, .14); }
-.portal-animated-background[data-portal-section="mail"] { --portal-glow-a: rgba(40, 175, 228, .2); --portal-glow-b: rgba(111, 91, 222, .2); --portal-glow-c: rgba(232, 76, 160, .2); --portal-glow-d: rgba(242, 178, 83, .13); }
-.portal-animated-background[data-portal-section="timetable"] { --portal-glow-a: rgba(37, 190, 170, .22); --portal-glow-b: rgba(56, 132, 232, .2); --portal-glow-c: rgba(124, 94, 213, .16); --portal-glow-d: rgba(246, 184, 77, .14); }
-.portal-animated-background[data-portal-section="services"] { --portal-glow-a: rgba(30, 190, 152, .2); --portal-glow-b: rgba(71, 143, 216, .19); --portal-glow-c: rgba(148, 89, 202, .16); --portal-glow-d: rgba(250, 166, 69, .18); }
-.portal-animated-background[data-portal-section="parent-feedback"] { --portal-glow-a: rgba(46, 190, 217, .2); --portal-glow-b: rgba(111, 103, 225, .2); --portal-glow-c: rgba(234, 83, 173, .19); --portal-glow-d: rgba(244, 183, 82, .14); }
-.portal-animated-background[data-portal-section="settings"] { --portal-glow-a: rgba(45, 178, 224, .2); --portal-glow-b: rgba(114, 94, 218, .2); --portal-glow-c: rgba(182, 86, 209, .17); --portal-glow-d: rgba(244, 188, 77, .17); }
-.portal-animated-background[data-portal-section="results"] { --portal-glow-a: rgba(38, 185, 221, .21); --portal-glow-b: rgba(85, 119, 227, .2); --portal-glow-c: rgba(173, 92, 201, .17); --portal-glow-d: rgba(249, 182, 65, .18); }
+  .portal-animated-background[data-portal-section="home"] { --portal-beam-a:#19c4e7; --portal-beam-b:#d852cf; --portal-beam-c:#416ce5; --portal-glow-a:rgba(47,202,222,.24); --portal-glow-b:rgba(59,129,220,.22); --portal-glow-c:rgba(123,91,210,.17); --portal-glow-d:rgba(244,186,85,.15); }
+.portal-animated-background[data-portal-section="learners"] { --portal-beam-a:#19c99a; --portal-beam-b:#36aede; --portal-beam-c:#e4bd43; --portal-glow-a:rgba(30,190,137,.22); --portal-glow-b:rgba(31,166,210,.2); --portal-glow-c:rgba(111,101,220,.15); --portal-glow-d:rgba(230,202,87,.14); }
+.portal-animated-background[data-portal-section="marks"] { --portal-beam-a:#16b8df; --portal-beam-b:#6358e8; --portal-beam-c:#e7a944; --portal-glow-a:rgba(35,191,235,.24); --portal-glow-b:rgba(56,104,239,.22); --portal-glow-c:rgba(138,91,222,.17); --portal-glow-d:rgba(236,173,71,.14); }
+.portal-animated-background[data-portal-section="analysis"] { --portal-beam-a:#626ce8; --portal-beam-b:#dc55c1; --portal-beam-c:#e3ad48; --portal-glow-a:rgba(95,139,244,.19); --portal-glow-b:rgba(164,91,237,.22); --portal-glow-c:rgba(238,93,177,.18); --portal-glow-d:rgba(244,185,76,.13); }
+.portal-animated-background[data-portal-section="reports"] { --portal-beam-a:#268be0; --portal-beam-b:#9153db; --portal-beam-c:#e15fa8; --portal-glow-a:rgba(48,142,229,.23); --portal-glow-b:rgba(119,91,229,.22); --portal-glow-c:rgba(206,95,190,.17); --portal-glow-d:rgba(249,190,82,.16); }
+.portal-animated-background[data-portal-section="marklists"] { --portal-beam-a:#20bcae; --portal-beam-b:#499edc; --portal-beam-c:#8b64d6; --portal-glow-a:rgba(32,194,185,.22); --portal-glow-b:rgba(58,157,218,.2); --portal-glow-c:rgba(131,100,222,.15); --portal-glow-d:rgba(232,181,75,.15); }
+.portal-animated-background[data-portal-section="staff"] { --portal-beam-a:#24aee8; --portal-beam-b:#725ce1; --portal-beam-c:#d65ba8; --portal-glow-a:rgba(34,159,235,.23); --portal-glow-b:rgba(99,100,224,.21); --portal-glow-c:rgba(181,100,200,.17); --portal-glow-d:rgba(246,190,83,.14); }
+.portal-animated-background[data-portal-section="mail"] { --portal-beam-a:#20a9dc; --portal-beam-b:#d957a4; --portal-beam-c:#745dde; --portal-glow-a:rgba(40,175,228,.2); --portal-glow-b:rgba(111,91,222,.2); --portal-glow-c:rgba(232,76,160,.2); --portal-glow-d:rgba(242,178,83,.13); }
+.portal-animated-background[data-portal-section="timetable"] { --portal-beam-a:#25c4b2; --portal-beam-b:#4e8fe3; --portal-beam-c:#7d5ed5; --portal-glow-a:rgba(37,190,170,.22); --portal-glow-b:rgba(56,132,232,.2); --portal-glow-c:rgba(124,94,213,.16); --portal-glow-d:rgba(246,184,77,.14); }
+.portal-animated-background[data-portal-section="services"] { --portal-beam-a:#1fc49a; --portal-beam-b:#4e97da; --portal-beam-c:#b061d0; --portal-glow-a:rgba(30,190,152,.2); --portal-glow-b:rgba(71,143,216,.19); --portal-glow-c:rgba(148,89,202,.16); --portal-glow-d:rgba(250,166,69,.18); }
+.portal-animated-background[data-portal-section="parent-feedback"] { --portal-beam-a:#28b7d2; --portal-beam-b:#dc58a9; --portal-beam-c:#7164df; --portal-glow-a:rgba(46,190,217,.2); --portal-glow-b:rgba(111,103,225,.2); --portal-glow-c:rgba(234,83,173,.19); --portal-glow-d:rgba(244,183,82,.14); }
+.portal-animated-background[data-portal-section="settings"] { --portal-beam-a:#299ed8; --portal-beam-b:#a65bd0; --portal-beam-c:#e1b34f; --portal-glow-a:rgba(45,178,224,.2); --portal-glow-b:rgba(114,94,218,.2); --portal-glow-c:rgba(182,86,209,.17); --portal-glow-d:rgba(244,188,77,.17); }
+.portal-animated-background[data-portal-section="results"] { --portal-beam-a:#26b9dd; --portal-beam-b:#a95cc9; --portal-beam-c:#e6ab43; --portal-glow-a:rgba(38,185,221,.21); --portal-glow-b:rgba(85,119,227,.2); --portal-glow-c:rgba(173,92,201,.17); --portal-glow-d:rgba(249,182,65,.18); }
 .portal-page-content {
   position: relative;
   isolation: isolate;
@@ -323,6 +326,9 @@ html[data-portal-motion="reduced"] .portal-loading, html[data-portal-motion="red
 }
 .portal-page-content::before {
   background-image:
+    linear-gradient(108deg, transparent 8%, color-mix(in srgb, var(--portal-beam-a) 22%, transparent) 18%, transparent 31%),
+    linear-gradient(73deg, transparent 39%, color-mix(in srgb, var(--portal-beam-b) 18%, transparent) 49%, transparent 61%),
+    linear-gradient(142deg, transparent 62%, color-mix(in srgb, var(--portal-beam-c) 19%, transparent) 73%, transparent 84%),
     radial-gradient(1px 1px at 8% 15%, rgba(14,42,74,.18) 50%, transparent 100%),
     radial-gradient(1px 1px at 19% 72%, rgba(29,78,137,.14) 50%, transparent 100%),
     radial-gradient(1.2px 1.2px at 34% 31%, rgba(14,42,74,.14) 50%, transparent 100%),
