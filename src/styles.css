@@ -207,7 +207,7 @@ html[data-portal-accent-motion="off"] .portal-page-content::before, html[data-po
 .welcome-login-panel > form { position: relative; z-index: 1; padding: clamp(1.4rem, 4vw, 2.25rem); border: 1px solid color-mix(in srgb, var(--welcome-accent-alt, #8bd5ff) 20%, rgba(255,255,255,.72)); border-radius: 1.6rem; background: color-mix(in srgb, var(--color-card) 83%, transparent); box-shadow: 0 24px 75px rgba(14,42,74,.16), inset 0 1px rgba(255,255,255,.78); backdrop-filter: blur(16px); animation: login-card-rise .8s cubic-bezier(.2,.8,.2,1) both; transition: box-shadow .5s ease, border-color .5s ease, transform .5s ease; }
 .welcome-login-panel > form:hover { border-color: color-mix(in srgb, var(--welcome-accent-alt, #8bd5ff) 38%, rgba(255,255,255,.72)); box-shadow: 0 30px 90px rgba(14,42,74,.2), inset 0 1px rgba(255,255,255,.9); transform: translateY(-2px); }
 .welcome-login-panel input { background-color: rgba(255,255,255,.82); transition: border-color .3s ease, box-shadow .3s ease, background-color .3s ease; }
-.welcome-login-panel input:focus { background-color: #fff; box-shadow: 0 0 0 4px color-mix(in srgb, var(--welcome-accent-alt, #8bd5ff) 18%, transparent), 0 8px 22px rgba(14,42,74,.08); }
+.welcome-login-panel input:focus { background-color: #fff; box-shadow: 0 0 0 4px color-mix(in srgb, var(--welcome-accent-alt, #8bd5ff) 26%, transparent), 0 8px 22px rgba(14,42,74,.08); }
 .welcome-login-panel button[type="submit"] { position: relative; overflow: hidden; box-shadow: 0 10px 24px color-mix(in srgb, var(--welcome-accent-color, #1d4e89) 28%, transparent); transition: transform .25s ease, box-shadow .35s ease, filter .35s ease; }
 .welcome-login-panel button[type="submit"]::after { content: ""; position: absolute; top: -80%; bottom: -80%; left: -40%; width: 24%; transform: rotate(20deg); background: linear-gradient(90deg, transparent, rgba(255,255,255,.32), transparent); animation: login-button-sheen 7s ease-in-out infinite; }
 .welcome-login-panel button[type="submit"]:hover { filter: saturate(1.12) brightness(1.06); box-shadow: 0 14px 32px color-mix(in srgb, var(--welcome-accent-color, #1d4e89) 38%, transparent); transform: translateY(-2px); }
@@ -272,13 +272,46 @@ html[data-portal-accent-motion="off"] .portal-page-content :is(article, section,
 .portal-loading-orbit { display: grid; width: 6rem; height: 6rem; place-items: center; margin-inline: auto; border: 3px solid transparent; border-radius: 50%; background: linear-gradient(white,white) padding-box, conic-gradient(from 0deg, #f4bb46, #e36695, #845dc4, #3989d2, #48bba0, #f4bb46) border-box; animation: portal-loading-orbit 4s linear infinite; box-shadow: 0 0 26px rgba(87,139,197,.2); }
 .portal-loading-track { height: .45rem; overflow: hidden; border-radius: 999px; background: linear-gradient(90deg, rgba(57,137,210,.12), rgba(72,187,160,.16), rgba(243,181,72,.18)); }
 .portal-loading-track span { display: block; width: 42%; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #3989d2, #845dc4, #e36695, #f4bb46, #48bba0); background-size: 220% 100%; animation: portal-loading-progress 2.4s ease-in-out infinite, portal-loading-spectrum 8s linear infinite; }
+
+/* Mukuyu loading entrance: reference-inspired night sky, soft neon beams and orbital rings. */
+.portal-loading {
+  color: #f7f4ee;
+  background-color: #030611;
+  background-image:
+    radial-gradient(1.5px 1.5px at 8% 15%, rgba(255,255,255,.82) 50%, transparent 100%),
+    radial-gradient(1px 1px at 19% 72%, rgba(185,229,255,.72) 50%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 34% 31%, rgba(255,255,255,.8) 50%, transparent 100%),
+    radial-gradient(1px 1px at 46% 83%, rgba(216,192,255,.7) 50%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 63% 18%, rgba(255,255,255,.78) 50%, transparent 100%),
+    radial-gradient(1px 1px at 75% 59%, rgba(194,236,255,.76) 50%, transparent 100%),
+    radial-gradient(1px 1px at 89% 30%, rgba(255,255,255,.74) 50%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 94% 85%, rgba(255,225,170,.78) 50%, transparent 100%),
+    linear-gradient(112deg, transparent 28%, rgba(23,198,229,.16) 48%, transparent 65%),
+    linear-gradient(72deg, transparent 36%, rgba(221,61,173,.12) 54%, transparent 68%),
+    linear-gradient(140deg, #030611 0%, #080b1a 48%, #03050d 100%);
+  background-size: 180% 180%;
+  animation: portal-loading-spectrum 32s ease-in-out infinite alternate;
+}
+.portal-loading::before { background: radial-gradient(ellipse, rgba(27,200,232,.78) 0%, rgba(27,200,232,.2) 38%, transparent 72%); opacity: .48; filter: blur(58px); animation: portal-loading-cloud-a 18s ease-in-out infinite alternate; }
+.portal-loading::after { background: radial-gradient(ellipse, rgba(244,181,70,.76) 0%, rgba(225,68,171,.2) 42%, transparent 74%); opacity: .38; filter: blur(66px); animation: portal-loading-cloud-b 23s ease-in-out infinite alternate; }
+.portal-loading-card { isolation: isolate; min-width: min(26rem, calc(100vw - 3rem)); padding: 2.2rem 2rem; border: 0; background: transparent; box-shadow: none; backdrop-filter: none; }
+.portal-loading-card::before, .portal-loading-card::after { content: ""; position: absolute; inset: -3.2rem -1rem; z-index: -1; border: 1px solid rgba(148,205,255,.23); border-radius: 50%; pointer-events: none; animation: portal-loading-orbit-one 26s linear infinite; }
+.portal-loading-card::after { inset: -3.7rem 1.2rem; border-color: rgba(232,178,255,.18); animation: portal-loading-orbit-two 34s linear infinite; }
+.portal-loading-card > * { position: relative; z-index: 1; }
+.portal-loading-card .text-navy { color: #fff9e9; text-shadow: 0 0 20px rgba(255,198,83,.5); }
+.portal-loading-card .text-muted { color: rgba(235,239,248,.72); }
+.portal-loading-orbit { width: 6.5rem; height: 6.5rem; background: linear-gradient(#07101e,#07101e) padding-box, conic-gradient(from 0deg, #25d5ed, #416ce5, #d64fca, #f4bb46, #25d5ed) border-box; animation-duration: 8s; box-shadow: 0 0 22px rgba(37,213,237,.38), 0 0 52px rgba(214,79,202,.17); }
+.portal-loading-track { background: linear-gradient(90deg, rgba(118,192,255,.16), rgba(210,92,222,.17), rgba(246,189,75,.2)); box-shadow: 0 0 15px rgba(58,133,228,.18); }
+.portal-loading-track span { background: linear-gradient(90deg, #19cbe5, #4c70ed, #d44dc8, #ffbc48, #19cbe5); box-shadow: 0 0 15px rgba(82,179,245,.7); }
+@keyframes portal-loading-orbit-one { from { transform: rotate(-24deg) scaleX(.72); } to { transform: rotate(336deg) scaleX(.72); } }
+@keyframes portal-loading-orbit-two { from { transform: rotate(38deg) scaleX(.92); } to { transform: rotate(-322deg) scaleX(.92); } }
 @keyframes portal-loading-spectrum { 0%,100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
 @keyframes portal-loading-orbit { to { filter: hue-rotate(360deg); transform: rotate(360deg); } }
 @keyframes portal-loading-progress { 0% { transform: translateX(-110%); } 65%,100% { transform: translateX(250%); } }
 @keyframes portal-loading-cloud-a { from { transform: translate3d(-3vw, 0, 0) scale(.92); } to { transform: translate3d(8vw, 7vh, 0) scale(1.12); } }
 @keyframes portal-loading-cloud-b { from { transform: translate3d(4vw, -2vh, 0) scale(1.08); } to { transform: translate3d(-7vw, -8vh, 0) scale(.88); } }
-html[data-portal-motion="reduced"] .portal-loading, html[data-portal-motion="reduced"] .portal-loading::before, html[data-portal-motion="reduced"] .portal-loading::after, html[data-portal-motion="reduced"] .portal-loading-orbit, html[data-portal-motion="reduced"] .portal-loading-track span { animation: none !important; }
-@media (prefers-reduced-motion: reduce) { .portal-loading, .portal-loading::before, .portal-loading::after, .portal-loading-orbit, .portal-loading-track span { animation: none !important; } }
+html[data-portal-motion="reduced"] .portal-loading, html[data-portal-motion="reduced"] .portal-loading::before, html[data-portal-motion="reduced"] .portal-loading::after, html[data-portal-motion="reduced"] .portal-loading-card::before, html[data-portal-motion="reduced"] .portal-loading-card::after, html[data-portal-motion="reduced"] .portal-loading-orbit, html[data-portal-motion="reduced"] .portal-loading-track span { animation: none !important; }
+@media (prefers-reduced-motion: reduce) { .portal-loading, .portal-loading::before, .portal-loading::after, .portal-loading-card::before, .portal-loading-card::after, .portal-loading-orbit, .portal-loading-track span { animation: none !important; } }
 @media print { .portal-loading, .portal-loading::before, .portal-loading::after, .portal-loading-orbit, .portal-loading-track span { animation: none !important; } }
 
 
@@ -295,19 +328,19 @@ html[data-portal-motion="reduced"] .portal-loading, html[data-portal-motion="red
   isolation: isolate;
   background: #f4f0e6;
 }
-  .portal-animated-background[data-portal-section="home"] { --portal-beam-a:#19c4e7; --portal-beam-b:#d852cf; --portal-beam-c:#416ce5; --portal-glow-a:rgba(47,202,222,.24); --portal-glow-b:rgba(59,129,220,.22); --portal-glow-c:rgba(123,91,210,.17); --portal-glow-d:rgba(244,186,85,.15); }
-.portal-animated-background[data-portal-section="learners"] { --portal-beam-a:#19c99a; --portal-beam-b:#36aede; --portal-beam-c:#e4bd43; --portal-glow-a:rgba(30,190,137,.22); --portal-glow-b:rgba(31,166,210,.2); --portal-glow-c:rgba(111,101,220,.15); --portal-glow-d:rgba(230,202,87,.14); }
-.portal-animated-background[data-portal-section="marks"] { --portal-beam-a:#16b8df; --portal-beam-b:#6358e8; --portal-beam-c:#e7a944; --portal-glow-a:rgba(35,191,235,.24); --portal-glow-b:rgba(56,104,239,.22); --portal-glow-c:rgba(138,91,222,.17); --portal-glow-d:rgba(236,173,71,.14); }
-.portal-animated-background[data-portal-section="analysis"] { --portal-beam-a:#626ce8; --portal-beam-b:#dc55c1; --portal-beam-c:#e3ad48; --portal-glow-a:rgba(95,139,244,.19); --portal-glow-b:rgba(164,91,237,.22); --portal-glow-c:rgba(238,93,177,.18); --portal-glow-d:rgba(244,185,76,.13); }
-.portal-animated-background[data-portal-section="reports"] { --portal-beam-a:#268be0; --portal-beam-b:#9153db; --portal-beam-c:#e15fa8; --portal-glow-a:rgba(48,142,229,.23); --portal-glow-b:rgba(119,91,229,.22); --portal-glow-c:rgba(206,95,190,.17); --portal-glow-d:rgba(249,190,82,.16); }
-.portal-animated-background[data-portal-section="marklists"] { --portal-beam-a:#20bcae; --portal-beam-b:#499edc; --portal-beam-c:#8b64d6; --portal-glow-a:rgba(32,194,185,.22); --portal-glow-b:rgba(58,157,218,.2); --portal-glow-c:rgba(131,100,222,.15); --portal-glow-d:rgba(232,181,75,.15); }
-.portal-animated-background[data-portal-section="staff"] { --portal-beam-a:#24aee8; --portal-beam-b:#725ce1; --portal-beam-c:#d65ba8; --portal-glow-a:rgba(34,159,235,.23); --portal-glow-b:rgba(99,100,224,.21); --portal-glow-c:rgba(181,100,200,.17); --portal-glow-d:rgba(246,190,83,.14); }
-.portal-animated-background[data-portal-section="mail"] { --portal-beam-a:#20a9dc; --portal-beam-b:#d957a4; --portal-beam-c:#745dde; --portal-glow-a:rgba(40,175,228,.2); --portal-glow-b:rgba(111,91,222,.2); --portal-glow-c:rgba(232,76,160,.2); --portal-glow-d:rgba(242,178,83,.13); }
-.portal-animated-background[data-portal-section="timetable"] { --portal-beam-a:#25c4b2; --portal-beam-b:#4e8fe3; --portal-beam-c:#7d5ed5; --portal-glow-a:rgba(37,190,170,.22); --portal-glow-b:rgba(56,132,232,.2); --portal-glow-c:rgba(124,94,213,.16); --portal-glow-d:rgba(246,184,77,.14); }
-.portal-animated-background[data-portal-section="services"] { --portal-beam-a:#1fc49a; --portal-beam-b:#4e97da; --portal-beam-c:#b061d0; --portal-glow-a:rgba(30,190,152,.2); --portal-glow-b:rgba(71,143,216,.19); --portal-glow-c:rgba(148,89,202,.16); --portal-glow-d:rgba(250,166,69,.18); }
-.portal-animated-background[data-portal-section="parent-feedback"] { --portal-beam-a:#28b7d2; --portal-beam-b:#dc58a9; --portal-beam-c:#7164df; --portal-glow-a:rgba(46,190,217,.2); --portal-glow-b:rgba(111,103,225,.2); --portal-glow-c:rgba(234,83,173,.19); --portal-glow-d:rgba(244,183,82,.14); }
-.portal-animated-background[data-portal-section="settings"] { --portal-beam-a:#299ed8; --portal-beam-b:#a65bd0; --portal-beam-c:#e1b34f; --portal-glow-a:rgba(45,178,224,.2); --portal-glow-b:rgba(114,94,218,.2); --portal-glow-c:rgba(182,86,209,.17); --portal-glow-d:rgba(244,188,77,.17); }
-.portal-animated-background[data-portal-section="results"] { --portal-beam-a:#26b9dd; --portal-beam-b:#a95cc9; --portal-beam-c:#e6ab43; --portal-glow-a:rgba(38,185,221,.21); --portal-glow-b:rgba(85,119,227,.2); --portal-glow-c:rgba(173,92,201,.17); --portal-glow-d:rgba(249,182,65,.18); }
+  .portal-animated-background[data-portal-section="home"] { --portal-beam-a:#19c4e7; --portal-beam-b:#d852cf; --portal-beam-c:#416ce5; --portal-glow-a:rgba(47,202,222,0.32); --portal-glow-b:rgba(59,129,220,0.30); --portal-glow-c:rgba(123,91,210,0.23); --portal-glow-d:rgba(244,186,85,0.20); }
+.portal-animated-background[data-portal-section="learners"] { --portal-beam-a:#19c99a; --portal-beam-b:#36aede; --portal-beam-c:#e4bd43; --portal-glow-a:rgba(30,190,137,0.30); --portal-glow-b:rgba(31,166,210,0.27); --portal-glow-c:rgba(111,101,220,0.20); --portal-glow-d:rgba(230,202,87,0.19); }
+.portal-animated-background[data-portal-section="marks"] { --portal-beam-a:#16b8df; --portal-beam-b:#6358e8; --portal-beam-c:#e7a944; --portal-glow-a:rgba(35,191,235,0.32); --portal-glow-b:rgba(56,104,239,0.30); --portal-glow-c:rgba(138,91,222,0.23); --portal-glow-d:rgba(236,173,71,0.19); }
+.portal-animated-background[data-portal-section="analysis"] { --portal-beam-a:#626ce8; --portal-beam-b:#dc55c1; --portal-beam-c:#e3ad48; --portal-glow-a:rgba(95,139,244,0.26); --portal-glow-b:rgba(164,91,237,0.30); --portal-glow-c:rgba(238,93,177,0.24); --portal-glow-d:rgba(244,185,76,0.18); }
+.portal-animated-background[data-portal-section="reports"] { --portal-beam-a:#268be0; --portal-beam-b:#9153db; --portal-beam-c:#e15fa8; --portal-glow-a:rgba(48,142,229,0.31); --portal-glow-b:rgba(119,91,229,0.30); --portal-glow-c:rgba(206,95,190,0.23); --portal-glow-d:rgba(249,190,82,0.22); }
+.portal-animated-background[data-portal-section="marklists"] { --portal-beam-a:#20bcae; --portal-beam-b:#499edc; --portal-beam-c:#8b64d6; --portal-glow-a:rgba(32,194,185,0.30); --portal-glow-b:rgba(58,157,218,0.27); --portal-glow-c:rgba(131,100,222,0.20); --portal-glow-d:rgba(232,181,75,0.20); }
+.portal-animated-background[data-portal-section="staff"] { --portal-beam-a:#24aee8; --portal-beam-b:#725ce1; --portal-beam-c:#d65ba8; --portal-glow-a:rgba(34,159,235,0.31); --portal-glow-b:rgba(99,100,224,0.28); --portal-glow-c:rgba(181,100,200,0.23); --portal-glow-d:rgba(246,190,83,0.19); }
+.portal-animated-background[data-portal-section="mail"] { --portal-beam-a:#20a9dc; --portal-beam-b:#d957a4; --portal-beam-c:#745dde; --portal-glow-a:rgba(40,175,228,0.27); --portal-glow-b:rgba(111,91,222,0.27); --portal-glow-c:rgba(232,76,160,0.27); --portal-glow-d:rgba(242,178,83,0.18); }
+.portal-animated-background[data-portal-section="timetable"] { --portal-beam-a:#25c4b2; --portal-beam-b:#4e8fe3; --portal-beam-c:#7d5ed5; --portal-glow-a:rgba(37,190,170,0.30); --portal-glow-b:rgba(56,132,232,0.27); --portal-glow-c:rgba(124,94,213,0.22); --portal-glow-d:rgba(246,184,77,0.19); }
+.portal-animated-background[data-portal-section="services"] { --portal-beam-a:#1fc49a; --portal-beam-b:#4e97da; --portal-beam-c:#b061d0; --portal-glow-a:rgba(30,190,152,0.27); --portal-glow-b:rgba(71,143,216,0.26); --portal-glow-c:rgba(148,89,202,0.22); --portal-glow-d:rgba(250,166,69,0.24); }
+.portal-animated-background[data-portal-section="parent-feedback"] { --portal-beam-a:#28b7d2; --portal-beam-b:#dc58a9; --portal-beam-c:#7164df; --portal-glow-a:rgba(46,190,217,0.27); --portal-glow-b:rgba(111,103,225,0.27); --portal-glow-c:rgba(234,83,173,0.26); --portal-glow-d:rgba(244,183,82,0.19); }
+.portal-animated-background[data-portal-section="settings"] { --portal-beam-a:#299ed8; --portal-beam-b:#a65bd0; --portal-beam-c:#e1b34f; --portal-glow-a:rgba(45,178,224,0.27); --portal-glow-b:rgba(114,94,218,0.27); --portal-glow-c:rgba(182,86,209,0.23); --portal-glow-d:rgba(244,188,77,0.23); }
+.portal-animated-background[data-portal-section="results"] { --portal-beam-a:#26b9dd; --portal-beam-b:#a95cc9; --portal-beam-c:#e6ab43; --portal-glow-a:rgba(38,185,221,0.28); --portal-glow-b:rgba(85,119,227,0.27); --portal-glow-c:rgba(173,92,201,0.23); --portal-glow-d:rgba(249,182,65,0.24); }
 .portal-page-content {
   position: relative;
   isolation: isolate;
@@ -326,9 +359,9 @@ html[data-portal-motion="reduced"] .portal-loading, html[data-portal-motion="red
 }
 .portal-page-content::before {
   background-image:
-    linear-gradient(108deg, transparent 8%, color-mix(in srgb, var(--portal-beam-a) 22%, transparent) 18%, transparent 31%),
-    linear-gradient(73deg, transparent 39%, color-mix(in srgb, var(--portal-beam-b) 18%, transparent) 49%, transparent 61%),
-    linear-gradient(142deg, transparent 62%, color-mix(in srgb, var(--portal-beam-c) 19%, transparent) 73%, transparent 84%),
+    linear-gradient(108deg, transparent 8%, color-mix(in srgb, var(--portal-beam-a) 36%, transparent) 18%, transparent 31%),
+    linear-gradient(73deg, transparent 39%, color-mix(in srgb, var(--portal-beam-b) 32%, transparent) 49%, transparent 61%),
+    linear-gradient(142deg, transparent 62%, color-mix(in srgb, var(--portal-beam-c) 34%, transparent) 73%, transparent 84%),
     radial-gradient(1px 1px at 8% 15%, rgba(14,42,74,.18) 50%, transparent 100%),
     radial-gradient(1px 1px at 19% 72%, rgba(29,78,137,.14) 50%, transparent 100%),
     radial-gradient(1.2px 1.2px at 34% 31%, rgba(14,42,74,.14) 50%, transparent 100%),
@@ -347,13 +380,13 @@ html[data-portal-motion="reduced"] .portal-loading, html[data-portal-motion="red
 }
 .portal-page-content::after {
   background-image:
-    radial-gradient(ellipse at 13% 26%, color-mix(in srgb, var(--portal-user-glow-a, #0e2a4a) 18%, transparent), transparent 42%),
-    radial-gradient(ellipse at 86% 20%, color-mix(in srgb, var(--portal-user-glow-b, #1d4e89) 18%, transparent), transparent 40%),
-    radial-gradient(ellipse at 66% 80%, color-mix(in srgb, var(--portal-user-glow-c, #9a7430) 16%, transparent), transparent 38%),
-    radial-gradient(ellipse at 94% 90%, color-mix(in srgb, var(--portal-user-glow-d, #1f7a4d) 14%, transparent), transparent 34%),
-    radial-gradient(ellipse 49% 30% at 48% 48%, transparent 94.8%, rgba(29,78,137,.11) 95.1%, transparent 95.5%),
-    radial-gradient(ellipse 35% 53% at 55% 50%, transparent 95%, rgba(154,116,48,.09) 95.3%, transparent 95.7%),
-    radial-gradient(ellipse 63% 44% at 50% 47%, transparent 97%, rgba(120,205,218,.12) 97.2%, transparent 97.6%);
+    radial-gradient(ellipse at 13% 26%, color-mix(in srgb, var(--portal-user-glow-a, #0e2a4a) 26%, transparent), transparent 42%),
+    radial-gradient(ellipse at 86% 20%, color-mix(in srgb, var(--portal-user-glow-b, #1d4e89) 26%, transparent), transparent 40%),
+    radial-gradient(ellipse at 66% 80%, color-mix(in srgb, var(--portal-user-glow-c, #9a7430) 23%, transparent), transparent 38%),
+    radial-gradient(ellipse at 94% 90%, color-mix(in srgb, var(--portal-user-glow-d, #1f7a4d) 21%, transparent), transparent 34%),
+    radial-gradient(ellipse 49% 30% at 48% 48%, transparent 94.8%, rgba(29,78,137,.15) 95.1%, transparent 95.5%),
+    radial-gradient(ellipse 35% 53% at 55% 50%, transparent 95%, rgba(154,116,48,.13) 95.3%, transparent 95.7%),
+    radial-gradient(ellipse 63% 44% at 50% 47%, transparent 97%, rgba(120,205,218,.17) 97.2%, transparent 97.6%);
   animation: mukuyu-orbit-drift 78s ease-in-out infinite alternate;
 }
 /* Content keeps Mukuyu's original ink and semantic colors; only the canvas behind it moves. */
