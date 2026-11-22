@@ -290,27 +290,27 @@ html[data-portal-motion="reduced"] .portal-loading, html[data-portal-motion="red
   --portal-glow-d: rgba(239, 172, 75, .16);
   position: relative;
   isolation: isolate;
-  background: #070913;
+  background: #f4f0e6;
 }
-.portal-animated-background[data-portal-section="home"] { --portal-glow-a: rgba(47, 202, 222, .32); --portal-glow-b: rgba(59, 129, 220, .28); --portal-glow-c: rgba(123, 91, 210, .2); --portal-glow-d: rgba(244, 186, 85, .18); }
-.portal-animated-background[data-portal-section="learners"] { --portal-glow-a: rgba(30, 213, 157, .31); --portal-glow-b: rgba(31, 166, 210, .25); --portal-glow-c: rgba(111, 101, 220, .16); --portal-glow-d: rgba(230, 202, 87, .17); }
-.portal-animated-background[data-portal-section="marks"] { --portal-glow-a: rgba(35, 191, 235, .32); --portal-glow-b: rgba(56, 104, 239, .28); --portal-glow-c: rgba(138, 91, 222, .19); --portal-glow-d: rgba(236, 173, 71, .16); }
-.portal-animated-background[data-portal-section="analysis"] { --portal-glow-a: rgba(95, 139, 244, .27); --portal-glow-b: rgba(164, 91, 237, .31); --portal-glow-c: rgba(238, 93, 177, .24); --portal-glow-d: rgba(244, 185, 76, .15); }
-.portal-animated-background[data-portal-section="reports"] { --portal-glow-a: rgba(48, 142, 229, .3); --portal-glow-b: rgba(119, 91, 229, .3); --portal-glow-c: rgba(206, 95, 190, .21); --portal-glow-d: rgba(249, 190, 82, .2); }
-.portal-animated-background[data-portal-section="marklists"] { --portal-glow-a: rgba(32, 194, 185, .31); --portal-glow-b: rgba(58, 157, 218, .27); --portal-glow-c: rgba(131, 100, 222, .17); --portal-glow-d: rgba(232, 181, 75, .19); }
-.portal-animated-background[data-portal-section="staff"] { --portal-glow-a: rgba(34, 159, 235, .3); --portal-glow-b: rgba(99, 100, 224, .3); --portal-glow-c: rgba(181, 100, 200, .22); --portal-glow-d: rgba(246, 190, 83, .18); }
-.portal-animated-background[data-portal-section="mail"] { --portal-glow-a: rgba(40, 175, 228, .26); --portal-glow-b: rgba(111, 91, 222, .29); --portal-glow-c: rgba(232, 76, 160, .27); --portal-glow-d: rgba(242, 178, 83, .15); }
-.portal-animated-background[data-portal-section="timetable"] { --portal-glow-a: rgba(37, 210, 190, .31); --portal-glow-b: rgba(56, 132, 232, .28); --portal-glow-c: rgba(124, 94, 213, .18); --portal-glow-d: rgba(246, 184, 77, .17); }
-.portal-animated-background[data-portal-section="services"] { --portal-glow-a: rgba(30, 205, 166, .28); --portal-glow-b: rgba(71, 143, 216, .26); --portal-glow-c: rgba(148, 89, 202, .2); --portal-glow-d: rgba(250, 166, 69, .23); }
-.portal-animated-background[data-portal-section="parent-feedback"] { --portal-glow-a: rgba(46, 190, 217, .27); --portal-glow-b: rgba(111, 103, 225, .28); --portal-glow-c: rgba(234, 83, 173, .27); --portal-glow-d: rgba(244, 183, 82, .17); }
-.portal-animated-background[data-portal-section="settings"] { --portal-glow-a: rgba(45, 178, 224, .27); --portal-glow-b: rgba(114, 94, 218, .28); --portal-glow-c: rgba(182, 86, 209, .24); --portal-glow-d: rgba(244, 188, 77, .2); }
-.portal-animated-background[data-portal-section="results"] { --portal-glow-a: rgba(38, 185, 221, .28); --portal-glow-b: rgba(85, 119, 227, .27); --portal-glow-c: rgba(173, 92, 201, .2); --portal-glow-d: rgba(249, 182, 65, .24); }
+.portal-animated-background[data-portal-section="home"] { --portal-glow-a: rgba(47, 202, 222, .16); --portal-glow-b: rgba(59, 129, 220, .16); --portal-glow-c: rgba(123, 91, 210, .16); --portal-glow-d: rgba(244, 186, 85, .16); }
+.portal-animated-background[data-portal-section="learners"] { --portal-glow-a: rgba(30, 213, 157, .16); --portal-glow-b: rgba(31, 166, 210, .16); --portal-glow-c: rgba(111, 101, 220, .16); --portal-glow-d: rgba(230, 202, 87, .16); }
+.portal-animated-background[data-portal-section="marks"] { --portal-glow-a: rgba(35, 191, 235, .16); --portal-glow-b: rgba(56, 104, 239, .16); --portal-glow-c: rgba(138, 91, 222, .16); --portal-glow-d: rgba(236, 173, 71, .16); }
+.portal-animated-background[data-portal-section="analysis"] { --portal-glow-a: rgba(95, 139, 244, .16); --portal-glow-b: rgba(164, 91, 237, .16); --portal-glow-c: rgba(238, 93, 177, .16); --portal-glow-d: rgba(244, 185, 76, .16); }
+.portal-animated-background[data-portal-section="reports"] { --portal-glow-a: rgba(48, 142, 229, .16); --portal-glow-b: rgba(119, 91, 229, .16); --portal-glow-c: rgba(206, 95, 190, .16); --portal-glow-d: rgba(249, 190, 82, .16); }
+.portal-animated-background[data-portal-section="marklists"] { --portal-glow-a: rgba(32, 194, 185, .16); --portal-glow-b: rgba(58, 157, 218, .16); --portal-glow-c: rgba(131, 100, 222, .16); --portal-glow-d: rgba(232, 181, 75, .16); }
+.portal-animated-background[data-portal-section="staff"] { --portal-glow-a: rgba(34, 159, 235, .16); --portal-glow-b: rgba(99, 100, 224, .16); --portal-glow-c: rgba(181, 100, 200, .16); --portal-glow-d: rgba(246, 190, 83, .16); }
+.portal-animated-background[data-portal-section="mail"] { --portal-glow-a: rgba(40, 175, 228, .16); --portal-glow-b: rgba(111, 91, 222, .16); --portal-glow-c: rgba(232, 76, 160, .16); --portal-glow-d: rgba(242, 178, 83, .16); }
+.portal-animated-background[data-portal-section="timetable"] { --portal-glow-a: rgba(37, 210, 190, .16); --portal-glow-b: rgba(56, 132, 232, .16); --portal-glow-c: rgba(124, 94, 213, .16); --portal-glow-d: rgba(246, 184, 77, .16); }
+.portal-animated-background[data-portal-section="services"] { --portal-glow-a: rgba(30, 205, 166, .16); --portal-glow-b: rgba(71, 143, 216, .16); --portal-glow-c: rgba(148, 89, 202, .16); --portal-glow-d: rgba(250, 166, 69, .16); }
+.portal-animated-background[data-portal-section="parent-feedback"] { --portal-glow-a: rgba(46, 190, 217, .16); --portal-glow-b: rgba(111, 103, 225, .16); --portal-glow-c: rgba(234, 83, 173, .16); --portal-glow-d: rgba(244, 183, 82, .16); }
+.portal-animated-background[data-portal-section="settings"] { --portal-glow-a: rgba(45, 178, 224, .16); --portal-glow-b: rgba(114, 94, 218, .16); --portal-glow-c: rgba(182, 86, 209, .16); --portal-glow-d: rgba(244, 188, 77, .16); }
+.portal-animated-background[data-portal-section="results"] { --portal-glow-a: rgba(38, 185, 221, .16); --portal-glow-b: rgba(85, 119, 227, .16); --portal-glow-c: rgba(173, 92, 201, .16); --portal-glow-d: rgba(249, 182, 65, .16); }
 .portal-page-content {
   position: relative;
   isolation: isolate;
   min-width: 0;
   min-height: calc(100vh - 4rem);
-  color: #eaf1fc;
+  color: var(--color-ink);
   background: transparent;
 }
 .portal-page-content::before,
@@ -323,19 +323,19 @@ html[data-portal-motion="reduced"] .portal-loading, html[data-portal-motion="red
 }
 .portal-page-content::before {
   background-image:
-    radial-gradient(1px 1px at 8% 15%, rgba(255,255,255,.78) 50%, transparent 100%),
-    radial-gradient(1px 1px at 19% 72%, rgba(203,229,255,.72) 50%, transparent 100%),
-    radial-gradient(1.2px 1.2px at 34% 31%, rgba(255,255,255,.74) 50%, transparent 100%),
-    radial-gradient(1px 1px at 46% 83%, rgba(193,226,255,.65) 50%, transparent 100%),
-    radial-gradient(1.2px 1.2px at 63% 18%, rgba(255,255,255,.72) 50%, transparent 100%),
-    radial-gradient(1px 1px at 75% 59%, rgba(199,224,255,.75) 50%, transparent 100%),
-    radial-gradient(1px 1px at 89% 30%, rgba(255,255,255,.7) 50%, transparent 100%),
-    radial-gradient(1.2px 1.2px at 94% 85%, rgba(218,230,255,.72) 50%, transparent 100%),
+    radial-gradient(1px 1px at 8% 15%, rgba(14,42,74,.18) 50%, transparent 100%),
+    radial-gradient(1px 1px at 19% 72%, rgba(29,78,137,.14) 50%, transparent 100%),
+    radial-gradient(1.2px 1.2px at 34% 31%, rgba(14,42,74,.14) 50%, transparent 100%),
+    radial-gradient(1px 1px at 46% 83%, rgba(29,78,137,.12) 50%, transparent 100%),
+    radial-gradient(1.2px 1.2px at 63% 18%, rgba(14,42,74,.13) 50%, transparent 100%),
+    radial-gradient(1px 1px at 75% 59%, rgba(29,78,137,.13) 50%, transparent 100%),
+    radial-gradient(1px 1px at 89% 30%, rgba(14,42,74,.12) 50%, transparent 100%),
+    radial-gradient(1.2px 1.2px at 94% 85%, rgba(29,78,137,.12) 50%, transparent 100%),
     radial-gradient(ellipse at 14% 23%, var(--portal-glow-a), transparent 42%),
     radial-gradient(ellipse at 78% 20%, var(--portal-glow-b), transparent 40%),
     radial-gradient(ellipse at 61% 76%, var(--portal-glow-c), transparent 38%),
     radial-gradient(ellipse at 96% 88%, var(--portal-glow-d), transparent 34%),
-    linear-gradient(140deg, #040711 0%, #09101f 48%, #060914 100%);
+    linear-gradient(140deg, #f4f0e6 0%, #f8f5ed 48%, #f2eee3 100%);
   background-size: 100% 100%;
   animation: mukuyu-nebula-drift 62s ease-in-out infinite alternate;
 }
@@ -345,19 +345,12 @@ html[data-portal-motion="reduced"] .portal-loading, html[data-portal-motion="red
     radial-gradient(ellipse at 86% 20%, color-mix(in srgb, var(--portal-user-glow-b, #1d4e89) 18%, transparent), transparent 40%),
     radial-gradient(ellipse at 66% 80%, color-mix(in srgb, var(--portal-user-glow-c, #9a7430) 16%, transparent), transparent 38%),
     radial-gradient(ellipse at 94% 90%, color-mix(in srgb, var(--portal-user-glow-d, #1f7a4d) 14%, transparent), transparent 34%),
-    radial-gradient(ellipse 49% 30% at 48% 48%, transparent 94.8%, rgba(123,196,255,.18) 95.1%, transparent 95.5%),
-    radial-gradient(ellipse 35% 53% at 55% 50%, transparent 95%, rgba(209,169,255,.12) 95.3%, transparent 95.7%),
-    radial-gradient(ellipse 63% 44% at 50% 47%, transparent 97%, rgba(255,204,127,.1) 97.2%, transparent 97.6%);
+    radial-gradient(ellipse 49% 30% at 48% 48%, transparent 94.8%, rgba(29,78,137,.11) 95.1%, transparent 95.5%),
+    radial-gradient(ellipse 35% 53% at 55% 50%, transparent 95%, rgba(154,116,48,.09) 95.3%, transparent 95.7%),
+    radial-gradient(ellipse 63% 44% at 50% 47%, transparent 97%, rgba(120,205,218,.12) 97.2%, transparent 97.6%);
   animation: mukuyu-orbit-drift 78s ease-in-out infinite alternate;
 }
-.portal-page-content :is(h1, h2, h3, h4),
-.portal-page-content .text-navy,
-.portal-page-content .text-ink { color: #edf4ff; }
-.portal-page-content .text-muted { color: #c5d1e2; }
-.portal-page-content .text-info { color: #9ed5ff; }
-.portal-page-content .text-good { color: #a4edc1; }
-.portal-page-content .text-warn { color: #ffd18a; }
-.portal-page-content .text-bad { color: #ffb9bd; }
+/* Content keeps Mukuyu's original ink and semantic colors; only the canvas behind it moves. */
 .portal-page-content :is([class*="bg-card"], [class*="bg-white"], [class*="bg-paper"]) { color: var(--color-ink); }
 .portal-page-content :is(th, td)[class*="bg-slate-"] { color: var(--color-ink); }
 .portal-page-content :is([class*="bg-card"], [class*="bg-white"], [class*="bg-paper"]) :is(h1, h2, h3, h4, .text-navy, .text-ink) { color: #102b49; }
