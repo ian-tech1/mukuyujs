@@ -160,12 +160,17 @@ export function renderInstallPageHtml(template, { host, url, appName } = {}) {
 
 export function renderWebManifest(hostHeader, appNameOverride, iconPath) {
   const name = String(appNameOverride ?? "").trim().replace(/\s+/g, " ").slice(0, 100) || appNameFromHost(hostHeader);
-  const icons = iconPath === "/__grok/school-icon.svg"
+  const icons = iconPath === "/icons/mukuyu-app-192.png"
     ? [
-        { src: iconPath, sizes: "any", type: "image/svg+xml", purpose: "any maskable" },
-        { src: "/__grok/icon-180.png", sizes: "180x180", type: "image/png" },
+        { src: "/icons/mukuyu-app-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
+        { src: "/icons/mukuyu-app-512.png", sizes: "512x512", type: "image/png", purpose: "any maskable" },
       ]
-    : [{ src: "/__grok/icon-180.png", sizes: "180x180", type: "image/png" }];
+    : iconPath === "/__grok/school-icon.svg"
+      ? [
+          { src: iconPath, sizes: "any", type: "image/svg+xml", purpose: "any maskable" },
+          { src: "/__grok/icon-180.png", sizes: "180x180", type: "image/png" },
+        ]
+      : [{ src: "/__grok/icon-180.png", sizes: "180x180", type: "image/png" }];
   return JSON.stringify(
     {
       name,
@@ -174,8 +179,8 @@ export function renderWebManifest(hostHeader, appNameOverride, iconPath) {
       start_url: "/",
       scope: "/",
       display: "standalone",
-      background_color: "#000000",
-      theme_color: "#000000",
+      background_color: "#f4f0e6",
+      theme_color: "#0e2a4a",
       icons,
     },
     null,
@@ -195,7 +200,7 @@ export function grokPwaHeadTags(appName = DEFAULT_APP_NAME) {
     // Standalone display comes from the manifest ("display": "standalone");
     // the legacy *-web-app-capable metas it replaces are deliberately absent.
     ["manifest", '<link rel="manifest" href="/__grok/manifest.webmanifest">'],
-    ["apple-touch-icon", '<link rel="apple-touch-icon" href="/__grok/icon-180.png">'],
+    ["apple-touch-icon", '<link rel="apple-touch-icon" href="/icons/mukuyu-app-180.png">'],
     [
       "apple-mobile-web-app-title",
       `<meta name="apple-mobile-web-app-title" content="${escapeHtml(appName)}">`,
@@ -459,7 +464,7 @@ export function injectGrokPwaHead(html, ctx = {}) {
   const missing = grokPwaHeadTags(appName)
     .filter(([key]) => {
       if (key === "manifest") return !next.includes('href="/__grok/manifest.webmanifest"');
-      if (key === "apple-touch-icon") return !next.includes('href="/__grok/icon-180.png"');
+      if (key === "apple-touch-icon") return !next.includes('href="/icons/mukuyu-app-180.png"');
       return !next.includes(`name="${key}"`);
     })
     .map(([, tag]) => tag);

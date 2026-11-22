@@ -66,8 +66,8 @@ export function ReportsView({ ws, flash, refresh }: Gate) {
           row,
           qr,
           logo,
-          closingDate: period.calendar?.closingDate,
-          openingDate: period.calendar?.openingDate,
+          closingDate: period.calendar?.closingDate ?? "",
+          openingDate: period.calendar?.openingDate ?? "",
           title: period.calendar?.reportTitle,
           extras: extrasFor(ws, row.learner, period.yearId, period.termId, subjects, exams),
         });
@@ -129,7 +129,7 @@ export function ReportsView({ ws, flash, refresh }: Gate) {
       </div>
       {current && grade ? (
         <>
-          <ReportSheet profile={profileForPeriod} grade={grade} stream={ws.streams.find((stream) => stream.id === current.learner.streamId)} subjects={subjects} exams={displayExams} row={current} closingDate={period.calendar?.closingDate} openingDate={period.calendar?.openingDate} title={period.calendar?.reportTitle} extras={currentExtras} />
+          <ReportSheet profile={profileForPeriod} grade={grade} stream={ws.streams.find((stream) => stream.id === current.learner.streamId)} subjects={subjects} exams={displayExams} row={current} closingDate={period.calendar?.closingDate ?? ""} openingDate={period.calendar?.openingDate ?? ""} title={period.calendar?.reportTitle} extras={currentExtras} />
           {canEditLearner(ws.me, ws.assignments, current.learner.streamId) ? <AttendanceEditor key={`${current.learner.id}-${period.yearId}-${period.termId}`} ws={ws} flash={flash} refresh={refresh} learnerId={current.learner.id} learnerName={current.learner.fullName} yearId={period.yearId} termId={period.termId} note={currentExtras?.termNote ?? null} /> : null}
         </>
       ) : <p className="text-sm text-muted">{query.trim() ? "No learner matches that name or admission number." : "No learners in this class yet."}</p>}

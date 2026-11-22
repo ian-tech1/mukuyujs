@@ -43,10 +43,12 @@ export function PublicReport({ code }: { code: string }) {
 
   if (state === "loading") {
     return (
-      <main className="grid min-h-screen place-items-center bg-paper">
-        <div className="text-center" role="status" aria-live="polite">
-          <SchoolLogo className="mx-auto size-20" />
-          <p className="mt-3 text-sm font-semibold text-navy">Loading the selected report card…</p>
+      <main className="portal-loading grid min-h-screen place-items-center bg-paper px-6">
+        <div className="portal-loading-card text-center" role="status" aria-live="polite">
+          <span className="portal-loading-orbit" aria-hidden="true"><SchoolLogo className="size-16" /></span>
+          <p className="mt-5 font-serif text-lg font-semibold text-navy">Mukuyu Junior School</p>
+          <p className="mt-1 text-sm text-muted">Loading the selected report card…</p>
+          <div className="portal-loading-track mt-5" aria-hidden="true"><span /></div>
         </div>
       </main>
     );
@@ -72,7 +74,7 @@ export function PublicReport({ code }: { code: string }) {
       const qr = data.profile.showQr ? await qrFor(url) : "";
       const safeName = data.row.learner.fullName.trim().replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "").toLowerCase() || "learner";
       const logo = await logoDataUrl(data.profile.logoData || "");
-      await downloadReportPdf(`${safeName}-${data.profile.academicYear}-${data.profile.termName}-report.pdf`.replace(/[^a-z0-9._-]+/gi, "-"), [{ profile: data.profile, grade: data.grade, stream: data.stream, subjects: data.subjects, exams: data.exams, row: data.row, extras: data.extras, closingDate: data.calendar?.closingDate, openingDate: data.calendar?.openingDate, title: data.calendar?.reportTitle, qr, logo }]);
+      await downloadReportPdf(`${safeName}-${data.profile.academicYear}-${data.profile.termName}-report.pdf`.replace(/[^a-z0-9._-]+/gi, "-"), [{ profile: data.profile, grade: data.grade, stream: data.stream, subjects: data.subjects, exams: data.exams, row: data.row, extras: data.extras, closingDate: data.calendar?.closingDate ?? "", openingDate: data.calendar?.openingDate ?? "", title: data.calendar?.reportTitle, qr, logo }]);
     } catch { window.print(); }
     finally { setDownloading(false); }
   }
@@ -91,8 +93,8 @@ export function PublicReport({ code }: { code: string }) {
           subjects={data.subjects}
           exams={data.exams}
           row={data.row}
-          closingDate={data.calendar?.closingDate}
-          openingDate={data.calendar?.openingDate}
+          closingDate={data.calendar?.closingDate ?? ""}
+          openingDate={data.calendar?.openingDate ?? ""}
           title={data.calendar?.reportTitle}
           extras={data.extras}
         />

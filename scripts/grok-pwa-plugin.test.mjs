@@ -528,6 +528,16 @@ test("renders a school-branded manifest and initials icon when runtime identity 
   assert.equal(icon.includes("<script>"), false);
 });
 
+test("renders square Mukuyu school-logo artwork in the install manifest", () => {
+  const manifest = JSON.parse(renderWebManifest("preview.local", "Mukuyu Junior School", "/icons/mukuyu-app-192.png"));
+  assert.deepEqual(manifest.icons, [
+    { src: "/icons/mukuyu-app-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
+    { src: "/icons/mukuyu-app-512.png", sizes: "512x512", type: "image/png", purpose: "any maskable" },
+  ]);
+  assert.equal(manifest.background_color, "#f4f0e6");
+  assert.equal(manifest.theme_color, "#0e2a4a");
+});
+
 test("school name overrides are HTML-escaped in the install tutorial", () => {
   const html = renderInstallPage("localhost:8080", "/?install=1&platform=ios", "<unsafe school>");
   assert.match(html, /&lt;unsafe school&gt;/);

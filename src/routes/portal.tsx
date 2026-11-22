@@ -125,10 +125,12 @@ function PortalPage() {
 
   if (!ws) {
     return (
-      <main className="grid min-h-screen place-items-center bg-paper">
-        <div className="text-center">
-          <SchoolLogo className="mx-auto size-16" />
-          <p className="mt-4 text-sm text-muted">Opening the school office…</p>
+      <main className="portal-loading grid min-h-screen place-items-center bg-paper px-6">
+        <div className="portal-loading-card text-center" role="status" aria-live="polite">
+          <span className="portal-loading-orbit" aria-hidden="true"><SchoolLogo className="size-16" /></span>
+          <p className="mt-5 font-serif text-lg font-semibold text-navy">Mukuyu Junior School</p>
+          <p className="mt-1 text-sm text-muted">Opening the school office…</p>
+          <div className="portal-loading-track mt-5" aria-hidden="true"><span /></div>
         </div>
       </main>
     );

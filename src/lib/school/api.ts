@@ -17,6 +17,7 @@ import { DEFAULT_ADMISSION_NUMBER_SETTINGS, normalizeAdmissionNumberSettings, va
 import { DEFAULT_ROLE_ACCESS, normalizeRoleAccess, canActorAccess, type RoleAccessPolicy } from "@/lib/school/role-access";
 import { normalizeReportCode, resolveReportCode } from "@/lib/school/report-code";
 import { isValidParentEmail, matchLearnerName, normalizeLearnerName, normalizeParentEmail } from "@/lib/school/parent-access";
+import { resolveSubjectHeader } from "@/lib/school/subject-header";
 
 type SessionData = { userId: string; v: number };
 let spotifyTokenCache: { accessToken: string; expiresAt: number } | null = null;
@@ -3197,7 +3198,6 @@ export const importMarksExcel = createServerFn({ method: "POST" })
     const placedAtYear = new Map((await learnersAtYear(sql, data.yearId)).map((placed) => [placed.id, placed]));
     const assignments = await sql<Assignment>`select id, user_id as "userId", kind, grade_id as "gradeId", stream_id as "streamId", subject_id as "subjectId" from assignments where user_id = ${me.id}`;
     const availableSubjects = await sql<{ id: string; name: string; short_name: string }>`select id, name, short_name from subjects order by sort`;
-    const normalizeSubject = (value: string) => value.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/\([^)]*\)/g, " ").toLowerCase().replace(/&/g, "and").replace(/[^a-z0-9]+/g, " ").trim().replace(/\s+/g, " ");
     const activeLearners = await sql<{ id: string; full_name: string; admission_number: string | null; grade_id: string; stream_id: string }>`select id, full_name, admission_number, grade_id, stream_id from learners where status = 'active'`;
     const normalizeName = (value: string) => value.trim().toUpperCase().replace(/\s+/g, " ");
     const byAdmission = new Map(activeLearners.flatMap((learner) => learner.admission_number?.trim() ? [[learner.admission_number.trim().toUpperCase(), learner] as const] : []));
@@ -3230,13 +3230,8 @@ export const importMarksExcel = createServerFn({ method: "POST" })
         errors.push(`Row ${line}: name does not match admission ${admission}; verify the learner.`); continue;
       }
       const subjectName = row.subject.trim();
-      const normalizedHeader = normalizeSubject(subjectName).replace(/\s+(?:out of|maximum|marks?)\s+\d+(?:\.\d+)?$/, "").trim();
-      const matches = availableSubjects.filter((subject) => [subject.name, subject.short_name].filter(Boolean).some((name) => {
-        const normalizedName = normalizeSubject(name);
-        return normalizedHeader === normalizedName || normalizedHeader === `${normalizedName} score` || normalizedHeader === `${normalizedName} marks` || normalizedHeader === `${normalizedName} out of 100`;
-      }));
-      if (matches.length !== 1) { errors.push(`Row ${line}: subject '${subjectName}' was ${matches.length ? "ambiguous" : "not recognized"}. Use the subject name or short name shown in the portal.`); continue; }
-      const matchedSubject = matches[0];
+      const matchedSubject = resolveSubjectHeader(subjectName, availableSubjects.map((subject) => ({ id: subject.id, name: subject.name, shortName: subject.short_name })));
+      if (!matchedSubject) { errors.push(`Row ${line}: subject '${subjectName}' was not recognized or is ambiguous. Use the subject name or short name shown in the portal.`); continue; }
       const key = `${learner.id}|${matchedSubject.id}`;
       if (seen.has(key)) { errors.push(`Row ${line}: duplicate learner/subject row.`); continue; }
       seen.add(key);

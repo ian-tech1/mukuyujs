@@ -33,8 +33,8 @@ export function ReportSheet({
   const link = liveReportLink(profile.publicBaseUrl, row.learner.publicCode || "");
   const qr = useQr(profile.showQr ? link : "");
   const logo = profile.logoData || "/logo.png";
-  const closing = closingDate ?? profile.closingDate;
-  const opening = openingDate ?? profile.resumptionDate;
+  const closing = closingDate !== undefined ? closingDate : profile.closingDate;
+  const opening = openingDate !== undefined ? openingDate : profile.resumptionDate;
   const heading = title || grade.reportTitle || profile.reportTitle;
   const footnote = reportFootnote(profile, row, subjects, extras);
   const showRank = Boolean(profile.showSubjectRank);

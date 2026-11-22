@@ -441,17 +441,17 @@ function CalendarCard({ ws, flash, refresh }: Pick<Gate, "ws" | "flash" | "refre
         await refresh();
       } catch (error) { flash(errText(error), true); }
     }}>
-      <h2 className="font-serif text-xl text-navy">Years, terms, closing and opening</h2>
-      <p className="text-sm text-muted">Four years are ready, from 2024 to 2027. Each has Term 1, Term 2 and Term 3. The current term is what parents see first.</p>
+      <h2 className="font-serif text-xl text-navy">Report dates for a selected year and term</h2>
+      <p className="text-sm text-muted">Choose an academic year and term below before editing. Opening and closing dates are saved separately for that exact year–term combination; blank dates stay blank and do not inherit dates from the school profile or another term. The current term is what parents see first.</p>
       <div className="grid gap-2 sm:grid-cols-2">
-        <select className={inputClass} value={yearId} onChange={(event) => { setYearId(event.target.value); load(event.target.value, termId); }}>
+        <label className="text-sm font-semibold">Academic year<select className={`${inputClass} mt-1`} value={yearId} onChange={(event) => { setYearId(event.target.value); load(event.target.value, termId); }}>
           {ws.years.map((year) => <option key={year.id} value={year.id}>{year.name}</option>)}
-        </select>
-        <select className={inputClass} value={termId} onChange={(event) => { setTermId(event.target.value); load(yearId, event.target.value); }}>
+        </select></label>
+        <label className="text-sm font-semibold">Term<select className={`${inputClass} mt-1`} value={termId} onChange={(event) => { setTermId(event.target.value); load(yearId, event.target.value); }}>
           {ws.terms.map((term) => <option key={term.id} value={term.id}>{term.name}</option>)}
-        </select>
-        <label className="text-sm">Closing date<input className={`${inputClass} mt-1`} value={closing} onChange={(event) => setClosing(event.target.value)} placeholder="23/10/2026" /></label>
-        <label className="text-sm">Opening date<input className={`${inputClass} mt-1`} value={opening} onChange={(event) => setOpening(event.target.value)} placeholder="4/1/2027" /></label>
+        </select></label>
+        <label className="text-sm">Closing date for this year and term<input className={`${inputClass} mt-1`} value={closing} onChange={(event) => setClosing(event.target.value)} placeholder="23/10/2026" /></label>
+        <label className="text-sm">Opening / resumption date for this year and term<input className={`${inputClass} mt-1`} value={opening} onChange={(event) => setOpening(event.target.value)} placeholder="4/1/2027" /></label>
       </div>
       <label className="block text-sm">Report title for this term<input className={`${inputClass} mt-1`} value={title} onChange={(event) => setTitle(event.target.value)} /></label>
       <label className="block text-sm">Requirements for this term<textarea className={`${inputClass} mt-1 h-16 py-2`} value={requirements} onChange={(event) => setRequirements(event.target.value)} /></label>

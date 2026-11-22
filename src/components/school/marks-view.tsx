@@ -5,6 +5,7 @@ import { PeriodBar, useSchoolPeriod } from "@/components/school/period-bar";
 import { bandFor, buildBoards, canEditMark, canEnterMark, learnersForYear, markControlFor } from "@/lib/school/model";
 import { approveMarksPeriod, clearBulkResults, importMarksExcel, saveMarks, saveSubjectRemarks } from "@/lib/school/api";
 import { parseMarkSpreadsheet, marksFromDelimited, type MarkSheetRow } from "@/lib/school/sheet";
+import { resolveSubjectHeader } from "@/lib/school/subject-header";
 
 function parseEnteredScore(raw: string, denominator = 100): number | null {
   const value = raw.trim();
@@ -60,6 +61,8 @@ export function MarksView({ ws, refresh, flash }: Gate) {
   const [uploadRows, setUploadRows] = useState<MarkSheetRow[]>([]);
   const [uploadText, setUploadText] = useState("");
   const [uploadBusy, setUploadBusy] = useState(false);
+  const [uploadErrors, setUploadErrors] = useState<string[]>([]);
+  const uploadSubjects = useMemo(() => [...new Set(uploadRows.flatMap((row) => Object.keys(row.scores)))].map((header) => ({ header, subject: resolveSubjectHeader(header, subjects) })), [uploadRows, subjects]);
   useEffect(() => {
     const next: Record<string, string> = {};
     for (const learner of learners) {
@@ -268,25 +271,30 @@ export function MarksView({ ws, refresh, flash }: Gate) {
       {(ws.me.role === "super_admin" || ws.me.isDeputy || ws.me.privImport || ws.me.role === "admin") ? <section className="marks-import-panel space-y-3 rounded-2xl border border-line p-4 shadow-sm">
         <div className="flex flex-wrap items-start justify-between gap-2"><div><p className="text-xs font-bold uppercase tracking-[.18em] text-info">Spreadsheet import</p><h2 className="font-serif text-xl text-navy">Paste or upload marks</h2></div><span className="rounded-full bg-white/80 px-3 py-1 text-xs font-semibold text-navy">{subjects.length} available subjects</span></div>
         <p className="text-sm text-muted">Copy the complete Excel range, including its header row, and paste below. Include Admission Number or Learner Name plus one column for every subject. Subject names and short names are recognized; fractions such as 30/40 are converted to percentages. Blank cells are left unchanged.</p>
-        <textarea aria-label="Paste spreadsheet marks" className={`${inputClass} marks-paste-grid h-36 py-3 font-mono text-xs`} placeholder={'Admission Number\tLearner Name\tMathematics\tEnglish\tIntegrated Science\nMKS-2026-12345\tAMINA YUSUF\t30/40\t81\t33/40'} value={uploadText} onChange={(event) => { setUploadText(event.target.value); try { setUploadRows(marksFromDelimited(event.target.value)); } catch { setUploadRows([]); } }} />
+        <textarea aria-label="Paste spreadsheet marks" className={`${inputClass} marks-paste-grid h-36 py-3 font-mono text-xs`} placeholder={'Admission Number\tLearner Name\tMathematics\tEnglish\tIntegrated Science\tAgriculture\tPretech\nMKS-2026-12345\tAMINA YUSUF\t30/40\t81\t33/40\t76\t42'} value={uploadText} onChange={(event) => { setUploadText(event.target.value); setUploadErrors([]); try { setUploadRows(marksFromDelimited(event.target.value)); } catch { setUploadRows([]); } }} />
         <input className="block text-sm" type="file" accept=".xlsx,.csv,.tsv,.txt" onChange={async (event) => {
           const file = event.target.files?.[0]; if (!file) return;
-          try { const parsed = await parseMarkSpreadsheet(file); setUploadRows(parsed); flash(`${parsed.length} learner row(s) read. Review the preview before saving.`); }
+          try { const parsed = await parseMarkSpreadsheet(file); setUploadRows(parsed); setUploadErrors([]); flash(`${parsed.length} learner row(s) read. Review the subject matches before saving.`); }
           catch (error) { flash(errText(error), true); }
         }} />
         <p className="rounded-xl bg-white/70 px-3 py-2 text-sm font-semibold text-navy">{uploadRows.length} learner rows · {uploadRows.reduce((n, row) => n + Object.values(row.scores).filter((score) => score != null).length, 0)} numeric subject marks detected</p>
+        {uploadSubjects.length ? <div className="grid gap-1 rounded-xl border border-line bg-white/75 p-3 text-xs sm:grid-cols-2"><p className="sm:col-span-2 font-semibold text-navy">Subject column check before import</p>{uploadSubjects.map(({ header, subject }) => <p key={header} className={subject ? "text-good" : "font-semibold text-bad"}>{subject ? `✓ ${header} → ${subject.name}` : `Needs review: ${header} does not match one unique subject`}</p>)}</div> : null}
         {uploadRows.length ? <div className="marks-grid-scroll max-h-64 overflow-auto rounded-xl border border-line"><table className="marks-preview-table text-xs"><thead><tr><th className="sticky left-0 z-10 p-2 text-left">Admission</th><th className="p-2 text-left">Learner</th>{[...new Set(uploadRows.flatMap((row) => Object.keys(row.scores)))].map((name) => <th key={name} className="p-2 text-right">{name}</th>)}</tr></thead><tbody>{uploadRows.slice(0, 100).map((row, index) => <tr key={`${row.admissionNumber || row.fullName}-${index}`}><td className="sticky left-0 p-2">{row.admissionNumber || "—"}</td><td className="p-2">{row.fullName || "—"}</td>{[...new Set(uploadRows.flatMap((item) => Object.keys(item.scores)))].map((name) => <td key={name} className="p-2 text-right tabular-nums">{row.scores[name] ?? "—"}</td>)}</tr>)}</tbody></table>{uploadRows.length > 100 ? <p className="p-2 text-xs text-muted">Previewing first 100 of {uploadRows.length} rows; all rows will be validated on save.</p> : null}</div> : null}
         <button className={btnClass} type="button" disabled={!uploadRows.length || uploadBusy} onClick={async () => {
           const flat = uploadRows.flatMap((row) => Object.entries(row.scores).filter(([, score]) => score != null).map(([subject, score]) => ({ admissionNumber: row.admissionNumber, fullName: row.fullName, subject, score: score as number })));
           if (!flat.length) { flash("No numeric subject scores were found.", true); return; }
+          if (uploadSubjects.some(({ subject }) => !subject)) { flash("Review the unmatched subject columns above. Only recognized subject headers can be saved.", true); return; }
           setUploadBusy(true);
           try {
             const result = await importMarksExcel({ data: { yearId: period.yearId, termId: period.termId, examId, rows: flat } });
-            flash(result.errors.length ? `${result.saved} mark(s) saved; ${result.errors.length} row(s) need attention. First issue: ${result.errors[0]}` : `${result.saved} mark(s) saved successfully.`);
-            setUploadRows([]); setUploadText(""); await refresh();
+            setUploadErrors(result.errors);
+            flash(result.errors.length ? `${result.saved} mark(s) saved; ${result.errors.length} row(s) need attention. See the full error list below.` : `${result.saved} mark(s) saved successfully.` , result.errors.length > 0);
+            if (!result.errors.length) { setUploadRows([]); setUploadText(""); }
+            await refresh();
           } catch (error) { flash(errText(error), true); }
           finally { setUploadBusy(false); }
         }}>{uploadBusy ? "Saving marks…" : "Validate and save uploaded marks"}</button>
+        {uploadErrors.length ? <div className="max-h-48 overflow-auto rounded-xl border border-rose-300 bg-rose-50 p-3 text-xs text-rose-900" role="alert"><p className="font-bold">{uploadErrors.length} row(s) were not saved. Correct the learner/subject data and retry; already-saved unchanged marks will not be duplicated.</p><ul className="mt-2 list-inside list-disc space-y-1">{uploadErrors.slice(0, 100).map((error, index) => <li key={`${index}-${error}`}>{error}</li>)}</ul>{uploadErrors.length > 100 ? <p className="mt-2">Showing the first 100 errors.</p> : null}</div> : null}
       </section> : null}
       {ws.me.role === "super_admin" ? <ClearBulkResultsCard ws={ws} gradeId={gradeId} streamId={streamId} yearId={period.yearId} termId={period.termId} examId={examId} flash={flash} refresh={refresh} /> : null}
       {(ws.me.role === "super_admin" || ws.me.isDeputy || (ws.me.role === "admin" && ws.me.privCalendar)) ? <section className="rounded-md border border-line bg-card p-4 space-y-3"><h2 className="font-serif text-xl text-navy">Approve recorded marks</h2><p className="text-sm text-muted">Approval applies to existing marks for the selected academic year, term and grade/stream. Any later edit or import changes the affected mark back to Recorded so it must be reviewed again.</p><p className="text-sm">Approved marks: {period.marks.filter((mark) => mark.status === "approved" && mark.gradeId === gradeId && (!streamId || mark.streamId === streamId)).length} · Recorded but not approved: {period.marks.filter((mark) => mark.status !== "approved" && mark.gradeId === gradeId && (!streamId || mark.streamId === streamId)).length}</p><button className={btnClass} type="button" onClick={async () => { if (!confirm(`Approve all currently recorded marks for ${ws.grades.find((grade) => grade.id === gradeId)?.name ?? "this grade"}, ${ws.terms.find((term) => term.id === period.termId)?.name ?? "selected term"}?`)) return; try { const result = await approveMarksPeriod({ data: { yearId: period.yearId, termId: period.termId, gradeId, streamId: streamId || undefined } }); flash(`${result.approved} mark(s) approved.`); await refresh(); } catch (error) { flash(errText(error), true); } }}>Approve marks for selected period</button></section> : null}

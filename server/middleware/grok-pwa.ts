@@ -85,7 +85,7 @@ export default async function grokPwaMiddleware(
 
   if (path === "/__grok/manifest.webmanifest" || path === "/__grok/manifest.json") {
     const schoolName = await schoolBrandName();
-    return new Response(renderWebManifest(requestHost(event), schoolName, "/__grok/school-icon.svg"), {
+    return new Response(renderWebManifest(requestHost(event), schoolName, "/icons/mukuyu-app-192.png"), {
       headers: {
         "content-type": "application/manifest+json; charset=utf-8",
         "cache-control": "no-cache",

@@ -120,8 +120,8 @@ function drawReport(doc: import("jspdf").jsPDF, input: DrawInput) {
 
   if (profile.showQr && qr) doc.addImage(qr, "PNG", 8, 61, 22, 22);
   doc.setFontSize(7.5);
-  doc.text(`CLOSING DATE:   ${input.closingDate || profile.closingDate}`, 34, 70);
-  doc.text(`OPENING DATE:   ${input.openingDate || profile.resumptionDate}`, 34, 76);
+  doc.text(`CLOSING DATE:   ${input.closingDate ?? profile.closingDate}`, 34, 70);
+  doc.text(`OPENING DATE:   ${input.openingDate ?? profile.resumptionDate}`, 34, 76);
   doc.setFont("helvetica", "italic");
   doc.setFontSize(7);
   doc.text(profile.catNote, 34, 82);

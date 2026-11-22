@@ -76,7 +76,7 @@ export function ResultsView({ ws, flash }: Gate) {
             const logo = await logoDataUrl(ws.profile.logoData);
             await downloadReportPdf(`${row.learner.fullName}.pdf`.replace(/\s+/g, "_"), [{
               profile: profileForPeriod, grade, stream, subjects, exams: displayExams, row, qr, logo,
-              closingDate: calendar?.closingDate, openingDate: calendar?.openingDate, title: calendar?.reportTitle,
+              closingDate: calendar?.closingDate ?? "", openingDate: calendar?.openingDate ?? "", title: calendar?.reportTitle,
               extras,
             }]);
           } catch (error) { flash(errText(error), true); }
@@ -84,7 +84,7 @@ export function ResultsView({ ws, flash }: Gate) {
         {row ? <button className={`${btnClass} border border-line bg-card text-navy`} type="button" onClick={() => window.print()}>Print / Save as PDF</button> : null}
       </header>
       {ws.profile.whatsappGroupEnabled && ws.profile.whatsappGroupUrl ? <a className="block rounded-xl border-2 border-[#128C7E] bg-[#25D366] px-4 py-4 text-center text-base font-extrabold text-white shadow-lg ring-2 ring-[#25D366]/30 transition hover:brightness-95" aria-label={ws.profile.whatsappGroupLabel || `Tap to join ${ws.profile.name} WhatsApp group`} href={ws.profile.whatsappGroupUrl} target="_blank" rel="noreferrer"><span className="block text-xs uppercase tracking-widest text-white/90">School community</span><span className="mt-1 block">{ws.profile.whatsappGroupLabel || `Tap to join ${ws.profile.name} WhatsApp group`}</span></a> : null}
-      {row ? <ReportSheet profile={profileForPeriod} grade={grade} stream={stream} subjects={subjects} exams={displayExams} row={row} closingDate={calendar?.closingDate} openingDate={calendar?.openingDate} title={calendar?.reportTitle} extras={extras} /> : <p className="text-sm text-muted">Marks for this term have not been entered.</p>}
+      {row ? <ReportSheet profile={profileForPeriod} grade={grade} stream={stream} subjects={subjects} exams={displayExams} row={row} closingDate={calendar?.closingDate ?? ""} openingDate={calendar?.openingDate ?? ""} title={calendar?.reportTitle} extras={extras} /> : <p className="text-sm text-muted">Marks for this term have not been entered.</p>}
       {ws.me.role === "parent" && row && learner.publicCode && parentOptions ? <QrParentFeedback code={learner.publicCode} learnerName={learner.fullName} gradeName={grade.name} streamName={stream?.name ?? "Stream not listed"} settings={parentOptions.feedbackSettings} teachers={parentOptions.feedbackTeachers} /> : null}
     </div>
   );

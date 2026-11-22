@@ -314,3 +314,21 @@ html:not([data-portal-accent-motion="off"]) .portal-page-content :is(article, se
 html[data-portal-motion="reduced"] .welcome-features-button, html[data-portal-motion="reduced"] .welcome-features-overlay, html[data-portal-motion="reduced"] .welcome-features-dialog, html[data-portal-motion="reduced"] .welcome-feature-card, html[data-portal-motion="reduced"] .portal-page-content :is(article, section, form)[class~="bg-card"] { animation: none !important; }
 html[data-portal-motion="reduced"] .portal-page-content :is(article, section)[class~="bg-card"][class~="shadow-card"]:hover { transform: none !important; }
 html[data-portal-accent-motion="off"] .portal-page-content :is(article, section, form)[class~="bg-card"] { animation: none !important; }
+
+/* School-branded rainbow loading state: a slow spectrum, never a flashing spinner. */
+.portal-loading { position: relative; isolation: isolate; overflow: hidden; background: linear-gradient(125deg, #f4f0e6, #edf7fb, #fff3df, #f3eafb, #f4f0e6); background-size: 320% 320%; animation: portal-loading-spectrum 18s ease-in-out infinite; }
+.portal-loading::before, .portal-loading::after { content: ""; position: absolute; z-index: 0; width: min(60vw, 32rem); aspect-ratio: 1; border-radius: 50%; filter: blur(64px); opacity: .28; pointer-events: none; }
+.portal-loading::before { left: -14%; top: -35%; background: radial-gradient(circle, #51c6d8 0%, rgba(81,198,216,0) 70%); animation: portal-loading-cloud-a 13s ease-in-out infinite alternate; }
+.portal-loading::after { right: -13%; bottom: -38%; background: radial-gradient(circle, #f3b548 0%, rgba(243,181,72,0) 70%); animation: portal-loading-cloud-b 17s ease-in-out infinite alternate; }
+.portal-loading-card { position: relative; z-index: 1; min-width: min(22rem, calc(100vw - 3rem)); padding: 2rem; border: 1px solid rgba(255,255,255,.8); border-radius: 1.5rem; background: rgba(255,255,255,.72); box-shadow: 0 22px 70px rgba(14,42,74,.12), inset 0 1px rgba(255,255,255,.9); backdrop-filter: blur(18px); }
+.portal-loading-orbit { display: grid; width: 6rem; height: 6rem; place-items: center; margin-inline: auto; border: 3px solid transparent; border-radius: 50%; background: linear-gradient(white,white) padding-box, conic-gradient(from 0deg, #f4bb46, #e36695, #845dc4, #3989d2, #48bba0, #f4bb46) border-box; animation: portal-loading-orbit 4s linear infinite; box-shadow: 0 0 26px rgba(87,139,197,.2); }
+.portal-loading-track { height: .45rem; overflow: hidden; border-radius: 999px; background: linear-gradient(90deg, rgba(57,137,210,.12), rgba(72,187,160,.16), rgba(243,181,72,.18)); }
+.portal-loading-track span { display: block; width: 42%; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #3989d2, #845dc4, #e36695, #f4bb46, #48bba0); background-size: 220% 100%; animation: portal-loading-progress 2.4s ease-in-out infinite, portal-loading-spectrum 8s linear infinite; }
+@keyframes portal-loading-spectrum { 0%,100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+@keyframes portal-loading-orbit { to { filter: hue-rotate(360deg); transform: rotate(360deg); } }
+@keyframes portal-loading-progress { 0% { transform: translateX(-110%); } 65%,100% { transform: translateX(250%); } }
+@keyframes portal-loading-cloud-a { from { transform: translate3d(-3vw, 0, 0) scale(.92); } to { transform: translate3d(8vw, 7vh, 0) scale(1.12); } }
+@keyframes portal-loading-cloud-b { from { transform: translate3d(4vw, -2vh, 0) scale(1.08); } to { transform: translate3d(-7vw, -8vh, 0) scale(.88); } }
+html[data-portal-motion="reduced"] .portal-loading, html[data-portal-motion="reduced"] .portal-loading::before, html[data-portal-motion="reduced"] .portal-loading::after, html[data-portal-motion="reduced"] .portal-loading-orbit, html[data-portal-motion="reduced"] .portal-loading-track span { animation: none !important; }
+@media (prefers-reduced-motion: reduce) { .portal-loading, .portal-loading::before, .portal-loading::after, .portal-loading-orbit, .portal-loading-track span { animation: none !important; } }
+@media print { .portal-loading, .portal-loading::before, .portal-loading::after, .portal-loading-orbit, .portal-loading-track span { animation: none !important; } }

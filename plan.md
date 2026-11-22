@@ -79,3 +79,18 @@ Drag movement, live clash highlighting, undo/redo foundations, visual conflict r
 - Extend the existing Mukuyu editorial academic command-center style with a calm aurora palette, soft glass surfaces and jewel-tone accents. Use slow, low-amplitude motion, depth and staggered entry rather than rapid flashing.
 - Respect the welcome animation switch, the user's portal motion setting, and `prefers-reduced-motion`; preserve print clarity, responsive layouts, keyboard focus visibility and readable contrast.
 - Place the reusable visual treatments in `src/school-display.css`, imported by the existing `src/styles.css` entrypoint, so portal, welcome, login and public QR surfaces share a consistent finish.
+
+## Follow-up: marks import, term-specific report dates, and school branding
+
+- Normalize common spreadsheet subject headings and known aliases against the configured subject list, including English, Integrated Science spelling variants, Agriculture, and Pretechnical/Pretech; keep ambiguous and unknown labels visible as errors rather than silently dropping marks.
+- Keep report opening and closing dates scoped to the selected academic year and term across portal reports, parent QR reports, printed report sheets, and PDF output. Do not fall back to another term's school-profile dates when the selected year/term has no saved date.
+- Make the Settings term-date control clearly select one academic year and one term before saving that period's opening and closing dates.
+- Add calm, continuously shifting rainbow-spectrum motion to loading states and layered moving colors to existing portal backgrounds, honoring reduced-motion preferences and print clarity.
+- Replace the generated initials-only shortcut art with square install icons derived from the existing school logo, and ensure link previews keep using the existing school-branded Open Graph image.
+
+### Project structure touched
+
+- `src/lib/school/subject-header.ts` and focused tests: subject-heading normalization and explicit safe aliases.
+- `src/lib/school/api.ts` and `src/components/school/marks-view.tsx`: server import matching and transparent preview/error handling.
+- `src/components/school/settings-view.tsx`, report views, `report-sheet.tsx` and `pdf.ts`: year/term-specific date entry and rendering.
+- `src/styles.css`, `src/routes/portal.tsx`, `scripts/grok-pwa-shared.mjs` and `public/`: loader animation, branded app icons, and existing social preview metadata.
