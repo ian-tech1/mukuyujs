@@ -357,12 +357,12 @@ html[data-portal-accent-motion="off"] .portal-page-content.portal-panel-color-mo
 .portal-loading::after { background: radial-gradient(ellipse, rgba(244,181,70,.76) 0%, rgba(225,68,171,.2) 42%, transparent 74%); opacity: .38; filter: blur(66px); animation: portal-loading-cloud-b 23s ease-in-out infinite alternate; }
 
 .portal-loading-ribbon-field { position:absolute; inset:0; z-index:0; overflow:hidden; pointer-events:none; opacity:.88; }
-.portal-loading-ribbon { position:absolute; left:-12%; display:block; width:125%; height:clamp(3.2rem,8vw,7rem); border-radius:50%; filter:blur(.3px); mix-blend-mode:screen; box-shadow:0 0 35px rgba(139,213,255,.16); }
-.portal-loading-ribbon-one { top:12%; background:linear-gradient(90deg,transparent,rgba(139,213,255,.34) 18%,rgba(245,166,216,.46) 42%,rgba(244,202,114,.4) 65%,transparent); animation:portal-loading-ribbon-drift-one 16s ease-in-out infinite alternate; }
-.portal-loading-ribbon-two { top:29%; height:clamp(2.8rem,7vw,5.5rem); opacity:.58; background:linear-gradient(90deg,transparent,rgba(244,202,114,.4),rgba(139,213,255,.34),rgba(164,85,165,.38),transparent); animation:portal-loading-ribbon-drift-two 20s ease-in-out infinite alternate; }
-.portal-loading-ribbon-three { bottom:18%; height:clamp(2.7rem,6.5vw,5rem); opacity:.5; background:linear-gradient(90deg,transparent,rgba(164,85,165,.36),rgba(139,213,255,.4),rgba(244,202,114,.33),transparent); animation:portal-loading-ribbon-drift-three 23s ease-in-out infinite alternate; }
-.portal-loading-ribbon-four { bottom:4%; height:2.8rem; opacity:.4; background:linear-gradient(90deg,transparent,rgba(139,213,255,.34),rgba(245,166,216,.34),rgba(244,202,114,.32),transparent); animation:portal-loading-ribbon-drift-one 19s ease-in-out infinite alternate-reverse; }
-.portal-loading-ribbon-orb { position:absolute; display:block; width:clamp(5rem,12vw,10rem); aspect-ratio:1; border-radius:50%; filter:blur(28px); opacity:.34; animation:portal-loading-ribbon-orb-float 19s ease-in-out infinite alternate; }
+.portal-loading-ribbon { position:absolute; left:-12%; display:block; width:125%; height:clamp(3.2rem,8vw,7rem); border-radius:50%; filter:blur(.3px); background-size:220% 100%; background-position:0% 50%; mix-blend-mode:screen; box-shadow:0 0 35px rgba(139,213,255,.16); }
+.portal-loading-ribbon-one { top:12%; background:linear-gradient(90deg,transparent,rgba(139,213,255,.34) 18%,rgba(245,166,216,.46) 42%,rgba(244,202,114,.4) 65%,transparent); animation:portal-loading-ribbon-drift-one 16s ease-in-out infinite alternate,portal-loading-ribbon-color-flow 25s ease-in-out infinite alternate; }
+.portal-loading-ribbon-two { top:29%; height:clamp(2.8rem,7vw,5.5rem); opacity:.58; background:linear-gradient(90deg,transparent,rgba(244,202,114,.4),rgba(139,213,255,.34),rgba(164,85,165,.38),transparent); animation:portal-loading-ribbon-drift-two 20s ease-in-out infinite alternate,portal-loading-ribbon-color-flow 29s ease-in-out infinite alternate; animation-delay:-7s; }
+.portal-loading-ribbon-three { bottom:18%; height:clamp(2.7rem,6.5vw,5rem); opacity:.5; background:linear-gradient(90deg,transparent,rgba(164,85,165,.36),rgba(139,213,255,.4),rgba(244,202,114,.33),transparent); animation:portal-loading-ribbon-drift-three 23s ease-in-out infinite alternate,portal-loading-ribbon-color-flow 31s ease-in-out infinite alternate; animation-delay:-13s; }
+.portal-loading-ribbon-four { bottom:4%; height:2.8rem; opacity:.4; background:linear-gradient(90deg,transparent,rgba(139,213,255,.34),rgba(245,166,216,.34),rgba(244,202,114,.32),transparent); animation:portal-loading-ribbon-drift-one 19s ease-in-out infinite alternate-reverse,portal-loading-ribbon-color-flow 27s ease-in-out infinite alternate; animation-delay:-5s; }
+.portal-loading-ribbon-orb { position:absolute; display:block; width:clamp(5rem,12vw,10rem); aspect-ratio:1; border-radius:50%; filter:blur(28px); opacity:.34; animation:portal-loading-ribbon-orb-float 19s ease-in-out infinite alternate,portal-loading-orb-color 28s ease-in-out infinite alternate; }
 .portal-loading-ribbon-orb-one { top:15%; right:6%; background:rgba(82,203,255,.78); }
 .portal-loading-ribbon-orb-two { bottom:7%; left:5%; background:rgba(244,202,114,.8); animation-delay:-8s; }
 .portal-loading-rays { position:absolute; inset:-14%; z-index:0; pointer-events:none; opacity:.84; mix-blend-mode:screen; background:radial-gradient(ellipse 42% 28% at 50% 43%,rgba(57,85,235,.2),transparent 78%),linear-gradient(88deg,transparent 12%,rgba(30,155,255,.10) 27%,transparent 41%),linear-gradient(92deg,transparent 39%,rgba(225,43,185,.17) 47%,rgba(225,43,185,.08) 53%,transparent 66%),linear-gradient(90deg,transparent 46%,rgba(23,214,239,.15) 51%,transparent 59%),linear-gradient(0deg,transparent 36%,rgba(244,195,82,.13) 49%,transparent 62%); background-size:130% 130%; animation:portal-loading-rays-flow 22s ease-in-out infinite alternate; }
@@ -370,6 +370,10 @@ html[data-portal-accent-motion="off"] .portal-page-content.portal-panel-color-mo
 .portal-loading-rays::before { left:-12%; top:42%; width:70vw; height:3rem; background:linear-gradient(90deg,transparent,rgba(255,209,103,.2),rgba(249,246,222,.08),transparent); transform:rotate(-7deg); animation:portal-loading-beam-sweep 17s ease-in-out infinite alternate; }
 .portal-loading-rays::after { right:18%; top:-20%; width:min(14vw,9rem); height:145%; background:linear-gradient(180deg,transparent,rgba(32,195,245,.18) 30%,rgba(226,62,189,.2) 60%,transparent); transform:rotate(9deg); animation:portal-loading-beam-sweep 21s ease-in-out infinite alternate-reverse; }
 .portal-loading-atom { position:absolute; inset:0; z-index:0; pointer-events:none; overflow:hidden; }
+.portal-loading-orbit-glints { position:absolute; left:50%; top:41%; z-index:0; width:min(76vw,46rem); height:min(42vh,24rem); pointer-events:none; transform:translate(-50%,-50%) scaleY(.56); animation:portal-loading-glint-orbit 31s linear infinite; }
+.portal-loading-orbit-glints::before, .portal-loading-orbit-glints::after { content:""; position:absolute; top:50%; width:.5rem; height:.5rem; border-radius:50%; transform:translateY(-50%); }
+.portal-loading-orbit-glints::before { right:-.25rem; background:#a7f3ff; box-shadow:0 0 8px #fff,0 0 20px #38dfff,0 0 35px rgba(56,223,255,.68); }
+.portal-loading-orbit-glints::after { left:-.25rem; background:#ffe1a3; box-shadow:0 0 8px #fff,0 0 20px #ffb54e,0 0 35px rgba(255,181,78,.62); }
 .portal-loading-atom::before, .portal-loading-atom::after { content:""; position:absolute; left:50%; top:41%; width:min(76vw,46rem); height:min(42vh,24rem); border:1px solid rgba(138,218,255,.24); border-radius:50%; box-shadow:0 0 16px rgba(53,190,255,.12),inset 0 0 16px rgba(53,190,255,.05); }
 .portal-loading-atom::before { animation:portal-loading-atom-orbit-a 42s linear infinite; }
 .portal-loading-atom::after { width:min(67vw,40rem); height:min(36vh,20rem); border-color:rgba(240,154,255,.2); box-shadow:0 0 17px rgba(212,89,255,.12),inset 0 0 16px rgba(212,89,255,.05); animation:portal-loading-atom-orbit-b 50s linear infinite; }
@@ -404,6 +408,9 @@ html[data-portal-accent-motion="off"] .portal-page-content.portal-panel-color-mo
 .portal-loading-orbit { width: 8rem; height: 8rem; background: linear-gradient(#07101e,#07101e) padding-box, conic-gradient(from 0deg, #25d5ed, #416ce5, #d64fca, #f4bb46, #25d5ed) border-box; animation-duration: 8s; box-shadow: 0 0 22px rgba(37,213,237,.38), 0 0 52px rgba(214,79,202,.17); }
 .portal-loading-track { background:linear-gradient(90deg,rgba(118,192,255,.16),rgba(210,92,222,.17),rgba(246,189,75,.2)); box-shadow:0 0 15px rgba(58,133,228,.18); }
 .portal-loading-track span { background: linear-gradient(90deg, #19cbe5, #4c70ed, #d44dc8, #ffbc48, #19cbe5); box-shadow: 0 0 15px rgba(82,179,245,.7); }
+@keyframes portal-loading-ribbon-color-flow { from { background-position:0% 50%; filter:blur(.3px) saturate(.9) hue-rotate(-8deg); } to { background-position:100% 50%; filter:blur(.3px) saturate(1.18) hue-rotate(22deg); } }
+@keyframes portal-loading-orb-color { from { filter:blur(28px) hue-rotate(-8deg); } to { filter:blur(28px) hue-rotate(58deg); } }
+@keyframes portal-loading-glint-orbit { from { transform:translate(-50%,-50%) rotate(-18deg) scaleY(.56); } to { transform:translate(-50%,-50%) rotate(342deg) scaleY(.56); } }
 @keyframes portal-loading-ribbon-drift-one { 0% { transform:translate(-4%,-8px) rotate(-10deg) skew(-12deg) scaleY(.9); } 100% { transform:translate(3%,10px) rotate(-6deg) skew(-8deg) scaleY(1.08); } }
 @keyframes portal-loading-ribbon-drift-two { 0% { transform:translate(5%,14px) rotate(8deg) skew(13deg) scaleY(1); } 100% { transform:translate(-4%,-9px) rotate(4deg) skew(8deg) scaleY(.86); } }
 @keyframes portal-loading-ribbon-drift-three { 0% { transform:translate(-5%,10px) rotate(-7deg) skew(10deg) scaleY(.8); } 100% { transform:translate(4%,-12px) rotate(-3deg) skew(5deg) scaleY(1.04); } }
@@ -439,6 +446,7 @@ html[data-portal-motion="reduced"] .portal-loading-rays::before,
 html[data-portal-motion="reduced"] .portal-loading-rays::after,
 html[data-portal-motion="reduced"] .portal-loading-atom::before,
 html[data-portal-motion="reduced"] .portal-loading-atom::after,
+html[data-portal-motion="reduced"] .portal-loading-orbit-glints,
 html[data-portal-motion="reduced"] .portal-loading-aurora,
 html[data-portal-motion="reduced"] .portal-loading-aurora::before,
 html[data-portal-motion="reduced"] .portal-loading-aurora::after,
@@ -463,6 +471,7 @@ html[data-portal-motion="reduced"] .portal-loading-track span { animation:none !
   .portal-loading-ribbon, .portal-loading-ribbon-orb,
   .portal-loading-rays, .portal-loading-rays::before, .portal-loading-rays::after,
   .portal-loading-atom::before, .portal-loading-atom::after,
+  .portal-loading-orbit-glints,
   .portal-loading-aurora, .portal-loading-aurora::before, .portal-loading-aurora::after, .portal-loading-kicker, .portal-loading-title, .portal-loading-tagline,
   .portal-loading-stars, .portal-loading-stars::before, .portal-loading-stars::after,
   .portal-loading-dust, .portal-loading-dust::before, .portal-loading-dust::after,
@@ -474,6 +483,7 @@ html[data-portal-motion="reduced"] .portal-loading-track span { animation:none !
   .portal-loading-ribbon, .portal-loading-ribbon-orb,
   .portal-loading-rays, .portal-loading-rays::before, .portal-loading-rays::after,
   .portal-loading-atom::before, .portal-loading-atom::after,
+  .portal-loading-orbit-glints,
   .portal-loading-aurora, .portal-loading-aurora::before, .portal-loading-aurora::after, .portal-loading-kicker, .portal-loading-title, .portal-loading-tagline,
   .portal-loading-stars, .portal-loading-stars::before, .portal-loading-stars::after,
   .portal-loading-dust, .portal-loading-dust::before, .portal-loading-dust::after,
