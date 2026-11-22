@@ -238,6 +238,9 @@ html[data-portal-accent-motion="off"] .portal-animated-background::before, html[
 .marks-preview-table td, .marks-preview-table th { border-right: 1px solid rgba(42,92,103,.12); border-bottom: 1px solid rgba(42,92,103,.12); }
 .marks-preview-table tbody tr:nth-child(even) { background: rgba(239,248,249,.72); }
 .marks-preview-table tbody tr:hover { background: rgba(255,237,199,.55); }
+.marks-preview-table input { min-height: 2.25rem; background: rgba(255,255,255,.96); }
+.marks-preview-table input:focus { position: relative; z-index: 3; border-color: #2586c7; outline: 2px solid rgba(37,134,199,.18); box-shadow: 0 0 0 2px rgba(37,134,199,.1); }
+.marks-preview-table tbody td { background-clip: padding-box; }
 @keyframes import-glow-turn { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .marks-import-panel::before { animation: none; } }
 

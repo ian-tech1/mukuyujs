@@ -3,7 +3,7 @@ export type ImportSubject = { id: string; name: string; shortName: string };
 const SUBJECT_FAMILIES: Record<string, string[]> = {
   english: ["english", "eng", "english language", "english language arts"],
   integratedScience: [
-    "integrated science", "integrated sci", "int science", "int sci", "integr sci", "sci",
+    "integrated science", "integrated sci", "int science", "int sci", "integr sci", "sci", "science",
     "intergrated science", "intergrate science", "intergrated sci", "intergrate sci",
     "integration science", "integrated sciences",
   ],
@@ -14,6 +14,9 @@ const SUBJECT_FAMILIES: Record<string, string[]> = {
   pretechnical: [
     "pretech", "pre tech", "pre tech studies", "pretechnical", "pre technical",
     "pretechnical studies", "pre technical studies", "pretechnical studies and skills", "pre tech studies and skills",
+  ],
+  creativeArts: [
+    "creative arts and sports", "creative arts", "creative arts sports", "creative", "c a", "ca",
   ],
 };
 

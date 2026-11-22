@@ -59,10 +59,40 @@ export function MarksView({ ws, refresh, flash }: Gate) {
   const [scores, setScores] = useState<Record<string, string>>({});
   const [remarks, setRemarks] = useState<Record<string, string>>({});
   const [uploadRows, setUploadRows] = useState<MarkSheetRow[]>([]);
-  const [uploadText, setUploadText] = useState("");
   const [uploadBusy, setUploadBusy] = useState(false);
   const [uploadErrors, setUploadErrors] = useState<string[]>([]);
   const uploadSubjects = useMemo(() => [...new Set(uploadRows.flatMap((row) => Object.keys(row.scores)))].map((header) => ({ header, subject: resolveSubjectHeader(header, subjects) })), [uploadRows, subjects]);
+  const uploadColumns = uploadRows.length ? [...new Set(uploadRows.flatMap((row) => Object.keys(row.scores)))] : subjects.map((subject) => subject.name);
+  function setUploadCell(rowIndex: number, columnIndex: number, raw: string) {
+    const next = [...uploadRows];
+    while (next.length <= rowIndex) next.push({ admissionNumber: "", fullName: "", scores: Object.fromEntries(uploadColumns.map((name) => [name, null])) });
+    const row = { ...next[rowIndex], scores: { ...next[rowIndex].scores } };
+    if (columnIndex === 0) row.admissionNumber = raw;
+    else if (columnIndex === 1) row.fullName = raw;
+    else {
+      const header = uploadColumns[columnIndex - 2];
+      const value = raw.trim();
+      if (!value) row.scores[header] = null;
+      else {
+        const fraction = value.match(/^(\d+(?:\.\d+)?)\s*\/\s*(\d+(?:\.\d+)?)$/);
+        row.scores[header] = fraction
+          ? Number(fraction[2]) > 0 ? Math.round((Number(fraction[1]) / Number(fraction[2])) * 10000) / 100 : Number.NaN
+          : Number(value);
+      }
+    }
+    next[rowIndex] = row;
+    setUploadRows(next);
+    setUploadErrors([]);
+  }
+  function renameUploadHeader(oldName: string, nextName: string) {
+    const label = nextName.trim();
+    if (!label || label === oldName) return;
+    setUploadRows((rows) => rows.map((row) => {
+      const scores = { ...row.scores };
+      if (Object.hasOwn(scores, oldName)) { scores[label] = scores[oldName]; delete scores[oldName]; }
+      return { ...row, scores };
+    }));
+  }
   useEffect(() => {
     const next: Record<string, string> = {};
     for (const learner of learners) {
@@ -270,26 +300,38 @@ export function MarksView({ ws, refresh, flash }: Gate) {
       </section> : null}
       {(ws.me.role === "super_admin" || ws.me.isDeputy || ws.me.privImport || ws.me.role === "admin") ? <section className="marks-import-panel space-y-3 rounded-2xl border border-line p-4 shadow-sm">
         <div className="flex flex-wrap items-start justify-between gap-2"><div><p className="text-xs font-bold uppercase tracking-[.18em] text-info">Spreadsheet import</p><h2 className="font-serif text-xl text-navy">Paste or upload marks</h2></div><span className="rounded-full bg-white/80 px-3 py-1 text-xs font-semibold text-navy">{subjects.length} available subjects</span></div>
-        <p className="text-sm text-muted">Copy the complete Excel range, including its header row, and paste below. Include Admission Number or Learner Name plus one column for every subject. Subject names and short names are recognized; fractions such as 30/40 are converted to percentages. Blank cells are left unchanged.</p>
-        <textarea aria-label="Paste spreadsheet marks" className={`${inputClass} marks-paste-grid h-36 py-3 font-mono text-xs`} placeholder={'Admission Number\tLearner Name\tMathematics\tEnglish\tIntegrated Science\tAgriculture\tPretech\nMKS-2026-12345\tAMINA YUSUF\t30/40\t81\t33/40\t76\t42'} value={uploadText} onChange={(event) => { setUploadText(event.target.value); setUploadErrors([]); try { setUploadRows(marksFromDelimited(event.target.value)); } catch { setUploadRows([]); } }} />
+        <p className="text-sm text-muted">Paste a complete Excel range directly into any cell below (include its header row). Or upload a workbook, then edit each cell here. Use Admission Number or Learner Name and add one column per subject. Tab moves between cells; arrow keys move up/down. Blank score cells are left unchanged.</p>
         <input className="block text-sm" type="file" accept=".xlsx,.csv,.tsv,.txt" onChange={async (event) => {
           const file = event.target.files?.[0]; if (!file) return;
-          try { const parsed = await parseMarkSpreadsheet(file); setUploadRows(parsed); setUploadErrors([]); flash(`${parsed.length} learner row(s) read. Review the subject matches before saving.`); }
+          try { const parsed = await parseMarkSpreadsheet(file); setUploadRows(parsed); setUploadErrors([]); flash(`${parsed.length} learner row(s) read into the editable grid. Review the subject matches before saving.`); }
           catch (error) { flash(errText(error), true); }
         }} />
-        <p className="rounded-xl bg-white/70 px-3 py-2 text-sm font-semibold text-navy">{uploadRows.length} learner rows · {uploadRows.reduce((n, row) => n + Object.values(row.scores).filter((score) => score != null).length, 0)} numeric subject marks detected</p>
+        <p className="rounded-xl bg-white/70 px-3 py-2 text-sm font-semibold text-navy">{uploadRows.filter((row) => row.admissionNumber || row.fullName).length} learner rows · {uploadRows.reduce((n, row) => n + Object.values(row.scores).filter((score) => score != null).length, 0)} subject mark cells. Click any cell to edit; subject headings can also be corrected.</p>
         {uploadSubjects.length ? <div className="grid gap-1 rounded-xl border border-line bg-white/75 p-3 text-xs sm:grid-cols-2"><p className="sm:col-span-2 font-semibold text-navy">Subject column check before import</p>{uploadSubjects.map(({ header, subject }) => <p key={header} className={subject ? "text-good" : "font-semibold text-bad"}>{subject ? `✓ ${header} → ${subject.name}` : `Needs review: ${header} does not match one unique subject`}</p>)}</div> : null}
-        {uploadRows.length ? <div className="marks-grid-scroll max-h-64 overflow-auto rounded-xl border border-line"><table className="marks-preview-table text-xs"><thead><tr><th className="sticky left-0 z-10 p-2 text-left">Admission</th><th className="p-2 text-left">Learner</th>{[...new Set(uploadRows.flatMap((row) => Object.keys(row.scores)))].map((name) => <th key={name} className="p-2 text-right">{name}</th>)}</tr></thead><tbody>{uploadRows.slice(0, 100).map((row, index) => <tr key={`${row.admissionNumber || row.fullName}-${index}`}><td className="sticky left-0 p-2">{row.admissionNumber || "—"}</td><td className="p-2">{row.fullName || "—"}</td>{[...new Set(uploadRows.flatMap((item) => Object.keys(item.scores)))].map((name) => <td key={name} className="p-2 text-right tabular-nums">{row.scores[name] ?? "—"}</td>)}</tr>)}</tbody></table>{uploadRows.length > 100 ? <p className="p-2 text-xs text-muted">Previewing first 100 of {uploadRows.length} rows; all rows will be validated on save.</p> : null}</div> : null}
+        <div className="marks-grid-scroll max-h-[28rem] overflow-auto rounded-xl border border-line bg-white" onPaste={(event) => {
+          const text = event.clipboardData.getData("text/plain");
+          if (!/[\t\n]/.test(text)) return;
+          event.preventDefault();
+          try { const parsed = marksFromDelimited(text); setUploadRows(parsed); setUploadErrors([]); flash(`${parsed.length} pasted learner row(s) arranged in the grid.`); }
+          catch (error) { flash(errText(error), true); }
+        }}>
+          <table className="marks-preview-table min-w-max border-separate border-spacing-0 text-xs"><thead><tr><th className="sticky left-0 z-20 min-w-36 bg-slate-100 p-2 text-left">Admission</th><th className="sticky left-36 z-20 min-w-48 bg-slate-100 p-2 text-left">Learner name</th>{uploadColumns.map((name) => <th key={name} className="sticky top-0 z-10 min-w-32 bg-slate-100 p-1 text-left"><input className="w-full min-w-28 rounded border border-line bg-white px-2 py-2 font-semibold" aria-label={`Subject heading ${name}`} defaultValue={name} onBlur={(event) => { if (!event.target.value.trim()) event.target.value = name; else renameUploadHeader(name, event.target.value); }} /></th>)}</tr></thead><tbody>{Array.from({ length: Math.max(uploadRows.length, 6) }, (_, index) => {
+            const row = uploadRows[index];
+            return <tr key={index}><td className="sticky left-0 z-[1] border-t border-line bg-white p-1"><input data-grid-cell={`${index}:0`} aria-label={`Row ${index + 1} admission number`} className="w-36 rounded border border-line px-2 py-2" value={row?.admissionNumber ?? ""} onChange={(event) => setUploadCell(index, 0, event.target.value)} /></td><td className="sticky left-36 z-[1] border-t border-line bg-white p-1"><input data-grid-cell={`${index}:1`} aria-label={`Row ${index + 1} learner name`} className="w-48 rounded border border-line px-2 py-2" value={row?.fullName ?? ""} onChange={(event) => setUploadCell(index, 1, event.target.value)} /></td>{uploadColumns.map((name, columnIndex) => <td key={name} className="border-t border-line p-1"><input data-grid-cell={`${index}:${columnIndex + 2}`} aria-label={`Row ${index + 1} ${name}`} inputMode="decimal" className="w-28 rounded border border-line px-2 py-2 text-right tabular-nums focus:border-sky-500" value={row?.scores[name] == null ? "" : String(row.scores[name])} onChange={(event) => setUploadCell(index, columnIndex + 2, event.target.value)} onKeyDown={(event) => { if (event.key === "ArrowDown" || event.key === "ArrowUp") { event.preventDefault(); document.querySelector<HTMLInputElement>(`[data-grid-cell="${Math.max(0, index + (event.key === "ArrowDown" ? 1 : -1))}:${columnIndex + 2}"]`)?.focus(); } }} /></td>)}</tr>;
+          })}</tbody></table>
+        </div>
+        <div className="flex flex-wrap gap-2"><button className={btnGhost} type="button" onClick={() => setUploadRows((rows) => [...rows, { admissionNumber: "", fullName: "", scores: Object.fromEntries(uploadColumns.map((name) => [name, null])) }])}>Add learner row</button><button className={btnGhost} type="button" disabled={!uploadRows.length} onClick={() => setUploadRows((rows) => rows.slice(0, -1))}>Remove last row</button><button className={btnGhost} type="button" onClick={() => { setUploadRows([]); setUploadErrors([]); }}>Clear grid</button></div>
         <button className={btnClass} type="button" disabled={!uploadRows.length || uploadBusy} onClick={async () => {
           const flat = uploadRows.flatMap((row) => Object.entries(row.scores).filter(([, score]) => score != null).map(([subject, score]) => ({ admissionNumber: row.admissionNumber, fullName: row.fullName, subject, score: score as number })));
           if (!flat.length) { flash("No numeric subject scores were found.", true); return; }
+          if (flat.some(({ score }) => !Number.isFinite(score) || score < 0 || score > 100)) { flash("Correct invalid mark cells first. Enter a score from 0 to 100, or use obtained/maximum such as 30/40.", true); return; }
           if (uploadSubjects.some(({ subject }) => !subject)) { flash("Review the unmatched subject columns above. Only recognized subject headers can be saved.", true); return; }
           setUploadBusy(true);
           try {
             const result = await importMarksExcel({ data: { yearId: period.yearId, termId: period.termId, examId, rows: flat } });
             setUploadErrors(result.errors);
             flash(result.errors.length ? `${result.saved} mark(s) saved; ${result.errors.length} row(s) need attention. See the full error list below.` : `${result.saved} mark(s) saved successfully.` , result.errors.length > 0);
-            if (!result.errors.length) { setUploadRows([]); setUploadText(""); }
+            if (!result.errors.length) setUploadRows([]);
             await refresh();
           } catch (error) { flash(errText(error), true); }
           finally { setUploadBusy(false); }
@@ -320,17 +362,28 @@ function ClearBulkResultsCard({ ws, gradeId, streamId, yearId, termId, examId, f
   flash: Gate["flash"]; refresh: Gate["refresh"];
 }) {
   const [allAssessments, setAllAssessments] = useState(false);
+  const [targetYearId, setTargetYearId] = useState(yearId);
+  const [targetTermId, setTargetTermId] = useState(termId);
+  const [targetExamId, setTargetExamId] = useState(examId);
+  useEffect(() => { setTargetYearId(yearId); }, [yearId]);
+  useEffect(() => { setTargetTermId(termId); }, [termId]);
+  useEffect(() => { setTargetExamId(examId); }, [examId]);
   const grade = ws.grades.find((item) => item.id === gradeId)?.name ?? "selected grade";
   const stream = streamId ? ws.streams.find((item) => item.id === streamId)?.name : null;
-  const year = ws.years.find((item) => item.id === yearId)?.name ?? "selected year";
-  const term = ws.terms.find((item) => item.id === termId)?.name ?? "selected term";
-  const exam = !allAssessments ? ws.exams.find((item) => item.id === examId)?.name : null;
+  const year = ws.years.find((item) => item.id === targetYearId)?.name ?? "selected year";
+  const term = ws.terms.find((item) => item.id === targetTermId)?.name ?? "selected term";
+  const exam = !allAssessments ? ws.exams.find((item) => item.id === targetExamId)?.name : null;
   const scope = `${grade}${stream ? ` ${stream}` : " (all streams)"} · ${year} · ${term} · ${exam ?? "all assessments"}`;
   return <section className="space-y-3 rounded-xl border-2 border-rose-300 bg-gradient-to-br from-rose-50 via-white to-amber-50 p-4">
     <p className="text-xs font-bold uppercase tracking-[.18em] text-rose-800">Super admin only · destructive action</p>
     <h2 className="font-serif text-xl text-navy">Clear selected bulk results</h2>
-    <p className="text-sm text-muted">Scope follows the selected grade, stream, academic year and term above. By default only the selected assessment is cleared; enable the all-assessments option to clear every assessment in that period. A complete safety snapshot is saved before marks are removed. Download and securely store a separate backup first.</p>
-    <label className="flex items-start gap-2 text-sm font-semibold"><input type="checkbox" checked={allAssessments} onChange={(event) => setAllAssessments(event.target.checked)} />Clear all assessments in this selected scope (not just {ws.exams.find((item) => item.id === examId)?.name ?? "the selected assessment"})</label>
+    <p className="text-sm text-muted">Choose the year, term, and CAT to clear. The selected class/stream above also applies. The portal creates a complete safety snapshot before marks are removed; download and securely store a separate backup first.</p>
+    <div className="grid gap-2 sm:grid-cols-3" aria-label="Bulk result deletion scope">
+      <label className="space-y-1 text-xs font-semibold text-muted">Academic year<select className={inputClass} value={targetYearId} onChange={(event) => setTargetYearId(event.target.value)}>{ws.years.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+      <label className="space-y-1 text-xs font-semibold text-muted">Term<select className={inputClass} value={targetTermId} onChange={(event) => setTargetTermId(event.target.value)}>{ws.terms.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+      <label className="space-y-1 text-xs font-semibold text-muted">CAT / assessment<select className={inputClass} value={targetExamId} onChange={(event) => { setTargetExamId(event.target.value); setAllAssessments(false); }}>{ws.exams.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+    </div>
+    <label className="flex items-start gap-2 text-sm font-semibold"><input type="checkbox" checked={allAssessments} onChange={(event) => setAllAssessments(event.target.checked)} />Clear every assessment in this year and term instead of only {ws.exams.find((item) => item.id === targetExamId)?.name ?? "the selected CAT"}</label>
     <p className="rounded-lg bg-white/80 p-3 text-sm"><strong>Selected scope:</strong> {scope}</p>
     <button className="inline-flex h-11 items-center justify-center rounded-md border border-bad/50 px-4 text-sm font-bold text-bad hover:bg-rose-100" type="button" onClick={async () => {
       if (!confirm(`A full safety snapshot will be saved first. Clear marks for ${scope}? This removes marks and changes reports for the selected scope.`)) return;
@@ -338,7 +391,7 @@ function ClearBulkResultsCard({ ws, gradeId, streamId, yearId, termId, examId, f
 CLEAR ${scope}`);
       if (typed == null) return;
       try {
-        const result = await clearBulkResults({ data: { gradeId, streamId: streamId || undefined, yearId, termId, examId: allAssessments ? undefined : examId, confirmText: typed } });
+        const result = await clearBulkResults({ data: { gradeId, streamId: streamId || undefined, yearId: targetYearId, termId: targetTermId, examId: allAssessments ? undefined : targetExamId, confirmText: typed } });
         flash(`${result.cleared} mark result(s) cleared. Safety snapshot ${result.backupId} was created first.`);
         await refresh();
       } catch (error) { flash(errText(error), true); }
