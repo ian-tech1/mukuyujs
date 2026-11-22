@@ -46,6 +46,7 @@ export function PublicReport({ code }: { code: string }) {
       <main className="portal-loading grid min-h-screen place-items-center bg-paper px-6">
         <div className="portal-loading-aurora" aria-hidden="true" />
         <div className="portal-loading-stars" aria-hidden="true" />
+        <div className="portal-loading-dust" aria-hidden="true" />
         <div className="portal-loading-card text-center" role="status" aria-live="polite">
           <p className="portal-loading-kicker">MUKUYU JUNIOR SCHOOL · LEARNER REPORTS</p>
           <span className="portal-loading-orbit" aria-hidden="true"><SchoolLogo className="size-20" /></span>
