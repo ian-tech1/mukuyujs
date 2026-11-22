@@ -141,7 +141,7 @@ function PortalPage() {
   const gate = { ws, refresh, flash, onWelcomeChange: (settings: { enabled: boolean; url: string }) => setStaffMusic({ ...settings, options: parseMusicSetting(settings.url || "").options }) };
 
   return (
-    <div className="portal-animated-background min-h-screen bg-paper lg:grid lg:grid-cols-[16rem_1fr]" data-portal-section={current}>
+    <div className="portal-animated-background min-h-screen w-full min-w-0 max-w-none overflow-x-clip bg-paper lg:grid lg:grid-cols-[16rem_minmax(0,1fr)]" data-portal-section={current}>
       <aside id="portal-navigation" aria-label="Main navigation" className={`${open ? "fixed inset-0 z-20" : "hidden"} bg-navy text-paper lg:sticky lg:top-0 lg:block lg:h-screen`}>
         <div className="flex items-center justify-between px-4 py-4">
           <div className="flex items-center gap-2">
@@ -240,7 +240,7 @@ function PortalPage() {
             </section> : null}
           </div>
         </header>
-        <div className="portal-page-content px-4 py-6 lg:px-8">
+        <div className="portal-page-content w-full min-w-0 max-w-none px-4 py-6 lg:px-8">
           {error ? <p className="mb-4 rounded-md border border-bad/30 bg-card px-3 py-2 text-sm text-bad">{error}</p> : null}
           {notice ? <p className="mb-4 rounded-md border border-good/30 bg-card px-3 py-2 text-sm text-good">{notice}</p> : null}
           {current === "home" ? <DashboardView {...gate} /> : null}

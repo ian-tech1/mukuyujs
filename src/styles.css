@@ -292,19 +292,19 @@ html[data-portal-motion="reduced"] .portal-loading, html[data-portal-motion="red
   isolation: isolate;
   background: #f4f0e6;
 }
-.portal-animated-background[data-portal-section="home"] { --portal-glow-a: rgba(47, 202, 222, .16); --portal-glow-b: rgba(59, 129, 220, .16); --portal-glow-c: rgba(123, 91, 210, .16); --portal-glow-d: rgba(244, 186, 85, .16); }
-.portal-animated-background[data-portal-section="learners"] { --portal-glow-a: rgba(30, 213, 157, .16); --portal-glow-b: rgba(31, 166, 210, .16); --portal-glow-c: rgba(111, 101, 220, .16); --portal-glow-d: rgba(230, 202, 87, .16); }
-.portal-animated-background[data-portal-section="marks"] { --portal-glow-a: rgba(35, 191, 235, .16); --portal-glow-b: rgba(56, 104, 239, .16); --portal-glow-c: rgba(138, 91, 222, .16); --portal-glow-d: rgba(236, 173, 71, .16); }
-.portal-animated-background[data-portal-section="analysis"] { --portal-glow-a: rgba(95, 139, 244, .16); --portal-glow-b: rgba(164, 91, 237, .16); --portal-glow-c: rgba(238, 93, 177, .16); --portal-glow-d: rgba(244, 185, 76, .16); }
-.portal-animated-background[data-portal-section="reports"] { --portal-glow-a: rgba(48, 142, 229, .16); --portal-glow-b: rgba(119, 91, 229, .16); --portal-glow-c: rgba(206, 95, 190, .16); --portal-glow-d: rgba(249, 190, 82, .16); }
-.portal-animated-background[data-portal-section="marklists"] { --portal-glow-a: rgba(32, 194, 185, .16); --portal-glow-b: rgba(58, 157, 218, .16); --portal-glow-c: rgba(131, 100, 222, .16); --portal-glow-d: rgba(232, 181, 75, .16); }
-.portal-animated-background[data-portal-section="staff"] { --portal-glow-a: rgba(34, 159, 235, .16); --portal-glow-b: rgba(99, 100, 224, .16); --portal-glow-c: rgba(181, 100, 200, .16); --portal-glow-d: rgba(246, 190, 83, .16); }
-.portal-animated-background[data-portal-section="mail"] { --portal-glow-a: rgba(40, 175, 228, .16); --portal-glow-b: rgba(111, 91, 222, .16); --portal-glow-c: rgba(232, 76, 160, .16); --portal-glow-d: rgba(242, 178, 83, .16); }
-.portal-animated-background[data-portal-section="timetable"] { --portal-glow-a: rgba(37, 210, 190, .16); --portal-glow-b: rgba(56, 132, 232, .16); --portal-glow-c: rgba(124, 94, 213, .16); --portal-glow-d: rgba(246, 184, 77, .16); }
-.portal-animated-background[data-portal-section="services"] { --portal-glow-a: rgba(30, 205, 166, .16); --portal-glow-b: rgba(71, 143, 216, .16); --portal-glow-c: rgba(148, 89, 202, .16); --portal-glow-d: rgba(250, 166, 69, .16); }
-.portal-animated-background[data-portal-section="parent-feedback"] { --portal-glow-a: rgba(46, 190, 217, .16); --portal-glow-b: rgba(111, 103, 225, .16); --portal-glow-c: rgba(234, 83, 173, .16); --portal-glow-d: rgba(244, 183, 82, .16); }
-.portal-animated-background[data-portal-section="settings"] { --portal-glow-a: rgba(45, 178, 224, .16); --portal-glow-b: rgba(114, 94, 218, .16); --portal-glow-c: rgba(182, 86, 209, .16); --portal-glow-d: rgba(244, 188, 77, .16); }
-.portal-animated-background[data-portal-section="results"] { --portal-glow-a: rgba(38, 185, 221, .16); --portal-glow-b: rgba(85, 119, 227, .16); --portal-glow-c: rgba(173, 92, 201, .16); --portal-glow-d: rgba(249, 182, 65, .16); }
+ .portal-animated-background[data-portal-section="home"] { --portal-glow-a: rgba(47, 202, 222, .24); --portal-glow-b: rgba(59, 129, 220, .22); --portal-glow-c: rgba(123, 91, 210, .17); --portal-glow-d: rgba(244, 186, 85, .15); }
+.portal-animated-background[data-portal-section="learners"] { --portal-glow-a: rgba(30, 190, 137, .22); --portal-glow-b: rgba(31, 166, 210, .2); --portal-glow-c: rgba(111, 101, 220, .15); --portal-glow-d: rgba(230, 202, 87, .14); }
+.portal-animated-background[data-portal-section="marks"] { --portal-glow-a: rgba(35, 191, 235, .24); --portal-glow-b: rgba(56, 104, 239, .22); --portal-glow-c: rgba(138, 91, 222, .17); --portal-glow-d: rgba(236, 173, 71, .14); }
+.portal-animated-background[data-portal-section="analysis"] { --portal-glow-a: rgba(95, 139, 244, .19); --portal-glow-b: rgba(164, 91, 237, .22); --portal-glow-c: rgba(238, 93, 177, .18); --portal-glow-d: rgba(244, 185, 76, .13); }
+.portal-animated-background[data-portal-section="reports"] { --portal-glow-a: rgba(48, 142, 229, .23); --portal-glow-b: rgba(119, 91, 229, .22); --portal-glow-c: rgba(206, 95, 190, .17); --portal-glow-d: rgba(249, 190, 82, .16); }
+.portal-animated-background[data-portal-section="marklists"] { --portal-glow-a: rgba(32, 194, 185, .22); --portal-glow-b: rgba(58, 157, 218, .2); --portal-glow-c: rgba(131, 100, 222, .15); --portal-glow-d: rgba(232, 181, 75, .15); }
+.portal-animated-background[data-portal-section="staff"] { --portal-glow-a: rgba(34, 159, 235, .23); --portal-glow-b: rgba(99, 100, 224, .21); --portal-glow-c: rgba(181, 100, 200, .17); --portal-glow-d: rgba(246, 190, 83, .14); }
+.portal-animated-background[data-portal-section="mail"] { --portal-glow-a: rgba(40, 175, 228, .2); --portal-glow-b: rgba(111, 91, 222, .2); --portal-glow-c: rgba(232, 76, 160, .2); --portal-glow-d: rgba(242, 178, 83, .13); }
+.portal-animated-background[data-portal-section="timetable"] { --portal-glow-a: rgba(37, 190, 170, .22); --portal-glow-b: rgba(56, 132, 232, .2); --portal-glow-c: rgba(124, 94, 213, .16); --portal-glow-d: rgba(246, 184, 77, .14); }
+.portal-animated-background[data-portal-section="services"] { --portal-glow-a: rgba(30, 190, 152, .2); --portal-glow-b: rgba(71, 143, 216, .19); --portal-glow-c: rgba(148, 89, 202, .16); --portal-glow-d: rgba(250, 166, 69, .18); }
+.portal-animated-background[data-portal-section="parent-feedback"] { --portal-glow-a: rgba(46, 190, 217, .2); --portal-glow-b: rgba(111, 103, 225, .2); --portal-glow-c: rgba(234, 83, 173, .19); --portal-glow-d: rgba(244, 183, 82, .14); }
+.portal-animated-background[data-portal-section="settings"] { --portal-glow-a: rgba(45, 178, 224, .2); --portal-glow-b: rgba(114, 94, 218, .2); --portal-glow-c: rgba(182, 86, 209, .17); --portal-glow-d: rgba(244, 188, 77, .17); }
+.portal-animated-background[data-portal-section="results"] { --portal-glow-a: rgba(38, 185, 221, .21); --portal-glow-b: rgba(85, 119, 227, .2); --portal-glow-c: rgba(173, 92, 201, .17); --portal-glow-d: rgba(249, 182, 65, .18); }
 .portal-page-content {
   position: relative;
   isolation: isolate;
@@ -336,8 +336,8 @@ html[data-portal-motion="reduced"] .portal-loading, html[data-portal-motion="red
     radial-gradient(ellipse at 61% 76%, var(--portal-glow-c), transparent 38%),
     radial-gradient(ellipse at 96% 88%, var(--portal-glow-d), transparent 34%),
     linear-gradient(140deg, #f4f0e6 0%, #f8f5ed 48%, #f2eee3 100%);
-  background-size: 100% 100%;
-  animation: mukuyu-nebula-drift 62s ease-in-out infinite alternate;
+  background-size: 220% 220%;
+  animation: mukuyu-nebula-drift 42s ease-in-out infinite alternate;
 }
 .portal-page-content::after {
   background-image:
@@ -361,7 +361,7 @@ html[data-portal-motion="reduced"] .portal-loading, html[data-portal-motion="red
 .portal-page-content :is([class*="bg-card"], [class*="bg-white"], [class*="bg-paper"]) .text-bad { color: #9f2d2d; }
 .portal-page-content :is(input, select, textarea) { color: #1c1915; }
 .portal-page-content :is(input, textarea)::placeholder { color: #777066; }
-@keyframes mukuyu-nebula-drift { 0% { background-position: 0 0; filter: saturate(.96); } 50% { background-position: 2% -1%; filter: saturate(1.08); } 100% { background-position: -1% 2%; filter: saturate(1); } }
+@keyframes mukuyu-nebula-drift { 0% { background-position: 0% 15%; filter: saturate(.96); } 50% { background-position: 100% 85%; filter: saturate(1.1); } 100% { background-position: 8% 100%; filter: saturate(1); } }
 @keyframes mukuyu-orbit-drift { from { transform: translate3d(-.45%, .2%, 0) rotate(-1deg); } to { transform: translate3d(.45%, -.2%, 0) rotate(1deg); } }
 @media (prefers-reduced-motion: reduce) {
   .portal-page-content::before, .portal-page-content::after, .portal-loading, .portal-loading::before, .portal-loading::after, .portal-loading-orbit, .portal-loading-track span, .welcome-shell, .welcome-hero, .welcome-login-panel { animation: none !important; }
