@@ -364,18 +364,22 @@ function AppearanceColorsCard({ flash }: Pick<Gate, "flash">) {
       <p className="mt-1 text-sm text-muted">Super Admin only. This single school-wide control changes the large inner page background—not the cards, tables, forms, controls, navigation or report cards.</p>
     </div>
     <div className="flex flex-wrap gap-2">{DISPLAY_PALETTES.map((preset) => <button key={preset.id} type="button" className={btnGhost} onClick={() => choosePreset(preset.colors)}>{preset.name}</button>)}</div>
-    <div className="grid gap-3 rounded-lg border border-line bg-paper p-3 sm:grid-cols-[minmax(0,1fr)_minmax(12rem,0.8fr)]">
-      <label className="space-y-2 text-sm font-semibold text-navy" htmlFor="portal-backdrop-theme">
-        <span className="block">Background mode</span>
-        <select id="portal-backdrop-theme" className={inputClass} value={colors.backdropTheme ?? "auto-sections"} disabled={!loaded} onChange={(event) => void chooseBackdropTheme(event.target.value as PortalBackdropThemeId)}>
-          {PORTAL_BACKDROP_THEMES.map((theme) => <option key={theme.id} value={theme.id}>{theme.name}</option>)}
-        </select>
-        <span className="block text-xs font-normal text-muted">Automatic scenes rotate every five seconds. Overview, Learners, Enter marks, Timetable, School Services, Parents Feedback, Analysis, Report cards, Mark lists, Staff, Mail log and Settings each have a distinct colour identity. The choice is saved centrally.</span>
-      </label>
-      <div className="flex min-h-24 flex-col justify-center gap-2 rounded-md border border-line bg-card p-3 text-sm text-ink">
-        <span className="font-semibold text-navy">18 moving scene styles</span>
-        <span className="text-xs text-muted">Aurora veils · orbit rings · prism ribbons · rippling water · comet trails · floating light · leaf-like arcs and more.</span>
+    <div className="space-y-3 rounded-lg border border-line bg-paper p-3">
+      <h3 className="text-sm font-semibold text-navy">Choose the school-wide background mode</h3>
+      <div className="grid gap-2 sm:grid-cols-2" role="group" aria-label="School-wide background mode">
+        {PORTAL_BACKDROP_THEMES.map((theme) => {
+          const selected = (colors.backdropTheme ?? "auto-sections") === theme.id;
+          const label = theme.id === "auto-sections" ? "Automatic 18-scene cycle" : "Mukuyu Starfall";
+          const description = theme.id === "auto-sections"
+            ? "One selectable mode. It automatically rotates through all 18 moving scenes every five seconds; you do not select scenes individually."
+            : "The original Mukuyu Starfall background, preserved as a steady alternative.";
+          return <button key={theme.id} type="button" disabled={!loaded} aria-pressed={selected} onClick={() => void chooseBackdropTheme(theme.id)} className={`rounded-md border p-3 text-left transition-colors disabled:opacity-60 ${selected ? "border-navy bg-navy text-white shadow-sm" : "border-line bg-card text-ink hover:border-navy"}`}>
+            <span className="block font-semibold">{label}</span>
+            <span className={`mt-1 block text-xs ${selected ? "text-white/85" : "text-muted"}`}>{description}</span>
+          </button>;
+        })}
       </div>
+      <p className="text-xs text-muted">The automatic scenes sit behind the large inner page only. Each of the 12 sections has its own colour identity and distinctive motif; cards and tables remain unchanged. This setting is saved for the whole school.</p>
     </div>
     <div className="space-y-3 rounded-lg border border-line bg-paper p-3">
       <div><h3 className="font-semibold text-navy">Saved colour types</h3><p className="mt-1 text-xs text-muted">Save each custom backdrop palette with a name. Saved types are shared centrally and can be selected again by the Super Admin on any device.</p></div>
