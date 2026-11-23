@@ -5,6 +5,7 @@ import { PreviewHostBridge } from "@/components/preview-host-bridge";
 import { getWelcomePage } from "@/lib/school/api";
 import { PORTAL_BACKDROP_THEME_IDS, type AppearancePalette } from "@/lib/school/model";
 import { applyDisplayPreferences, applyPortalBackdropColors, readDisplayPreferences } from "@/lib/school/display";
+import { initializePwaInstallCapture } from "@/lib/pwa-install";
 import appCss from "../styles.css?url";
 
 export const Route = createRootRoute({
@@ -47,6 +48,7 @@ export const Route = createRootRoute({
 
 function AppearanceBootstrap() {
   useEffect(() => {
+    initializePwaInstallCapture();
     const apply = (colors: Record<string, unknown>) => {
       const saved: Record<string, string> = {};
       for (const key of ["navy", "navy2", "brass", "brassSoft", "paper", "card", "ink", "muted", "line", "good", "warn", "bad", "info"]) {
