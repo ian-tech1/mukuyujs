@@ -77,7 +77,7 @@ function OpeningIntro({ title, motto, logoSrc }: { title: string; motto: string;
     </div>
     <div className="portal-loading-card text-center">
       <p className="portal-loading-kicker">MUKUYU JUNIOR SCHOOL · LEARNING PORTAL</p>
-      <span className="portal-loading-orbit" aria-hidden="true"><SchoolLogo src={logoSrc} className="size-20" /></span>
+      <span className="portal-loading-orbit" aria-hidden="true"><SchoolLogo src={logoSrc} className="size-24" /></span>
       <h1 id="opening-intro-title" className="portal-loading-title mt-5">{title}</h1>
       <p className="portal-loading-tagline mt-2">{motto}</p>
       <p id="opening-intro-description" className="portal-loading-message mt-4 text-sm">A brighter school day starts here. Welcome to the Mukuyu Junior School portal.</p>

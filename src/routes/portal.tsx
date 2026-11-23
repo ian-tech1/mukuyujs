@@ -172,7 +172,7 @@ function PortalPage() {
         </div>
         <div className="portal-loading-card text-center" role="status" aria-live="polite">
           <p className="portal-loading-kicker portal-loading-box portal-loading-box-kicker">MUKUYU JUNIOR SCHOOL · LEARNING PORTAL</p>
-          <span className="portal-loading-orbit" aria-hidden="true"><SchoolLogo className="size-20" /></span>
+          <span className="portal-loading-orbit" aria-hidden="true"><SchoolLogo className="size-24" /></span>
           <h1 className="portal-loading-title portal-loading-box portal-loading-box-title mt-5">Mukuyu Junior School</h1>
           <p className="portal-loading-tagline portal-loading-box portal-loading-box-tagline mt-2">Learn with purpose. Grow with confidence.</p>
           <p className="portal-loading-message portal-loading-box portal-loading-box-message mt-4 text-sm">Opening your school office and getting everything ready…</p>
