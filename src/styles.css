@@ -564,7 +564,14 @@ html[data-portal-backdrop-theme="starfall"] { --portal-scene-opacity: 0; }
   --portal-beam-c: #416ce5;
   position: relative;
   isolation: isolate;
-  background: #f4f0e6;
+  background-color: #f4f7ff;
+  background-image:
+    radial-gradient(ellipse at 8% 12%, color-mix(in srgb, var(--portal-beam-a) 17%, transparent), transparent 38%),
+    radial-gradient(ellipse at 92% 16%, color-mix(in srgb, var(--portal-beam-b) 15%, transparent), transparent 40%),
+    radial-gradient(ellipse at 72% 88%, color-mix(in srgb, var(--portal-beam-c) 14%, transparent), transparent 42%),
+    linear-gradient(135deg, #f2faff 0%, #f8f2ff 48%, #fff8e9 100%);
+  background-size: 190% 190%, 190% 190%, 190% 190%, 100% 100%;
+  animation: mukuyu-page-colour-flow 38s ease-in-out infinite alternate;
 }
   .portal-animated-background[data-portal-section="home"] { --portal-beam-a:#19c4e7; --portal-beam-b:#d852cf; --portal-beam-c:#416ce5; --portal-glow-a:rgba(47,202,222,0.32); --portal-glow-b:rgba(59,129,220,0.30); --portal-glow-c:rgba(123,91,210,0.23); --portal-glow-d:rgba(244,186,85,0.20); }
 .portal-animated-background[data-portal-section="learners"] { --portal-beam-a:#19c99a; --portal-beam-b:#36aede; --portal-beam-c:#e4bd43; --portal-glow-a:rgba(30,190,137,0.30); --portal-glow-b:rgba(31,166,210,0.27); --portal-glow-c:rgba(111,101,220,0.20); --portal-glow-d:rgba(230,202,87,0.19); }
@@ -698,9 +705,9 @@ html[data-portal-backdrop-theme="nature-cycle"] .portal-nature-scene[data-active
 @keyframes portal-scene-drift { from { background-position: 0% 10%; } to { background-position: 100% 90%; } }
 @keyframes mukuyu-orbit-drift { from { transform: translate3d(-.45%, .2%, 0) rotate(-1deg); } to { transform: translate3d(.45%, -.2%, 0) rotate(1deg); } }
 @media (prefers-reduced-motion: reduce) {
-  .portal-page-content::before, .portal-page-content::after, .portal-loading, .portal-loading::before, .portal-loading::after, .portal-loading-orbit, .portal-loading-track span, .welcome-shell, .welcome-hero, .welcome-login-panel, .welcome-word-panel, .welcome-parent-toggle { animation: none !important; }
+  .portal-page-content::before, .portal-page-content::after, .portal-animated-background, .portal-loading, .portal-loading::before, .portal-loading::after, .portal-loading-orbit, .portal-loading-track span, .welcome-shell, .welcome-hero, .welcome-login-panel, .welcome-word-panel, .welcome-parent-toggle { animation: none !important; }
 }
-html[data-portal-motion="reduced"] .portal-page-content::before, html[data-portal-motion="reduced"] .portal-page-content::after { animation: none !important; }
+html[data-portal-motion="reduced"] .portal-page-content::before, html[data-portal-motion="reduced"] .portal-page-content::after, html[data-portal-motion="reduced"] .portal-animated-background { animation: none !important; }
 @media (prefers-reduced-motion: reduce) { .portal-background-scene { animation: none !important; transition: none !important; } }
 html[data-portal-motion="reduced"] .portal-background-scene { animation: none !important; transition: none !important; }
 @media (prefers-reduced-motion: reduce) { .portal-nature-scene { transition: none !important; } }
@@ -791,9 +798,9 @@ html[data-portal-background-mode="original"] .portal-loading-monogram > span {
   --portal-nav-violet: #818cf8;
   background-color: var(--portal-nav-base);
   background-image:
-    radial-gradient(ellipse at 92% 2%, color-mix(in srgb, var(--portal-nav-gold) 28%, transparent), transparent 27%),
-    radial-gradient(ellipse at 3% 28%, color-mix(in srgb, var(--portal-nav-teal) 22%, transparent), transparent 30%),
-    radial-gradient(ellipse at 88% 76%, color-mix(in srgb, var(--portal-nav-violet) 20%, transparent), transparent 34%),
+    radial-gradient(ellipse at 92% 2%, color-mix(in srgb, var(--portal-nav-gold) 40%, transparent), transparent 27%),
+    radial-gradient(ellipse at 3% 28%, color-mix(in srgb, var(--portal-nav-teal) 34%, transparent), transparent 30%),
+    radial-gradient(ellipse at 88% 76%, color-mix(in srgb, var(--portal-nav-violet) 32%, transparent), transparent 34%),
     linear-gradient(155deg, var(--portal-nav-base) 0%, var(--portal-nav-blue) 52%, #102d51 100%);
   background-size: 180% 180%, 180% 180%, 180% 180%, 100% 100%;
   background-position: 0% 0%, 100% 20%, 0% 100%, 50% 50%;
@@ -841,6 +848,12 @@ html[data-portal-background-mode="original"] .portal-loading-monogram > span {
   100% {
     background-position: 100% 100%, 0% 80%, 72% 0%, 50% 50%;
   }
+}
+
+@keyframes mukuyu-page-colour-flow {
+  0% { background-position: 0% 5%, 100% 15%, 70% 100%, 50% 50%; }
+  50% { background-position: 45% 35%, 55% 70%, 15% 45%, 50% 50%; }
+  100% { background-position: 100% 90%, 0% 100%, 95% 0%, 50% 50%; }
 }
 
 html[data-portal-background-mode="original"] .portal-navigation-drawer {

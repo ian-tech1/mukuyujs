@@ -84,7 +84,7 @@ export function normalizeDisplayPreferences(value: unknown): LocalDisplayPrefere
     density: source.density === "compact" ? "compact" : "comfortable",
     backgroundMode: source.backgroundMode === "original" || source.backgroundMode === "animated"
       ? source.backgroundMode
-      : source.accentMotion === false ? "original" : DEFAULT_DISPLAY_PREFERENCES.backgroundMode,
+      : DEFAULT_DISPLAY_PREFERENCES.backgroundMode,
     motion: typeof source.motion === "boolean" ? source.motion : DEFAULT_DISPLAY_PREFERENCES.motion,
     fontFamily: source.fontFamily === "serif" || source.fontFamily === "system" || source.fontFamily === "mono" ? source.fontFamily : "sans",
     fontScale: source.fontScale === "small" || source.fontScale === "large" ? source.fontScale : "normal",

@@ -262,8 +262,8 @@ function PortalPage() {
             <SchoolLogo className="size-12" />
             <div>
               <span className="portal-nav-monogram" aria-label="Mukuyu Junior School initials">MJS</span>
-              <p className="font-serif text-lg leading-tight">Mukuyu JSS</p>
-              <p className="text-sm text-brass-soft">Exam portal</p>
+              <p className="font-serif text-xl leading-tight">Mukuyu JSS</p>
+              <p className="text-base text-brass-soft">Exam portal</p>
             </div>
           </div>
           <button className="lg:hidden" type="button" onClick={() => setOpen(false)} aria-label="Close menu">
@@ -275,7 +275,7 @@ function PortalPage() {
             <button
               key={item}
               type="button"
-              className={`portal-nav-item flex h-12 w-full items-center rounded-xl px-4 text-left text-base font-semibold ${current === item ? "portal-nav-item-active text-paper" : "text-paper/90"}`}
+              className={`portal-nav-item flex h-[3.25rem] w-full items-center rounded-xl px-4 text-left text-lg font-bold ${current === item ? "portal-nav-item-active text-paper" : "text-paper/90"}`}
               aria-current={current === item ? "page" : undefined}
               onClick={() => {
                 setOpen(false);
@@ -288,8 +288,8 @@ function PortalPage() {
             </button>
           ))}
         </nav>
-        <div className="mt-auto border-t border-white/15 px-5 py-5 text-sm text-paper/80">
-          <p className="font-semibold text-paper">{ws.me.fullName}</p>
+        <div className="mt-auto border-t border-white/15 px-5 py-5 text-base text-paper/80">
+          <p className="text-lg font-semibold text-paper">{ws.me.fullName}</p>
           <p>{ws.me.email}</p>
           <button
             className="mt-3 text-base font-semibold text-brass-soft"
@@ -308,7 +308,7 @@ function PortalPage() {
           <button className="lg:hidden" type="button" onClick={() => { setDisplaySettingsOpen(false); setOpen(true); }} aria-label="Open menu" aria-expanded={open} aria-controls="portal-navigation">
             <Menu />
           </button>
-          <p className="text-sm text-muted">
+          <p className="text-base text-muted">
             {ws.profile.termName} {ws.profile.academicYear}
           </p>
           <div className="relative flex items-center gap-2" ref={displayControlsRef}>
