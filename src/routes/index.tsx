@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { SchoolLogo } from "@/components/school/logo";
 import { PublicReport } from "@/components/school/public-report";
 import { btnClass, errText, inputClass } from "@/components/school/gate";
@@ -21,12 +21,14 @@ function GatePage() {
   return <LoginPage />;
 }
 
-function OpeningIntro({ title, motto, logoSrc }: { title: string; motto: string; logoSrc?: string }) {
+function OpeningIntro({ title, motto, logoSrc, durationSeconds }: { title: string; motto: string; logoSrc?: string; durationSeconds: number }) {
   const [visible, setVisible] = useState(true);
+  const startedAt = useRef(Date.now());
   useEffect(() => {
-    const timeout = window.setTimeout(() => setVisible(false), 5000);
+    const remaining = Math.max(0, durationSeconds * 1000 - (Date.now() - startedAt.current));
+    const timeout = window.setTimeout(() => setVisible(false), remaining);
     return () => window.clearTimeout(timeout);
-  }, []);
+  }, [durationSeconds]);
 
   function continueToSignIn() {
     setVisible(false);
@@ -74,8 +76,17 @@ function OpeningIntro({ title, motto, logoSrc }: { title: string; motto: string;
       <span className="portal-loading-object portal-loading-object-star portal-loading-object-ten" />
       <span className="portal-loading-object portal-loading-object-hex portal-loading-object-eleven" />
       <span className="portal-loading-object portal-loading-object-hex portal-loading-object-twelve" />
+      <span className="portal-loading-object portal-loading-object-diamond portal-loading-object-thirteen" />
+      <span className="portal-loading-object portal-loading-object-ring portal-loading-object-fourteen" />
+      <span className="portal-loading-object portal-loading-object-star portal-loading-object-fifteen" />
+      <span className="portal-loading-object portal-loading-object-hex portal-loading-object-sixteen" />
+      <span className="portal-loading-object portal-loading-object-diamond portal-loading-object-seventeen" />
+      <span className="portal-loading-object portal-loading-object-ring portal-loading-object-eighteen" />
+      <span className="portal-loading-object portal-loading-object-star portal-loading-object-nineteen" />
+      <span className="portal-loading-object portal-loading-object-hex portal-loading-object-twenty" />
     </div>
     <div className="portal-loading-card text-center">
+      <p className="portal-loading-monogram" aria-label="MJS">MJS</p>
       <p className="portal-loading-kicker">MUKUYU JUNIOR SCHOOL · LEARNING PORTAL</p>
       <span className="portal-loading-orbit" aria-hidden="true"><SchoolLogo src={logoSrc} className="size-24" /></span>
       <h1 id="opening-intro-title" className="portal-loading-title mt-5">{title}</h1>
@@ -114,7 +125,7 @@ function LoginPage() {
   const [parentBusy, setParentBusy] = useState(false);
   const [parentError, setParentError] = useState("");
   const [parentNotice, setParentNotice] = useState("");
-  const [welcome, setWelcome] = useState<{ title: string; subtitle: string; announcement: string; contact: string; logoData?: string; backgroundStart?: string; backgroundEnd?: string; titleSize?: number; fontFamily?: string; animationStyle?: string; animated?: boolean; highlights?: string; certification?: string; footerText?: string; paragraphColoursEnabled?: boolean; paragraphColourInterval?: number; display?: WelcomeDisplayOptions } | null>(null);
+  const [welcome, setWelcome] = useState<{ title: string; subtitle: string; announcement: string; contact: string; logoData?: string; backgroundStart?: string; backgroundEnd?: string; titleSize?: number; fontFamily?: string; animationStyle?: string; animated?: boolean; highlights?: string; certification?: string; footerText?: string; paragraphColoursEnabled?: boolean; paragraphColourInterval?: number; splashDurationSeconds?: number; display?: WelcomeDisplayOptions } | null>(null);
   const [display, setDisplay] = useState<LocalDisplayPreferences>(DEFAULT_DISPLAY_PREFERENCES);
   const [paragraphColourTick, setParagraphColourTick] = useState(0);
   const [featuresOpen, setFeaturesOpen] = useState(false);
@@ -321,7 +332,7 @@ function LoginPage() {
 
   return (
     <main className={`welcome-shell grid min-h-screen lg:grid-cols-[1.1fr_0.9fr] ${welcomeDisplay.animatedWordingPanels ? "" : "welcome-word-panels-disabled"}`} style={welcomeHeroStyle}>
-      <OpeningIntro title={welcome?.title || status?.schoolName || "Mukuyu Junior School"} motto={status?.motto || "Hard Work Pays"} logoSrc={welcome?.logoData || undefined} />
+      <OpeningIntro title={welcome?.title || status?.schoolName || "Mukuyu Junior School"} motto={status?.motto || "Hard Work Pays"} logoSrc={welcome?.logoData || undefined} durationSeconds={Math.max(5, Math.min(30, welcome?.splashDurationSeconds ?? 10))} />
       <section className={`welcome-hero relative flex flex-col justify-between px-6 py-8 text-paper sm:px-12 ${welcome?.animated === false || welcome?.animationStyle === "none" ? "welcome-static" : `welcome-animated welcome-animation-${welcome?.animationStyle || "aurora"}`} ${welcomeDisplay.showRibbons ? "" : "welcome-no-ribbons"} ${welcomeDisplay.titleShadow ? "" : "welcome-title-shadow-disabled"} ${welcomeDisplay.contentAlignment === "center" ? "welcome-content-centered" : ""}`}>
         <div className="welcome-ribbon-field" aria-hidden="true"><span className="welcome-ribbon welcome-ribbon-one" /><span className="welcome-ribbon welcome-ribbon-two" /><span className="welcome-ribbon welcome-ribbon-three" /><span className="welcome-ribbon welcome-ribbon-four" /><span className="welcome-ribbon-orb welcome-ribbon-orb-one" /><span className="welcome-ribbon-orb welcome-ribbon-orb-two" /></div>
         <div className="relative z-10 flex items-center justify-between gap-4">
