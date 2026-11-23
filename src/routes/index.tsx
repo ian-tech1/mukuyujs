@@ -22,15 +22,13 @@ function GatePage() {
 }
 
 function OpeningIntro({ title, motto, logoSrc }: { title: string; motto: string; logoSrc?: string }) {
-  const [visible, setVisible] = useState(false);
+  const [visible, setVisible] = useState(true);
   useEffect(() => {
-    try { setVisible(window.localStorage.getItem("mukuyu-opening-intro-seen-v1") !== "seen"); }
-    catch { setVisible(true); }
+    const timeout = window.setTimeout(() => setVisible(false), 5000);
+    return () => window.clearTimeout(timeout);
   }, []);
 
   function continueToSignIn() {
-    try { window.localStorage.setItem("mukuyu-opening-intro-seen-v1", "seen"); }
-    catch { /* Keep sign-in available when local storage is blocked. */ }
     setVisible(false);
   }
 
@@ -63,6 +61,20 @@ function OpeningIntro({ title, motto, logoSrc }: { title: string; motto: string;
       <span className="portal-loading-comet portal-loading-comet-two" />
       <span className="portal-loading-comet portal-loading-comet-three" />
     </div>
+    <div className="portal-loading-orbiting-objects" aria-hidden="true">
+      <span className="portal-loading-object portal-loading-object-diamond portal-loading-object-one" />
+      <span className="portal-loading-object portal-loading-object-diamond portal-loading-object-two" />
+      <span className="portal-loading-object portal-loading-object-diamond portal-loading-object-three" />
+      <span className="portal-loading-object portal-loading-object-diamond portal-loading-object-four" />
+      <span className="portal-loading-object portal-loading-object-ring portal-loading-object-five" />
+      <span className="portal-loading-object portal-loading-object-ring portal-loading-object-six" />
+      <span className="portal-loading-object portal-loading-object-ring portal-loading-object-seven" />
+      <span className="portal-loading-object portal-loading-object-ring portal-loading-object-eight" />
+      <span className="portal-loading-object portal-loading-object-star portal-loading-object-nine" />
+      <span className="portal-loading-object portal-loading-object-star portal-loading-object-ten" />
+      <span className="portal-loading-object portal-loading-object-hex portal-loading-object-eleven" />
+      <span className="portal-loading-object portal-loading-object-hex portal-loading-object-twelve" />
+    </div>
     <div className="portal-loading-card text-center">
       <p className="portal-loading-kicker">MUKUYU JUNIOR SCHOOL · LEARNING PORTAL</p>
       <span className="portal-loading-orbit" aria-hidden="true"><SchoolLogo src={logoSrc} className="size-20" /></span>
@@ -72,6 +84,7 @@ function OpeningIntro({ title, motto, logoSrc }: { title: string; motto: string;
       <div className="portal-loading-track mt-6" aria-hidden="true"><span /></div>
       <button className="portal-loading-continue mt-6" type="button" autoFocus onClick={continueToSignIn}>Continue to sign in</button>
       <p className="portal-loading-footnote mt-4 justify-center">MUKUYU JUNIOR SCHOOL · LEARN WITH PURPOSE</p>
+      <p className="portal-loading-credit mt-2">PORTAL DEVELOPED BY IAN TECH</p>
     </div>
   </div>;
 }

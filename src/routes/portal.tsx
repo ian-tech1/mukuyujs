@@ -156,6 +156,20 @@ function PortalPage() {
           <span className="portal-loading-comet portal-loading-comet-two" />
           <span className="portal-loading-comet portal-loading-comet-three" />
         </div>
+        <div className="portal-loading-orbiting-objects" aria-hidden="true">
+          <span className="portal-loading-object portal-loading-object-diamond portal-loading-object-one" />
+          <span className="portal-loading-object portal-loading-object-diamond portal-loading-object-two" />
+          <span className="portal-loading-object portal-loading-object-diamond portal-loading-object-three" />
+          <span className="portal-loading-object portal-loading-object-diamond portal-loading-object-four" />
+          <span className="portal-loading-object portal-loading-object-ring portal-loading-object-five" />
+          <span className="portal-loading-object portal-loading-object-ring portal-loading-object-six" />
+          <span className="portal-loading-object portal-loading-object-ring portal-loading-object-seven" />
+          <span className="portal-loading-object portal-loading-object-ring portal-loading-object-eight" />
+          <span className="portal-loading-object portal-loading-object-star portal-loading-object-nine" />
+          <span className="portal-loading-object portal-loading-object-star portal-loading-object-ten" />
+          <span className="portal-loading-object portal-loading-object-hex portal-loading-object-eleven" />
+          <span className="portal-loading-object portal-loading-object-hex portal-loading-object-twelve" />
+        </div>
         <div className="portal-loading-card text-center" role="status" aria-live="polite">
           <p className="portal-loading-kicker portal-loading-box portal-loading-box-kicker">MUKUYU JUNIOR SCHOOL · LEARNING PORTAL</p>
           <span className="portal-loading-orbit" aria-hidden="true"><SchoolLogo className="size-20" /></span>
