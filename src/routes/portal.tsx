@@ -169,8 +169,17 @@ function PortalPage() {
           <span className="portal-loading-object portal-loading-object-star portal-loading-object-ten" />
           <span className="portal-loading-object portal-loading-object-hex portal-loading-object-eleven" />
           <span className="portal-loading-object portal-loading-object-hex portal-loading-object-twelve" />
+          <span className="portal-loading-object portal-loading-object-diamond portal-loading-object-thirteen" />
+          <span className="portal-loading-object portal-loading-object-ring portal-loading-object-fourteen" />
+          <span className="portal-loading-object portal-loading-object-star portal-loading-object-fifteen" />
+          <span className="portal-loading-object portal-loading-object-hex portal-loading-object-sixteen" />
+          <span className="portal-loading-object portal-loading-object-diamond portal-loading-object-seventeen" />
+          <span className="portal-loading-object portal-loading-object-ring portal-loading-object-eighteen" />
+          <span className="portal-loading-object portal-loading-object-star portal-loading-object-nineteen" />
+          <span className="portal-loading-object portal-loading-object-hex portal-loading-object-twenty" />
         </div>
         <div className="portal-loading-card text-center" role="status" aria-live="polite">
+          <p className="portal-loading-monogram" aria-label="Mukuyu Junior School initials">MJS</p>
           <p className="portal-loading-kicker portal-loading-box portal-loading-box-kicker">MUKUYU JUNIOR SCHOOL · LEARNING PORTAL</p>
           <span className="portal-loading-orbit" aria-hidden="true"><SchoolLogo className="size-24" /></span>
           <h1 className="portal-loading-title portal-loading-box portal-loading-box-title mt-5">Mukuyu Junior School</h1>
@@ -194,6 +203,7 @@ function PortalPage() {
           <div className="flex items-center gap-2">
             <SchoolLogo className="size-10" />
             <div>
+              <span className="portal-nav-monogram" aria-label="Mukuyu Junior School initials">MJS</span>
               <p className="font-serif text-sm leading-tight">Mukuyu JSS</p>
               <p className="text-xs text-brass-soft">Exam portal</p>
             </div>
