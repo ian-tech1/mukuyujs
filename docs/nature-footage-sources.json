@@ -3,10 +3,12 @@
   "processing": {
     "container": "MP4",
     "videoCodec": "H.264 Baseline",
-    "maximumDimensionPixels": 720,
+    "maximumDimensionPixels": 480,
     "frameRateFps": 20,
     "durationSeconds": 5,
-    "audio": "Removed"
+    "audio": "Removed",
+    "encoderPreset": "slow",
+    "constantRateFactor": 33
   },
   "licenseNote": "Each clip is from a source page that identifies it as free stock footage under the linked Pexels or Pixabay license. The files are trimmed, resized, transcoded, and embedded as part of the website background; do not resell or redistribute the stock clips as standalone assets. Check source and license terms before reuse in another context.",
   "clips": [
