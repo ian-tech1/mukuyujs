@@ -256,26 +256,26 @@ function PortalPage() {
 
   return (
     <div className="portal-animated-background min-h-screen w-full min-w-0 max-w-none overflow-x-clip bg-paper lg:grid lg:grid-cols-[16rem_minmax(0,1fr)]" data-portal-section={current}>
-      <aside id="portal-navigation" aria-label="Main navigation" className={`${open ? "fixed inset-0 z-20" : "hidden"} bg-navy text-paper lg:sticky lg:top-0 lg:block lg:h-screen`}>
-        <div className="flex items-center justify-between px-4 py-4">
+      <aside id="portal-navigation" aria-label="Main navigation" className={`portal-navigation-drawer flex min-h-screen flex-col overflow-y-auto ${open ? "fixed inset-0 z-20" : "hidden"} bg-navy text-paper lg:sticky lg:top-0 lg:block lg:h-screen`}>
+        <div className="flex items-center justify-between border-b border-white/10 px-5 py-5 lg:border-b-0">
           <div className="flex items-center gap-2">
-            <SchoolLogo className="size-10" />
+            <SchoolLogo className="size-12" />
             <div>
               <span className="portal-nav-monogram" aria-label="Mukuyu Junior School initials">MJS</span>
-              <p className="font-serif text-sm leading-tight">Mukuyu JSS</p>
-              <p className="text-xs text-brass-soft">Exam portal</p>
+              <p className="font-serif text-lg leading-tight">Mukuyu JSS</p>
+              <p className="text-sm text-brass-soft">Exam portal</p>
             </div>
           </div>
           <button className="lg:hidden" type="button" onClick={() => setOpen(false)} aria-label="Close menu">
             <X />
           </button>
         </div>
-        <nav className="px-3">
+        <nav className="space-y-2 px-4 py-4">
           {views.map((item) => (
             <button
               key={item}
               type="button"
-              className={`mb-1 flex h-11 w-full items-center rounded-md px-3 text-left text-sm ${current === item ? "bg-navy-2 text-brass-soft" : "text-paper/85"}`}
+              className={`portal-nav-item flex h-12 w-full items-center rounded-xl px-4 text-left text-base font-semibold ${current === item ? "portal-nav-item-active text-paper" : "text-paper/90"}`}
               aria-current={current === item ? "page" : undefined}
               onClick={() => {
                 setOpen(false);
@@ -288,11 +288,11 @@ function PortalPage() {
             </button>
           ))}
         </nav>
-        <div className="mt-6 border-t border-white/10 px-4 py-4 text-xs text-paper/70">
+        <div className="mt-auto border-t border-white/15 px-5 py-5 text-sm text-paper/80">
           <p className="font-semibold text-paper">{ws.me.fullName}</p>
           <p>{ws.me.email}</p>
           <button
-            className="mt-3 text-sm font-semibold text-brass-soft"
+            className="mt-3 text-base font-semibold text-brass-soft"
             type="button"
             onClick={async () => {
               await logout();

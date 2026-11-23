@@ -780,3 +780,44 @@ html[data-portal-background-mode="original"] .portal-loading-monogram > span {
 @media print {
   .portal-loading-orbiting-objects { display:none !important; }
 }
+
+
+/* A welcoming, colourful surface for the portal navigation shown on mobile. */
+.portal-navigation-drawer {
+  background-color: #0e2a4a;
+  background-image:
+    radial-gradient(ellipse at 92% 2%, rgba(251, 191, 36, 0.28), transparent 27%),
+    radial-gradient(ellipse at 3% 28%, rgba(45, 212, 191, 0.22), transparent 30%),
+    radial-gradient(ellipse at 88% 76%, rgba(129, 140, 248, 0.2), transparent 34%),
+    linear-gradient(155deg, #0b2543 0%, #123b62 52%, #102d51 100%);
+  box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.12);
+}
+
+.portal-navigation-drawer .portal-nav-item {
+  border: 1px solid transparent;
+  line-height: 1.25;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.portal-navigation-drawer .portal-nav-item:not(.portal-nav-item-active):hover {
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.portal-navigation-drawer .portal-nav-item-active {
+  border-color: rgba(255, 226, 150, 0.48);
+  background: linear-gradient(110deg, rgba(45, 212, 191, 0.25), rgba(251, 191, 36, 0.2));
+  box-shadow: inset 3px 0 0 #f4c96b, 0 8px 20px rgba(3, 15, 30, 0.16);
+}
+
+.portal-navigation-drawer .portal-nav-item:focus-visible {
+  outline: 3px solid #f4c96b;
+  outline-offset: 2px;
+}
+
+@media (max-width: 1023px) {
+  .portal-navigation-drawer {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+}
