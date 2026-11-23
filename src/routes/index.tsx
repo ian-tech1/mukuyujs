@@ -21,6 +21,48 @@ function GatePage() {
   return <LoginPage />;
 }
 
+function OpeningIntro({ title, motto, logoSrc }: { title: string; motto: string; logoSrc?: string }) {
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    try { setVisible(window.localStorage.getItem("mukuyu-opening-intro-seen-v1") !== "seen"); }
+    catch { setVisible(true); }
+  }, []);
+
+  function continueToSignIn() {
+    try { window.localStorage.setItem("mukuyu-opening-intro-seen-v1", "seen"); }
+    catch { /* Keep sign-in available when local storage is blocked. */ }
+    setVisible(false);
+  }
+
+  if (!visible) return null;
+  return <div className="portal-loading fixed inset-0 z-[100] grid min-h-screen w-full place-items-center px-6" role="dialog" aria-modal="true" aria-labelledby="opening-intro-title" aria-describedby="opening-intro-description" onKeyDown={(event) => { if (event.key === "Escape") continueToSignIn(); }}>
+    <div className="portal-loading-aurora" aria-hidden="true" />
+    <div className="portal-loading-ribbon-field" aria-hidden="true">
+      <span className="portal-loading-ribbon portal-loading-ribbon-one" />
+      <span className="portal-loading-ribbon portal-loading-ribbon-two" />
+      <span className="portal-loading-ribbon portal-loading-ribbon-three" />
+      <span className="portal-loading-ribbon portal-loading-ribbon-four" />
+      <span className="portal-loading-ribbon-orb portal-loading-ribbon-orb-one" />
+      <span className="portal-loading-ribbon-orb portal-loading-ribbon-orb-two" />
+    </div>
+    <div className="portal-loading-rays" aria-hidden="true" />
+    <div className="portal-loading-atom" aria-hidden="true" />
+    <div className="portal-loading-orbit-glints" aria-hidden="true" />
+    <div className="portal-loading-stars" aria-hidden="true" />
+    <div className="portal-loading-dust" aria-hidden="true" />
+    <div className="portal-loading-card text-center">
+      <p className="portal-loading-kicker">MUKUYU JUNIOR SCHOOL · LEARNING PORTAL</p>
+      <span className="portal-loading-orbit" aria-hidden="true"><SchoolLogo src={logoSrc} className="size-20" /></span>
+      <h1 id="opening-intro-title" className="portal-loading-title mt-5">{title}</h1>
+      <p className="portal-loading-tagline mt-2">{motto}</p>
+      <p id="opening-intro-description" className="portal-loading-message mt-4 text-sm">A brighter school day starts here. Welcome to the Mukuyu Junior School portal.</p>
+      <div className="portal-loading-track mt-6" aria-hidden="true"><span /></div>
+      <button className="portal-loading-continue mt-6" type="button" autoFocus onClick={continueToSignIn}>Continue to sign in</button>
+      <p className="portal-loading-footnote mt-4 justify-center">MUKUYU JUNIOR SCHOOL · LEARN WITH PURPOSE</p>
+    </div>
+  </div>;
+}
+
 function LoginPage() {
   const navigate = useNavigate();
   const [status, setStatus] = useState<{ needsSetup: boolean; schoolName: string; motto: string; poBox: string; location: string } | null>(null);
@@ -253,6 +295,7 @@ function LoginPage() {
 
   return (
     <main className={`welcome-shell grid min-h-screen lg:grid-cols-[1.1fr_0.9fr] ${welcomeDisplay.animatedWordingPanels ? "" : "welcome-word-panels-disabled"}`} style={welcomeHeroStyle}>
+      <OpeningIntro title={welcome?.title || status?.schoolName || "Mukuyu Junior School"} motto={status?.motto || "Hard Work Pays"} logoSrc={welcome?.logoData || undefined} />
       <section className={`welcome-hero relative flex flex-col justify-between px-6 py-8 text-paper sm:px-12 ${welcome?.animated === false || welcome?.animationStyle === "none" ? "welcome-static" : `welcome-animated welcome-animation-${welcome?.animationStyle || "aurora"}`} ${welcomeDisplay.showRibbons ? "" : "welcome-no-ribbons"} ${welcomeDisplay.titleShadow ? "" : "welcome-title-shadow-disabled"} ${welcomeDisplay.contentAlignment === "center" ? "welcome-content-centered" : ""}`}>
         <div className="welcome-ribbon-field" aria-hidden="true"><span className="welcome-ribbon welcome-ribbon-one" /><span className="welcome-ribbon welcome-ribbon-two" /><span className="welcome-ribbon welcome-ribbon-three" /><span className="welcome-ribbon welcome-ribbon-four" /><span className="welcome-ribbon-orb welcome-ribbon-orb-one" /><span className="welcome-ribbon-orb welcome-ribbon-orb-two" /></div>
         <div className="relative z-10 flex items-center justify-between gap-4">
