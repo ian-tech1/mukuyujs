@@ -50,6 +50,19 @@ function OpeningIntro({ title, motto, logoSrc }: { title: string; motto: string;
     <div className="portal-loading-orbit-glints" aria-hidden="true" />
     <div className="portal-loading-stars" aria-hidden="true" />
     <div className="portal-loading-dust" aria-hidden="true" />
+    <div className="portal-loading-motes" aria-hidden="true">
+      <span className="portal-loading-mote portal-loading-mote-one" />
+      <span className="portal-loading-mote portal-loading-mote-two" />
+      <span className="portal-loading-mote portal-loading-mote-three" />
+      <span className="portal-loading-mote portal-loading-mote-four" />
+      <span className="portal-loading-mote portal-loading-mote-five" />
+      <span className="portal-loading-mote portal-loading-mote-six" />
+    </div>
+    <div className="portal-loading-comets" aria-hidden="true">
+      <span className="portal-loading-comet portal-loading-comet-one" />
+      <span className="portal-loading-comet portal-loading-comet-two" />
+      <span className="portal-loading-comet portal-loading-comet-three" />
+    </div>
     <div className="portal-loading-card text-center">
       <p className="portal-loading-kicker">MUKUYU JUNIOR SCHOOL · LEARNING PORTAL</p>
       <span className="portal-loading-orbit" aria-hidden="true"><SchoolLogo src={logoSrc} className="size-20" /></span>

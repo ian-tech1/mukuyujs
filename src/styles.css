@@ -388,6 +388,18 @@ html[data-portal-accent-motion="off"] .portal-page-content.portal-panel-color-mo
 .portal-loading-dust::before, .portal-loading-dust::after { content:""; position:absolute; width:9px; height:9px; clip-path:polygon(50% 0%,61% 39%,100% 50%,61% 61%,50% 100%,39% 61%,0% 50%,39% 39%); filter:drop-shadow(0 0 8px currentColor); animation:portal-loading-sparkle 8s ease-in-out infinite alternate; }
 .portal-loading-dust::before { top:22%; left:17%; color:#a8f4ff; background:linear-gradient(135deg,#fff,#48dfff 65%,transparent); }
 .portal-loading-dust::after { top:74%; left:82%; color:#ffd38a; background:linear-gradient(135deg,#fff7d6,#ffb34b 65%,transparent); animation-delay:-3.5s; animation-duration:9s; }
+.portal-loading-motes, .portal-loading-comets { position:absolute; inset:0; z-index:0; overflow:hidden; pointer-events:none; }
+.portal-loading-mote { position:absolute; width:clamp(.28rem,.62vw,.48rem); aspect-ratio:1; border-radius:50%; background:currentColor; box-shadow:0 0 8px currentColor,0 0 18px currentColor; opacity:.32; animation:portal-loading-mote-float 8s ease-in-out infinite alternate; }
+.portal-loading-mote-one { top:18%; left:12%; color:var(--portal-user-glow-a,#20c9e8); --mote-dx:34px; --mote-dy:-42px; }
+.portal-loading-mote-two { top:27%; right:16%; color:var(--portal-user-glow-b,#596cf2); --mote-dx:-26px; --mote-dy:36px; animation-delay:-2.3s; animation-duration:10s; }
+.portal-loading-mote-three { top:63%; left:21%; color:var(--portal-user-glow-c,#f3b747); --mote-dx:30px; --mote-dy:28px; animation-delay:-5.2s; animation-duration:9s; }
+.portal-loading-mote-four { top:78%; right:23%; color:var(--portal-user-glow-d,#d84cbb); --mote-dx:-36px; --mote-dy:-30px; animation-delay:-3.7s; animation-duration:11s; }
+.portal-loading-mote-five { top:42%; left:8%; color:#b5f4ff; --mote-dx:22px; --mote-dy:34px; animation-delay:-6.1s; animation-duration:12s; }
+.portal-loading-mote-six { top:53%; right:9%; color:#ffe19a; --mote-dx:-24px; --mote-dy:-36px; animation-delay:-1.4s; animation-duration:9.5s; }
+.portal-loading-comet { position:absolute; left:-28rem; width:clamp(8rem,18vw,16rem); height:2px; border-radius:999px; opacity:0; background:linear-gradient(90deg,transparent,var(--comet-color,#68e7ff),#fff 78%,transparent); box-shadow:0 0 10px var(--comet-color,#68e7ff),0 0 24px var(--comet-color,#68e7ff); animation:portal-loading-comet-cross 18s linear infinite; will-change:transform,opacity; }
+.portal-loading-comet-one { top:14%; --comet-color:var(--portal-user-glow-a,#20c9e8); --comet-y:38vh; --comet-angle:-24deg; }
+.portal-loading-comet-two { top:47%; --comet-color:var(--portal-user-glow-d,#d84cbb); --comet-y:22vh; --comet-angle:-19deg; animation-duration:21s; animation-delay:-8s; }
+.portal-loading-comet-three { top:75%; --comet-color:var(--portal-user-glow-c,#f3b747); --comet-y:-18vh; --comet-angle:-31deg; animation-duration:24s; animation-delay:-15s; }
 .portal-loading-stars::before, .portal-loading-stars::after { content: ""; position: absolute; width: 13rem; height: 2px; left: -15rem; top: 14%; opacity: 0; border-radius: 999px; background: linear-gradient(90deg, transparent, rgba(52,220,255,.94), rgba(255,255,255,.96), transparent); box-shadow: 0 0 12px rgba(52,220,255,.85), 0 0 30px rgba(52,220,255,.4); transform: rotate(-28deg); animation: portal-loading-shooting-star 9s ease-in-out infinite; }
 .portal-loading-stars::after { top: 62%; width: 10rem; background: linear-gradient(90deg, transparent, rgba(255,190,88,.92), rgba(255,255,255,.96), transparent); box-shadow: 0 0 12px rgba(255,190,88,.82), 0 0 28px rgba(221,79,200,.35); animation-delay: 4.1s; animation-duration: 11s; }
 .portal-loading-card { position:relative; z-index:1; isolation:isolate; width:min(34rem,calc(100vw - 3rem)); padding: 2.6rem 2.4rem 2rem; border: 0; background: transparent; box-shadow: none; backdrop-filter: none; }
@@ -435,6 +447,8 @@ html[data-portal-accent-motion="off"] .portal-page-content.portal-panel-color-mo
 @keyframes portal-loading-star-drift { from { transform: translate3d(-1.5%, -1%, 0) scale(1); } to { transform: translate3d(1.5%, 1%, 0) scale(1.035); } }
 @keyframes portal-loading-star-glimmer { from { filter: brightness(.72) saturate(.9); opacity: .7; } to { filter: brightness(1.28) saturate(1.25); opacity: 1; } }
 @keyframes portal-loading-shooting-star { 0%, 14% { opacity: 0; transform: translate3d(0,0,0) rotate(-28deg); } 18% { opacity: .95; } 42% { opacity: .7; transform: translate3d(calc(100vw + 25rem), 34vh, 0) rotate(-28deg); } 43%,100% { opacity: 0; transform: translate3d(calc(100vw + 25rem), 34vh, 0) rotate(-28deg); } }
+@keyframes portal-loading-mote-float { from { opacity:.25; transform:translate3d(0,0,0) scale(.72); } to { opacity:.9; transform:translate3d(var(--mote-dx,24px),var(--mote-dy,-30px),0) scale(1.18); } }
+@keyframes portal-loading-comet-cross { 0%,10% { opacity:0; transform:translate3d(0,0,0) rotate(var(--comet-angle,-24deg)); } 14% { opacity:.9; } 38% { opacity:.62; transform:translate3d(calc(100vw + 32rem),var(--comet-y,30vh),0) rotate(var(--comet-angle,-24deg)); } 39%,100% { opacity:0; transform:translate3d(calc(100vw + 32rem),var(--comet-y,30vh),0) rotate(var(--comet-angle,-24deg)); } }
 @keyframes portal-loading-live-pulse { 0%,100% { opacity: .48; transform: scale(.8); } 50% { opacity: 1; transform: scale(1.12); } }
 @keyframes portal-loading-orbit-one { from { transform: rotate(-24deg) scaleX(.72); } to { transform: rotate(336deg) scaleX(.72); } }
 @keyframes portal-loading-orbit-two { from { transform: rotate(38deg) scaleX(.92); } to { transform: rotate(-322deg) scaleX(.92); } }
@@ -461,6 +475,8 @@ html[data-portal-motion="reduced"] .portal-loading-stars,
 html[data-portal-motion="reduced"] .portal-loading-dust,
 html[data-portal-motion="reduced"] .portal-loading-dust::before,
 html[data-portal-motion="reduced"] .portal-loading-dust::after,
+html[data-portal-motion="reduced"] .portal-loading-mote,
+html[data-portal-motion="reduced"] .portal-loading-comet,
 html[data-portal-motion="reduced"] .portal-loading-stars::before,
 html[data-portal-motion="reduced"] .portal-loading-stars::after,
 html[data-portal-motion="reduced"] .portal-loading-live i,
@@ -479,6 +495,7 @@ html[data-portal-motion="reduced"] .portal-loading-track span { animation:none !
   .portal-loading-aurora, .portal-loading-aurora::before, .portal-loading-aurora::after, .portal-loading-kicker, .portal-loading-title, .portal-loading-tagline,
   .portal-loading-stars, .portal-loading-stars::before, .portal-loading-stars::after,
   .portal-loading-dust, .portal-loading-dust::before, .portal-loading-dust::after,
+  .portal-loading-motes, .portal-loading-mote, .portal-loading-comets, .portal-loading-comet,
   .portal-loading-live i, .portal-loading, .portal-loading::before, .portal-loading::after,
   .portal-loading-card::before, .portal-loading-card::after, .portal-loading-orbit,
   .portal-loading-track span { animation:none !important; }
@@ -491,6 +508,7 @@ html[data-portal-motion="reduced"] .portal-loading-track span { animation:none !
   .portal-loading-aurora, .portal-loading-aurora::before, .portal-loading-aurora::after, .portal-loading-kicker, .portal-loading-title, .portal-loading-tagline,
   .portal-loading-stars, .portal-loading-stars::before, .portal-loading-stars::after,
   .portal-loading-dust, .portal-loading-dust::before, .portal-loading-dust::after,
+  .portal-loading-motes, .portal-loading-mote, .portal-loading-comets, .portal-loading-comet,
   .portal-loading-live i, .portal-loading, .portal-loading::before, .portal-loading::after,
   .portal-loading-card::before, .portal-loading-card::after, .portal-loading-orbit,
   .portal-loading-track span { animation:none !important; }
@@ -638,7 +656,9 @@ html[data-portal-background-mode="original"] .portal-loading-atom,
 html[data-portal-background-mode="original"] .portal-loading-orbit-glints,
 html[data-portal-background-mode="original"] .portal-loading-aurora,
 html[data-portal-background-mode="original"] .portal-loading-stars,
-html[data-portal-background-mode="original"] .portal-loading-dust {
+html[data-portal-background-mode="original"] .portal-loading-dust,
+html[data-portal-background-mode="original"] .portal-loading-motes,
+html[data-portal-background-mode="original"] .portal-loading-comets {
   display: none !important;
 }
 @media (max-width: 640px) {
