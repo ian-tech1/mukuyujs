@@ -333,6 +333,10 @@ html[data-portal-accent-motion="off"] .portal-page-content.portal-panel-color-mo
 
 /* Mukuyu loading entrance: reference-inspired night sky, soft neon beams and orbital rings. */
 .portal-loading {
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100svh;
+  min-height: 100dvh;
   color: #f8fbff;
   background-color: #071225;
   background-image:
@@ -350,7 +354,9 @@ html[data-portal-accent-motion="off"] .portal-page-content.portal-panel-color-mo
     linear-gradient(112deg, transparent 28%, rgba(23,198,229,.24) 48%, transparent 65%),
     linear-gradient(72deg, transparent 36%, rgba(221,61,173,.19) 54%, transparent 68%),
     linear-gradient(140deg, #071b37 0%, #171b49 42%, #0b2940 72%, #10152f 100%);
-  background-size: 180% 180%;
+  background-size: 100% 100%;
+  background-position: center;
+  background-repeat: no-repeat;
   animation: portal-loading-spectrum 22s ease-in-out infinite alternate;
 }
 .portal-loading::before { background: radial-gradient(ellipse, color-mix(in srgb, var(--portal-user-glow-a, #20c9e8) 82%, white 18%) 0%, color-mix(in srgb, var(--portal-user-glow-b, #5268ef) 38%, transparent) 42%, transparent 74%); opacity: .72; filter: blur(48px); animation: portal-loading-cloud-a 18s ease-in-out infinite alternate; }
@@ -598,6 +604,10 @@ html[data-portal-backdrop-theme="starfall"] { --portal-scene-opacity: 0; }
   --portal-beam-b: #cf4fd2;
   --portal-beam-c: #416ce5;
   position: relative;
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100svh;
+  min-height: 100dvh;
   isolation: isolate;
   --portal-cosmic-sky:
     radial-gradient(1.5px 1.5px at 8% 15%, rgba(255,255,255,.82) 50%, transparent 100%),
@@ -616,7 +626,9 @@ html[data-portal-backdrop-theme="starfall"] { --portal-scene-opacity: 0; }
     linear-gradient(140deg, #071b37 0%, #171b49 42%, #0b2940 72%, #10152f 100%);
   background-color: #071225;
   background-image: var(--portal-cosmic-sky);
-  background-size: 180% 180%;
+  background-size: 100% 100%;
+  background-position: center;
+  background-repeat: no-repeat;
   animation: portal-loading-spectrum 22s ease-in-out infinite alternate;
 }
   .portal-animated-background[data-portal-section="home"] { --portal-beam-a:#19c4e7; --portal-beam-b:#d852cf; --portal-beam-c:#416ce5; --portal-glow-a:rgba(47,202,222,0.32); --portal-glow-b:rgba(59,129,220,0.30); --portal-glow-c:rgba(123,91,210,0.23); --portal-glow-d:rgba(244,186,85,0.20); }
@@ -637,6 +649,8 @@ html[data-portal-backdrop-theme="starfall"] { --portal-scene-opacity: 0; }
   isolation: isolate;
   min-width: 0;
   min-height: calc(100vh - 4rem);
+  min-height: calc(100svh - 4rem);
+  min-height: calc(100dvh - 4rem);
   color: var(--color-ink);
   background: transparent;
 }
@@ -778,7 +792,9 @@ html[data-portal-background-mode="original"] .portal-page-content::after {
 html[data-portal-background-mode="original"] .portal-animated-background {
   background-color: #071225 !important;
   background-image: var(--portal-cosmic-sky) !important;
-  background-size: 180% 180% !important;
+  background-size: 100% 100% !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
   animation: none !important;
 }
 html[data-portal-background-mode="original"] .welcome-shell {
@@ -818,9 +834,17 @@ html[data-portal-background-mode="original"] .welcome-login-panel {
   --portal-nav-teal: #42e6cf;
   --portal-nav-gold: #ffd166;
   --portal-nav-violet: #a394ff;
+  min-height: 100vh;
+  min-height: 100svh;
+  min-height: 100dvh;
+  height: 100vh;
+  height: 100svh;
+  height: 100dvh;
   background-color: #071225;
   background-image: var(--portal-cosmic-sky);
-  background-size: 180% 180%;
+  background-size: 100% 100%;
+  background-position: center;
+  background-repeat: no-repeat;
   animation: portal-loading-spectrum 22s ease-in-out infinite alternate;
   box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.18), inset 0 0 70px rgba(65, 220, 207, 0.1);
 }
@@ -876,7 +900,9 @@ html[data-portal-background-mode="original"] .welcome-login-panel {
 html[data-portal-background-mode="original"] .portal-navigation-drawer {
   background-color: #071225;
   background-image: var(--portal-cosmic-sky);
-  background-size: 180% 180%;
+  background-size: 100% 100%;
+  background-position: center;
+  background-repeat: no-repeat;
   animation: none;
 }
 
