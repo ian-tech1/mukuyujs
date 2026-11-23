@@ -5,7 +5,7 @@ import type { AppearancePalette, Band, MarkControl, PortalBackdropThemeId, Profi
 import { ACCESS_AREAS, ACCESS_GROUPS, type AccessArea, type AccessGroup, type RoleAccessPolicy } from "@/lib/school/role-access";
 import { DEFAULT_APPEARANCE, can, isAdmin } from "@/lib/school/model";
 import { DEFAULT_WELCOME_DISPLAY, hexToRgba, normalizeWelcomeDisplay, type WelcomeDisplayOptions } from "@/lib/school/welcome-display";
-import { applyPortalBackdropColors, DISPLAY_PALETTES, PORTAL_BACKDROP_THEMES } from "@/lib/school/display";
+import { applyPortalBackdropColors, DISPLAY_PALETTES, NATURE_BACKDROP_SCENE_LABELS, PORTAL_BACKDROP_THEMES } from "@/lib/school/display";
 import { addExam, addSubject, deleteSubject, addYear, changePassword, deleteStream, deleteExam, deleteYear, exportSchoolBackup, getWelcomePage, listBackupSnapshots, restoreSchoolBackup, saveAppearance, saveBands, saveExams, saveProfile, saveReportOptions, saveStream, saveSubjects, saveTermAssessments, saveTermDate, saveWelcomePage, setActivePeriod, getMarkAuditHistory, saveMarkControl, saveRoleAccessPolicy, getParentLoginAudit, getPortalColorTypes, savePortalColorType } from "@/lib/school/api";
 import { DEFAULT_MUSIC_OPTIONS, formatPlaylistText, normalizeMusicOptions, parseMusicSetting, parsePlaylistText, type MusicOptions } from "@/lib/school/music";
 import { MusicStudioCard } from "@/components/school/music-studio";
@@ -366,20 +366,22 @@ function AppearanceColorsCard({ flash }: Pick<Gate, "flash">) {
     <div className="flex flex-wrap gap-2">{DISPLAY_PALETTES.map((preset) => <button key={preset.id} type="button" className={btnGhost} onClick={() => choosePreset(preset.colors)}>{preset.name}</button>)}</div>
     <div className="space-y-3 rounded-lg border border-line bg-paper p-3">
       <h3 className="text-sm font-semibold text-navy">Choose the school-wide background mode</h3>
-      <div className="grid gap-2 sm:grid-cols-2" role="group" aria-label="School-wide background mode">
+      <div className="grid gap-2 sm:grid-cols-3" role="group" aria-label="School-wide background mode">
         {PORTAL_BACKDROP_THEMES.map((theme) => {
           const selected = (colors.backdropTheme ?? "auto-sections") === theme.id;
-          const label = theme.id === "auto-sections" ? "Automatic 18-scene cycle" : "Mukuyu Starfall";
+          const label = theme.id === "auto-sections" ? "Automatic 18-scene cycle" : theme.id === "nature-cycle" ? "Mukuyu Nature Motion" : "Mukuyu Starfall";
           const description = theme.id === "auto-sections"
-            ? "One selectable mode. It automatically rotates through all 18 moving scenes every five seconds; you do not select scenes individually."
-            : "The original Mukuyu Starfall background, preserved as a steady alternative.";
+            ? "One mode automatically rotates through all 18 moving scenes every five seconds; scenes are not selected individually."
+            : theme.id === "nature-cycle"
+              ? "A separate monochrome mode: 15 moving nature and wildlife scenes cycle automatically every five seconds, without colour gradients or glow layers."
+              : "The original Mukuyu Starfall background, preserved as an alternative.";
           return <button key={theme.id} type="button" disabled={!loaded} aria-pressed={selected} onClick={() => void chooseBackdropTheme(theme.id)} className={`rounded-md border p-3 text-left transition-colors disabled:opacity-60 ${selected ? "border-navy bg-navy text-white shadow-sm" : "border-line bg-card text-ink hover:border-navy"}`}>
             <span className="block font-semibold">{label}</span>
             <span className={`mt-1 block text-xs ${selected ? "text-white/85" : "text-muted"}`}>{description}</span>
           </button>;
         })}
       </div>
-      <p className="text-xs text-muted">The automatic scenes sit behind the large inner page only. Each of the 12 sections has its own colour identity and distinctive motif; cards and tables remain unchanged. This setting is saved for the whole school.</p>
+      <p className="text-xs text-muted">All modes are school-wide and stay behind the large inner page only; cards and tables remain unchanged. The 15 nature scenes are: {NATURE_BACKDROP_SCENE_LABELS.join(" · ")}.</p>
     </div>
     <div className="space-y-3 rounded-lg border border-line bg-paper p-3">
       <div><h3 className="font-semibold text-navy">Saved colour types</h3><p className="mt-1 text-xs text-muted">Save each custom backdrop palette with a name. Saved types are shared centrally and can be selected again by the Super Admin on any device.</p></div>

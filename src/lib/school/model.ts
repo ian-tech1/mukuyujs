@@ -5,7 +5,7 @@ export { reportLink } from "./report-link.ts";
 export type Role = "super_admin" | "admin" | "teacher" | "parent" | "student";
 
 export const PORTAL_BACKDROP_THEME_IDS = [
-  "auto-sections", "starfall",
+  "auto-sections", "starfall", "nature-cycle",
 ] as const;
 export type PortalBackdropThemeId = typeof PORTAL_BACKDROP_THEME_IDS[number];
 

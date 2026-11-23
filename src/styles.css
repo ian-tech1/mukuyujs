@@ -629,7 +629,13 @@ html[data-portal-backdrop-theme="starfall"] { --portal-scene-opacity: 0; }
 }
 html[data-portal-backdrop-theme="auto-sections"] .portal-background-scene { display: block; }
 html[data-portal-backdrop-theme="starfall"] .portal-background-scene { display: none; }
+html[data-portal-backdrop-theme="nature-cycle"] .portal-background-scene { display: none; }
+html[data-portal-backdrop-theme="nature-cycle"] .portal-page-content::before,
+html[data-portal-backdrop-theme="nature-cycle"] .portal-page-content::after { background: none !important; animation: none !important; }
+html[data-portal-backdrop-theme="nature-cycle"] .portal-nature-scene { display: block; }
+html:not([data-portal-backdrop-theme="nature-cycle"]) .portal-nature-scene { display: none; }
 html[data-portal-background-mode="original"] .portal-background-scene { display: none !important; }
+html[data-portal-background-mode="original"] .portal-nature-scene { display: none !important; }
 .portal-animated-background[data-portal-section="home"] .portal-page-content::after { background-image: radial-gradient(ellipse at 50% 50%, transparent 38%, color-mix(in srgb, var(--portal-beam-a) 24%, transparent) 39%, transparent 40%), radial-gradient(ellipse at 50% 50%, transparent 58%, color-mix(in srgb, var(--portal-beam-b) 20%, transparent) 59%, transparent 60%), radial-gradient(circle at 50% 50%, var(--portal-glow-d), transparent 72%); }
 .portal-animated-background[data-portal-section="learners"] .portal-page-content::after { background-image: radial-gradient(ellipse at 20% 22%, transparent 26%, color-mix(in srgb, var(--portal-beam-a) 25%, transparent) 27%, transparent 29%), radial-gradient(ellipse at 75% 72%, transparent 31%, color-mix(in srgb, var(--portal-beam-b) 23%, transparent) 32%, transparent 34%), radial-gradient(ellipse at 42% 56%, var(--portal-glow-c), transparent 46%); }
 .portal-animated-background[data-portal-section="marks"] .portal-page-content::after { background-image: repeating-linear-gradient(0deg, transparent 0 48px, color-mix(in srgb, var(--portal-beam-a) 17%, transparent) 49px 51px, transparent 52px 96px), repeating-linear-gradient(90deg, transparent 0 68px, color-mix(in srgb, var(--portal-beam-b) 14%, transparent) 69px 71px, transparent 72px 136px); }
@@ -674,6 +680,22 @@ html[data-portal-backdrop-theme="auto-sections"] .portal-background-scene[data-a
 .portal-background-scene[data-background-scene="15"] { background-image: repeating-radial-gradient(ellipse at 76% 56%, transparent 0 16px, color-mix(in srgb, var(--portal-beam-c) 16%, transparent) 18px 20px, transparent 22px 39px), radial-gradient(ellipse at 25% 25%, var(--portal-glow-a), transparent 36%); }
 .portal-background-scene[data-background-scene="16"] { background-image: linear-gradient(105deg, transparent 14%, color-mix(in srgb, var(--portal-beam-a) 22%, transparent) 24%, transparent 35%), linear-gradient(83deg, transparent 43%, color-mix(in srgb, var(--portal-beam-b) 24%, transparent) 53%, transparent 64%), linear-gradient(150deg, transparent 74%, color-mix(in srgb, var(--portal-beam-c) 20%, transparent) 82%, transparent 90%); }
 .portal-background-scene[data-background-scene="17"] { background-image: radial-gradient(ellipse at 50% 50%, transparent 42%, color-mix(in srgb, var(--portal-beam-a) 26%, transparent) 43%, transparent 44%), radial-gradient(ellipse at 50% 50%, transparent 58%, color-mix(in srgb, var(--portal-beam-b) 23%, transparent) 59%, transparent 60%), radial-gradient(ellipse at 50% 50%, transparent 74%, color-mix(in srgb, var(--portal-beam-c) 20%, transparent) 75%, transparent 76%); }
+.portal-nature-scene { position: absolute; inset: 0; z-index: -1; display: none; overflow: hidden; pointer-events: none; color: #0e2a4a; opacity: 0; transition: opacity 1100ms ease-in-out; }
+html[data-portal-backdrop-theme="nature-cycle"] .portal-nature-scene[data-active="true"] { opacity: .24; }
+.portal-nature-scene * { animation-play-state: paused; }
+.portal-nature-scene[data-active="true"] * { animation-play-state: running; }
+.portal-nature-art { width: 100%; height: 100%; animation: portal-nature-drift 32s ease-in-out infinite alternate; }
+.portal-nature-rain { stroke-dasharray: 12 13; animation: portal-nature-rainfall .9s linear infinite; }
+.portal-nature-cloud-drift { animation: portal-nature-clouds 28s ease-in-out infinite alternate; }
+.portal-nature-birds { animation: portal-nature-birds 8s ease-in-out infinite alternate; }
+.portal-nature-butterfly { animation: portal-nature-butterfly 5s ease-in-out infinite alternate; transform-origin: 50% 50%; }
+.portal-nature-leaves { animation: portal-nature-leaves 7s ease-in-out infinite alternate; transform-origin: 50% 75%; }
+@keyframes portal-nature-drift { from { transform: translate3d(-1.2%, .5%, 0) scale(1); } to { transform: translate3d(1.2%, -.5%, 0) scale(1.035); } }
+@keyframes portal-nature-rainfall { to { stroke-dashoffset: -25; } }
+@keyframes portal-nature-clouds { from { transform: translateX(-1.5%); } to { transform: translateX(1.5%); } }
+@keyframes portal-nature-birds { from { transform: translate(-1%, 1%); } to { transform: translate(1%, -1.5%); } }
+@keyframes portal-nature-butterfly { from { transform: rotate(-1deg) translateY(0); } to { transform: rotate(1deg) translateY(-1.5%); } }
+@keyframes portal-nature-leaves { from { transform: rotate(-1.2deg); } to { transform: rotate(1.2deg); } }
 /* Content keeps Mukuyu's original ink and semantic colors; only the canvas behind it moves. */
 .portal-page-content :is([class*="bg-card"], [class*="bg-white"], [class*="bg-paper"]) { color: var(--color-ink); }
 .portal-page-content :is(th, td)[class*="bg-slate-"] { color: var(--color-ink); }
@@ -694,6 +716,8 @@ html[data-portal-backdrop-theme="auto-sections"] .portal-background-scene[data-a
 html[data-portal-motion="reduced"] .portal-page-content::before, html[data-portal-motion="reduced"] .portal-page-content::after { animation: none !important; }
 @media (prefers-reduced-motion: reduce) { .portal-background-scene { animation: none !important; transition: none !important; } }
 html[data-portal-motion="reduced"] .portal-background-scene { animation: none !important; transition: none !important; }
+@media (prefers-reduced-motion: reduce) { .portal-nature-scene, .portal-nature-art, .portal-nature-rain, .portal-nature-cloud-drift, .portal-nature-birds, .portal-nature-butterfly, .portal-nature-leaves { animation: none !important; transition: none !important; } }
+html[data-portal-motion="reduced"] .portal-nature-scene, html[data-portal-motion="reduced"] .portal-nature-art, html[data-portal-motion="reduced"] .portal-nature-rain, html[data-portal-motion="reduced"] .portal-nature-cloud-drift, html[data-portal-motion="reduced"] .portal-nature-birds, html[data-portal-motion="reduced"] .portal-nature-butterfly, html[data-portal-motion="reduced"] .portal-nature-leaves { animation: none !important; transition: none !important; }
 @media print {
   .portal-page-content::before, .portal-page-content::after, .portal-loading::before, .portal-loading::after { display: none !important; }
   .portal-animated-background, .portal-page-content { background: #fff !important; color: #111827 !important; }

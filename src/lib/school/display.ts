@@ -34,13 +34,24 @@ export const DISPLAY_PALETTES: Array<{ id: DisplayThemeId; name: string; colors:
 export const PORTAL_BACKDROP_THEMES: Array<{ id: PortalBackdropThemeId; name: string; description: string }> = [
   { id: "auto-sections", name: "Automatic section scenes", description: "Rotate 18 distinct moving background treatments every 5 seconds. Each portal section keeps its own colour identity and ornamental style." },
   { id: "starfall", name: "Mukuyu Starfall", description: "The original Mukuyu Starfall canvas, preserved as a steady alternative." },
+  { id: "nature-cycle", name: "Mukuyu Nature Motion", description: "Cycle through 15 monochrome nature and wildlife scenes every 5 seconds, with no colour gradients or glow layers." },
 ];
+
+export const NATURE_BACKDROP_SCENE_LABELS = [
+  "Rainfall", "Wind through trees", "Starry night", "Drifting clouds", "Flying birds",
+  "Elephant", "Giraffe", "Butterfly", "River fish", "Lion", "Rabbits", "Deer",
+  "Mountain forest", "Falling leaves", "Owl at night",
+] as const;
 
 export function applyPortalBackdropColors(colors: Partial<AppearancePalette> = DEFAULT_APPEARANCE) {
   if (typeof document === "undefined") return;
   const root = document.documentElement;
   if (colors.backdropTheme && PORTAL_BACKDROP_THEMES.some((theme) => theme.id === colors.backdropTheme)) {
+    const previousTheme = root.dataset.portalBackdropTheme;
     root.dataset.portalBackdropTheme = colors.backdropTheme;
+    if (previousTheme && previousTheme !== colors.backdropTheme && typeof window !== "undefined") {
+      window.dispatchEvent(new Event("mukuyu-portal-backdrop-change"));
+    }
   }
   ["--color-navy", "--color-navy-2", "--color-brass", "--color-brass-soft", "--color-paper", "--color-card", "--color-ink", "--color-muted", "--color-line", "--color-good", "--color-warn", "--color-bad", "--color-info"].forEach((name) => root.style.removeProperty(name));
   root.style.setProperty("--portal-user-glow-a", colors.navy || DEFAULT_APPEARANCE.navy);

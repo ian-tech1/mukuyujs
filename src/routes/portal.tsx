@@ -20,7 +20,7 @@ import { getWorkspace, getWelcomePage, logout } from "@/lib/school/api";
 import { visibleViews, type Workspace } from "@/lib/school/model";
 import { parseMusicSetting, type MusicOptions } from "@/lib/school/music";
 import { normalizeWelcomeDisplay } from "@/lib/school/welcome-display";
-import { applyDisplayPreferences, DEFAULT_DISPLAY_PREFERENCES, DISPLAY_PALETTES, readDisplayPreferences, saveDisplayPreferences, type LocalDisplayPreferences } from "@/lib/school/display";
+import { applyDisplayPreferences, DEFAULT_DISPLAY_PREFERENCES, DISPLAY_PALETTES, NATURE_BACKDROP_SCENE_LABELS, readDisplayPreferences, saveDisplayPreferences, type LocalDisplayPreferences } from "@/lib/school/display";
 
 const LABELS: Record<string, string> = {
   home: "Overview",
@@ -44,6 +44,27 @@ export const Route = createFileRoute("/portal")({
   }),
   component: PortalPage,
 });
+
+function NatureBackdropArt({ scene }: { scene: number }) {
+  const art = [
+    <g key="rain"><path d="M250 265c-48 0-84-32-84-73 0-39 31-69 73-73 20-53 71-85 128-77 52 7 88 43 97 92 41 4 70 32 70 68 0 38-33 63-77 63H250Z"/><g className="portal-nature-rain"><path d="m245 296-17 49m83-49-17 49m83-49-17 49m83-49-17 49m82-49-17 49"/></g></g>,
+    <g key="trees"><path d="M80 520h1040M210 520V250m-72 100 72-153 74 153m-117-41 43-85 44 85m457 211V198m-103 140 103-212 103 212m-157-57 157-260 158 260m-204-77 46-76 47 76m-150 318V312m-68 102 68-142 68 142"/></g>,
+    <g key="stars"><path d="M918 123a112 112 0 1 0 91 178 124 124 0 0 1-91-178Z"/><path d="m274 140 12 32 34 2-26 20 9 33-29-18-29 18 9-33-26-20 34-2 12-32Zm206 110 8 22 24 1-19 14 7 24-20-14-21 14 8-24-19-14 24-1 8-22Zm405-92 9 25 27 1-21 16 8 26-23-15-23 15 8-26-21-16 27-1 9-25Z"/></g>,
+    <g key="clouds" className="portal-nature-cloud-drift"><path d="M104 350c-36 0-63-24-63-55 0-29 23-52 55-55 15-40 53-64 97-58 39 5 66 32 73 69 31 3 53 24 53 51 0 29-25 48-58 48H104Zm570-117c-28 0-49-19-49-43 0-23 18-41 43-43 12-31 42-50 76-45 31 4 52 25 57 54 24 2 42 19 42 40 0 23-20 37-46 37H674Z"/><path d="M695 454c-24 0-42-16-42-37 0-20 15-35 37-37 10-27 36-43 65-39 26 3 44 21 49 47 21 2 36 16 36 35 0 19-17 31-39 31H695Z"/></g>,
+    <g key="birds" className="portal-nature-birds"><path d="M170 250q56-68 112 0 56-68 112 0m118-96q47-57 94 0 47-57 94 0m-48 224q42-51 84 0 42-51 84 0m96-167q35-43 70 0 35-43 70 0"/></g>,
+    <g key="elephant"><path d="M216 428c-39-21-53-63-41-108l22-81c14-51 58-82 113-82h172c72 0 128 54 128 123v119c0 36-28 64-64 64h-30v-92H307v91h-31v-84c-21 20-40 34-60 50Zm391-207c31 10 52 39 52 76v60c0 43-23 77-61 90m-270-52c0 40-23 69-54 69m8-188c20-18 50-26 77-21m158 173 14 34m-70-34 13 34m86-180 15 35m-79-34 12 34m-88 25c-6 34 4 57 25 67m-63-184v29m-26-29v29"/></g>,
+    <g key="giraffe"><path d="M327 511V309l28-105 12-98 37-42 38 42-10 98 45 105v202m-150-174h116m-106-53h92m-69-99h42m-42 39h43m-37 38h40m-82 148v139m124-139v139m-97-271-29-41m104 40 31-38m-117-79-17-31m90 31 17-31m-85 184h31m52 0h29"/><path d="M385 102h25m-21-18h21"/></g>,
+    <g key="butterfly" className="portal-nature-butterfly"><path d="M600 280c-40-92-191-127-211-38-16 72 91 112 211 86-93 60-96 151-37 156 54 5 75-74 37-156 38 82 107 137 150 106 48-35 2-119-150-106 120 26 227-14 211-86-20-89-171-54-211 38Zm0-12v246m-5-242-38-52m48 52 38-52"/><circle cx="600" cy="281" r="13"/></g>,
+    <g key="fish"><path d="M163 317c95-108 270-134 418-44l129-85-25 105c83 26 150 61 211 113-61 52-128 87-211 113l25 105-129-85c-148 90-323 64-418-44l-79 53 20-84-62-58 62-58-20-84 79 53Z"/><circle cx="358" cy="311" r="11"/><path d="M439 276q47 41 0 82m70-100q54 59 0 118m-68-25 47 51m-48-100 47-51"/></g>,
+    <g key="lion"><circle cx="600" cy="315" r="186"/><path d="m600 97 26 36 42-27 12 44 49-7-4 48 47 15-23 42 37 31-36 31 22 43-47 14 4 49-49-7-12 44-42-27-24 37-24-37-42 27-12-44-49 7 4-49-47-14 22-43-36-31 37-31-23-42 47-15-4-48 49 7 12-44 42 27 26-36Zm-68 184c-20-26-49-32-67-17m203 0c-18-15-47-9-67 17m-95 85q27 43 67 4 40 39 67-4m-67-39v39m-45 27q45 35 90 0"/></g>,
+    <g key="rabbits"><path d="M285 492c-47-16-69-58-53-97 12-30 43-45 81-40 4-53 16-111 45-114 33-3 28 68 25 112 10-59 28-104 55-96 31 9 7 87-5 128 55-20 107 2 115 42 9 44-34 77-94 79-60 2-115 1-169-14Zm397 4c-38-15-54-50-40-81 11-25 36-37 67-33 3-44 13-91 37-93 27-2 23 56 20 92 8-49 23-86 45-79 26 7 6 72-4 106 45-16 88 2 95 35 7 37-29 64-78 66-50 2-96 0-142-13Z"/><circle cx="384" cy="397" r="4"/><circle cx="766" cy="411" r="4"/></g>,
+    <g key="deer"><path d="M298 347c44-43 112-56 177-39l107 27 90-51 52 20 36 47-39 44-54-13-83 64-151-3-79 68m100-63-22 97m149-100 22 101m-208-211-46-54-37-85m37 85 16-86m30 116 45-53 39-83m-39 83-14-87m122 121 44-25"/><path d="M904 293c34-34 66-31 87-2m-86 3 12-61m-12 61 49-45m-49 45 70-27"/></g>,
+    <g key="mountains"><path d="m65 467 214-267 146 175 165-230 248 322 116-152 181 152H65Z"/><path d="m236 255 43-55 44 55m267-55 45-55 48 62m-323 270V356m-43 111V389m86 78V372m-45-13-42-73-42 73m548 108V363m-41 104V392m82 75V378m-41-15-41-71-41 71"/></g>,
+    <g key="leaves" className="portal-nature-leaves"><path d="M601 500c-3-134 13-240 116-361m-93 232c-96-5-162-52-182-135 84-9 152 28 182 135Zm35-73c105-12 166-67 176-148-82-2-146 43-176 148Zm-10 102c-91-4-147-46-159-118 71-4 129 35 159 118Zm26-178c89-18 130-62 138-123-70 3-116 39-138 123Z"/></g>,
+    <g key="owl"><path d="M381 498c-19-71-10-165 10-227l-16-124 107 72c49-18 107-18 156 0l107-72-16 124c20 62 29 156 10 227-44 61-111 91-179 91s-135-30-179-91Z"/><circle cx="495" cy="342" r="53"/><circle cx="625" cy="342" r="53"/><circle cx="495" cy="342" r="13"/><circle cx="625" cy="342" r="13"/><path d="m548 398 25 34 25-34m-151 156-31 36m236-36 31 36m-263-216-52-17m371 17 52-17m-259-74 22-39m74 39 22-39"/></g>,
+  ];
+  return <svg className="portal-nature-art" viewBox="0 0 1200 650" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><g fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">{art[scene]}</g></svg>;
+}
 
 function PortalPage() {
   const navigate = useNavigate();
@@ -92,9 +113,18 @@ function PortalPage() {
 
   useEffect(() => {
     if (!display.motion || display.backgroundMode !== "animated" || systemReducedMotion) return;
-    const timer = window.setInterval(() => setBackdropScene((scene) => (scene + 1) % 18), 5000);
+    const timer = window.setInterval(() => {
+      const count = document.documentElement.dataset.portalBackdropTheme === "nature-cycle" ? NATURE_BACKDROP_SCENE_LABELS.length : 18;
+      setBackdropScene((scene) => (scene + 1) % count);
+    }, 5000);
     return () => window.clearInterval(timer);
   }, [display.backgroundMode, display.motion, systemReducedMotion]);
+
+  useEffect(() => {
+    const resetScene = () => setBackdropScene(0);
+    window.addEventListener("mukuyu-portal-backdrop-change", resetScene);
+    return () => window.removeEventListener("mukuyu-portal-backdrop-change", resetScene);
+  }, []);
 
   useEffect(() => {
     setOpen(false);
@@ -322,6 +352,7 @@ function PortalPage() {
         </header>
         <div className={`portal-page-content w-full min-w-0 max-w-none px-4 py-6 lg:px-8 ${dashboardPanelColorsEnabled && display.motion && display.accentMotion ? "portal-panel-color-motion" : ""}`}>
           {Array.from({ length: 18 }, (_, scene) => <span key={scene} className="portal-background-scene" data-background-scene={scene} data-active={backdropScene === scene} aria-hidden="true" />)}
+          {NATURE_BACKDROP_SCENE_LABELS.map((label, scene) => <span key={label} className="portal-nature-scene" data-nature-scene={scene} data-active={backdropScene === scene} aria-hidden="true"><NatureBackdropArt scene={scene} /></span>)}
           {error ? <p className="mb-4 rounded-md border border-bad/30 bg-card px-3 py-2 text-sm text-bad">{error}</p> : null}
           {notice ? <p className="mb-4 rounded-md border border-good/30 bg-card px-3 py-2 text-sm text-good">{notice}</p> : null}
           {current === "home" ? <DashboardView {...gate} /> : null}
