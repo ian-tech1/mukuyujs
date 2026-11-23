@@ -88,6 +88,7 @@ function PortalPage() {
   const [backdropTheme, setBackdropTheme] = useState("auto-sections");
   const [systemReducedMotion, setSystemReducedMotion] = useState(false);
   const displayControlsRef = useRef<HTMLDivElement>(null);
+  const initialViewRef = useRef(view);
 
   const refresh = useCallback(async () => {
     const next = await getWorkspace();
@@ -139,7 +140,12 @@ function PortalPage() {
   }, []);
 
   useEffect(() => {
-    setOpen(false);
+    if (view === initialViewRef.current) {
+      setOpen(window.matchMedia("(max-width: 1023px)").matches);
+    } else {
+      initialViewRef.current = view;
+      setOpen(false);
+    }
     setDisplaySettingsOpen(false);
     window.scrollTo(0, 0);
   }, [view]);
