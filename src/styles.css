@@ -354,7 +354,7 @@ html[data-portal-accent-motion="off"] .portal-page-content.portal-panel-color-mo
     linear-gradient(112deg, transparent 28%, rgba(23,198,229,.24) 48%, transparent 65%),
     linear-gradient(72deg, transparent 36%, rgba(221,61,173,.19) 54%, transparent 68%),
     linear-gradient(140deg, #071b37 0%, #171b49 42%, #0b2940 72%, #10152f 100%);
-  background-size: 100% 100%;
+  background-size: 180% 180%;
   background-position: center;
   background-repeat: no-repeat;
   animation: portal-loading-spectrum 22s ease-in-out infinite alternate;
@@ -626,7 +626,7 @@ html[data-portal-backdrop-theme="starfall"] { --portal-scene-opacity: 0; }
     linear-gradient(140deg, #071b37 0%, #171b49 42%, #0b2940 72%, #10152f 100%);
   background-color: #071225;
   background-image: var(--portal-cosmic-sky);
-  background-size: 100% 100%;
+  background-size: 180% 180%;
   background-position: center;
   background-repeat: no-repeat;
   animation: portal-loading-spectrum 22s ease-in-out infinite alternate;
@@ -652,7 +652,7 @@ html[data-portal-backdrop-theme="starfall"] { --portal-scene-opacity: 0; }
   min-height: calc(100svh - 4rem);
   min-height: calc(100dvh - 4rem);
   color: var(--color-ink);
-  background: transparent;
+  background: rgba(244, 240, 230, .78);
 }
 .portal-page-content::before,
 .portal-page-content::after {
@@ -792,7 +792,7 @@ html[data-portal-background-mode="original"] .portal-page-content::after {
 html[data-portal-background-mode="original"] .portal-animated-background {
   background-color: #071225 !important;
   background-image: var(--portal-cosmic-sky) !important;
-  background-size: 100% 100% !important;
+  background-size: 180% 180% !important;
   background-position: center !important;
   background-repeat: no-repeat !important;
   animation: none !important;
@@ -842,7 +842,7 @@ html[data-portal-background-mode="original"] .welcome-login-panel {
   height: 100dvh;
   background-color: #071225;
   background-image: var(--portal-cosmic-sky);
-  background-size: 100% 100%;
+  background-size: 180% 180%;
   background-position: center;
   background-repeat: no-repeat;
   animation: portal-loading-spectrum 22s ease-in-out infinite alternate;
@@ -900,7 +900,7 @@ html[data-portal-background-mode="original"] .welcome-login-panel {
 html[data-portal-background-mode="original"] .portal-navigation-drawer {
   background-color: #071225;
   background-image: var(--portal-cosmic-sky);
-  background-size: 100% 100%;
+  background-size: 180% 180%;
   background-position: center;
   background-repeat: no-repeat;
   animation: none;
