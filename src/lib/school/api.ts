@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { createHmac, randomBytes, randomInt, scryptSync, timingSafeEqual } from "node:crypto";
 import { getSql, type Sql } from "@/lib/db";
-import type { AppearancePalette, Assignment, AvailabilityLevel, Band, ClassConstraint, Decorated, Exam, Grade, Learner, LessonRelation, MailItem, Mark, MarkControl, Me, Placement, Profile, ReportExtras, Role, StaffMember, Stream, Subject, SubjectConstraint, SubjectRemark, SubjectTeacherSlot, TeacherContract, TermAssessment, TermNote, TimetableAvailability, TimetableEntry, TimetablePeriod, TimetableRequirement, TimetableRoom, TimetableState, TimetableVersion, Workspace } from "@/lib/school/model";
+import { PORTAL_BACKDROP_THEME_IDS, type AppearancePalette, type Assignment, type AvailabilityLevel, type Band, type ClassConstraint, type Decorated, type Exam, type Grade, type Learner, type LessonRelation, type MailItem, type Mark, type MarkControl, type Me, type Placement, type Profile, type ReportExtras, type Role, type StaffMember, type Stream, type Subject, type SubjectConstraint, type SubjectRemark, type SubjectTeacherSlot, type TeacherContract, type TermAssessment, type TermNote, type TimetableAvailability, type TimetableEntry, type TimetablePeriod, type TimetableRequirement, type TimetableRoom, type TimetableState, type TimetableVersion, type Workspace } from "@/lib/school/model";
 import { DEFAULT_APPEARANCE, isAdmin, buildBoards, decorate, can, canEditLearner, canEditMark, canEnterMark, canViewMark, markControlFor, canManageTimetable } from "@/lib/school/model";
 import { initialsForSubject, meanForPeriod, previousPeriod } from "@/lib/school/extras";
 import { canReadPortalMusic, isSupportedMusicSource, normalizeMusicAttribution, normalizeMusicOptions } from "@/lib/school/music";
@@ -2559,9 +2559,13 @@ export const getMissingMarks = createServerFn({ method: "GET" })
 function safeAppearance(value: unknown): AppearancePalette {
   const source = value && typeof value === "object" ? value as Record<string, unknown> : {};
   const next = { ...DEFAULT_APPEARANCE } as AppearancePalette;
-  for (const key of Object.keys(DEFAULT_APPEARANCE) as Array<keyof AppearancePalette>) {
+  const paletteValues = next as Record<keyof typeof DEFAULT_APPEARANCE, string>;
+  for (const key of Object.keys(DEFAULT_APPEARANCE) as Array<keyof typeof DEFAULT_APPEARANCE>) {
     const candidate = source[key];
-    if (typeof candidate === "string" && /^#[0-9a-f]{6}$/i.test(candidate)) next[key] = candidate;
+    if (typeof candidate === "string" && /^#[0-9a-f]{6}$/i.test(candidate)) paletteValues[key] = candidate;
+  }
+  if (typeof source.backdropTheme === "string" && PORTAL_BACKDROP_THEME_IDS.includes(source.backdropTheme as typeof PORTAL_BACKDROP_THEME_IDS[number])) {
+    next.backdropTheme = source.backdropTheme as AppearancePalette["backdropTheme"];
   }
   return next;
 }

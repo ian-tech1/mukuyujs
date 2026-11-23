@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { AuthProvider } from "@/lib/auth/provider";
 import { PreviewHostBridge } from "@/components/preview-host-bridge";
 import { getWelcomePage } from "@/lib/school/api";
+import { PORTAL_BACKDROP_THEME_IDS, type AppearancePalette } from "@/lib/school/model";
 import { applyDisplayPreferences, applyPortalBackdropColors, readDisplayPreferences } from "@/lib/school/display";
 import appCss from "../styles.css?url";
 
@@ -54,8 +55,11 @@ function AppearanceBootstrap() {
           saved[key] = value;
         }
       }
+      saved.backdropTheme = typeof colors.backdropTheme === "string" && PORTAL_BACKDROP_THEME_IDS.includes(colors.backdropTheme as typeof PORTAL_BACKDROP_THEME_IDS[number])
+        ? colors.backdropTheme
+        : "starfall";
       document.documentElement.dataset.schoolAppearance = JSON.stringify(saved);
-      applyPortalBackdropColors(saved);
+      applyPortalBackdropColors(saved as Partial<AppearancePalette>);
     };
     applyDisplayPreferences(readDisplayPreferences());
     getWelcomePage().then((settings) => apply(settings.appearance || {})).catch(() => {

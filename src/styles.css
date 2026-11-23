@@ -552,6 +552,24 @@ html[data-portal-motion="reduced"] .portal-loading-track span { animation:none !
 
 
 /* Section-specific slow color movement is confined to the large inner content canvas. */
+:root { --portal-backdrop-hue: 0deg; --portal-backdrop-saturation: 1; }
+html[data-portal-backdrop-theme="starfall"] { --portal-backdrop-hue: 0deg; --portal-backdrop-saturation: 1; }
+html[data-portal-backdrop-theme="aurora"] { --portal-backdrop-hue: 54deg; --portal-backdrop-saturation: 1.12; }
+html[data-portal-backdrop-theme="rainforest"] { --portal-backdrop-hue: 86deg; --portal-backdrop-saturation: 1.14; }
+html[data-portal-backdrop-theme="coral-reef"] { --portal-backdrop-hue: 128deg; --portal-backdrop-saturation: 1.13; }
+html[data-portal-backdrop-theme="savannah"] { --portal-backdrop-hue: 158deg; --portal-backdrop-saturation: 1.12; }
+html[data-portal-backdrop-theme="sapphire-tide"] { --portal-backdrop-hue: 203deg; --portal-backdrop-saturation: 1.15; }
+html[data-portal-backdrop-theme="violet-galaxy"] { --portal-backdrop-hue: 239deg; --portal-backdrop-saturation: 1.16; }
+html[data-portal-backdrop-theme="sunrise-mist"] { --portal-backdrop-hue: 309deg; --portal-backdrop-saturation: 1.08; }
+html[data-portal-backdrop-theme="emerald-grove"] { --portal-backdrop-hue: 99deg; --portal-backdrop-saturation: 1.17; }
+html[data-portal-backdrop-theme="amethyst-dusk"] { --portal-backdrop-hue: 267deg; --portal-backdrop-saturation: 1.12; }
+html[data-portal-backdrop-theme="arctic-glow"] { --portal-backdrop-hue: 185deg; --portal-backdrop-saturation: 1.08; }
+html[data-portal-backdrop-theme="copper-canyon"] { --portal-backdrop-hue: 348deg; --portal-backdrop-saturation: 1.14; }
+html[data-portal-backdrop-theme="moonlit-lagoon"] { --portal-backdrop-hue: 192deg; --portal-backdrop-saturation: 1.11; }
+html[data-portal-backdrop-theme="rose-quartz"] { --portal-backdrop-hue: 330deg; --portal-backdrop-saturation: 1.09; }
+html[data-portal-backdrop-theme="tropical-orchid"] { --portal-backdrop-hue: 281deg; --portal-backdrop-saturation: 1.18; }
+html[data-portal-backdrop-theme="cosmic-indigo"] { --portal-backdrop-hue: 222deg; --portal-backdrop-saturation: 1.17; }
+html[data-portal-backdrop-theme="golden-hour"] { --portal-backdrop-hue: 22deg; --portal-backdrop-saturation: 1.1; }
 .portal-animated-background {
   --portal-glow-a: rgba(37, 177, 220, .28);
   --portal-glow-b: rgba(91, 104, 227, .24);
@@ -623,6 +641,7 @@ html[data-portal-motion="reduced"] .portal-loading-track span { animation:none !
     radial-gradient(ellipse 49% 30% at 48% 48%, transparent 94.8%, rgba(29,78,137,.15) 95.1%, transparent 95.5%),
     radial-gradient(ellipse 35% 53% at 55% 50%, transparent 95%, rgba(154,116,48,.13) 95.3%, transparent 95.7%),
     radial-gradient(ellipse 63% 44% at 50% 47%, transparent 97%, rgba(120,205,218,.17) 97.2%, transparent 97.6%);
+  filter: hue-rotate(var(--portal-backdrop-hue, 0deg)) saturate(var(--portal-backdrop-saturation, 1));
   animation: mukuyu-orbit-drift 78s ease-in-out infinite alternate;
 }
 /* Content keeps Mukuyu's original ink and semantic colors; only the canvas behind it moves. */
@@ -636,7 +655,7 @@ html[data-portal-motion="reduced"] .portal-loading-track span { animation:none !
 .portal-page-content :is([class*="bg-card"], [class*="bg-white"], [class*="bg-paper"]) .text-bad { color: #9f2d2d; }
 .portal-page-content :is(input, select, textarea) { color: #1c1915; }
 .portal-page-content :is(input, textarea)::placeholder { color: #777066; }
-@keyframes mukuyu-nebula-drift { 0% { background-position: 0% 15%; filter: saturate(.96); } 50% { background-position: 100% 85%; filter: saturate(1.1); } 100% { background-position: 8% 100%; filter: saturate(1); } }
+@keyframes mukuyu-nebula-drift { 0% { background-position: 0% 15%; filter: hue-rotate(var(--portal-backdrop-hue, 0deg)) saturate(calc(var(--portal-backdrop-saturation, 1) * .96)); } 50% { background-position: 100% 85%; filter: hue-rotate(var(--portal-backdrop-hue, 0deg)) saturate(calc(var(--portal-backdrop-saturation, 1) * 1.1)); } 100% { background-position: 8% 100%; filter: hue-rotate(var(--portal-backdrop-hue, 0deg)) saturate(var(--portal-backdrop-saturation, 1)); } }
 @keyframes mukuyu-orbit-drift { from { transform: translate3d(-.45%, .2%, 0) rotate(-1deg); } to { transform: translate3d(.45%, -.2%, 0) rotate(1deg); } }
 @media (prefers-reduced-motion: reduce) {
   .portal-page-content::before, .portal-page-content::after, .portal-loading, .portal-loading::before, .portal-loading::after, .portal-loading-orbit, .portal-loading-track span, .welcome-shell, .welcome-hero, .welcome-login-panel, .welcome-word-panel, .welcome-parent-toggle { animation: none !important; }

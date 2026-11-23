@@ -4,6 +4,12 @@ export { reportLink } from "./report-link.ts";
 
 export type Role = "super_admin" | "admin" | "teacher" | "parent" | "student";
 
+export const PORTAL_BACKDROP_THEME_IDS = [
+  "starfall", "aurora", "rainforest", "coral-reef", "savannah", "sapphire-tide", "violet-galaxy", "sunrise-mist",
+  "emerald-grove", "amethyst-dusk", "arctic-glow", "copper-canyon", "moonlit-lagoon", "rose-quartz", "tropical-orchid", "cosmic-indigo", "golden-hour",
+] as const;
+export type PortalBackdropThemeId = typeof PORTAL_BACKDROP_THEME_IDS[number];
+
 export type AppearancePalette = {
   navy: string;
   navy2: string;
@@ -18,6 +24,7 @@ export type AppearancePalette = {
   warn: string;
   bad: string;
   info: string;
+  backdropTheme?: PortalBackdropThemeId;
 };
 
 export const DEFAULT_APPEARANCE: AppearancePalette = {
