@@ -6,7 +6,7 @@ import { ACCESS_AREAS, ACCESS_GROUPS, type AccessArea, type AccessGroup, type Ro
 import { DEFAULT_APPEARANCE, can, isAdmin } from "@/lib/school/model";
 import { DEFAULT_WELCOME_DISPLAY, hexToRgba, normalizeWelcomeDisplay, type WelcomeDisplayOptions } from "@/lib/school/welcome-display";
 import { applyPortalBackdropColors, DISPLAY_PALETTES } from "@/lib/school/display";
-import { addExam, addSubject, deleteSubject, addYear, changePassword, deleteStream, deleteExam, deleteYear, exportSchoolBackup, getWelcomePage, listBackupSnapshots, restoreSchoolBackup, saveAppearance, saveBands, saveExams, saveProfile, saveReportOptions, saveStream, saveSubjects, saveTermAssessments, saveTermDate, saveWelcomePage, setActivePeriod, getMarkAuditHistory, saveMarkControl, saveRoleAccessPolicy, getParentLoginAudit } from "@/lib/school/api";
+import { addExam, addSubject, deleteSubject, addYear, changePassword, deleteStream, deleteExam, deleteYear, exportSchoolBackup, getWelcomePage, listBackupSnapshots, restoreSchoolBackup, saveAppearance, saveBands, saveExams, saveProfile, saveReportOptions, saveStream, saveSubjects, saveTermAssessments, saveTermDate, saveWelcomePage, setActivePeriod, getMarkAuditHistory, saveMarkControl, saveRoleAccessPolicy, getParentLoginAudit, getPortalColorTypes, savePortalColorType } from "@/lib/school/api";
 import { DEFAULT_MUSIC_OPTIONS, formatPlaylistText, normalizeMusicOptions, parseMusicSetting, parsePlaylistText, type MusicOptions } from "@/lib/school/music";
 import { MusicStudioCard } from "@/components/school/music-studio";
 import { AdminAutomationCards } from "@/components/school/admin-automation-cards";
@@ -287,6 +287,8 @@ function applyAppearance(colors: AppearancePalette) {
 function AppearanceColorsCard({ flash }: Pick<Gate, "flash">) {
   const [colors, setColors] = useState<AppearancePalette>(DEFAULT_APPEARANCE);
   const [loaded, setLoaded] = useState(false);
+  const [savedTypes, setSavedTypes] = useState<Awaited<ReturnType<typeof getPortalColorTypes>>>([]);
+  const [colorTypeName, setColorTypeName] = useState("");
 
   useEffect(() => {
     getWelcomePage().then((settings) => {
@@ -299,6 +301,10 @@ function AppearanceColorsCard({ flash }: Pick<Gate, "flash">) {
       setLoaded(true);
     });
   }, []);
+
+  useEffect(() => {
+    getPortalColorTypes().then(setSavedTypes).catch((error) => flash(errText(error), true));
+  }, [flash]);
 
   function updateColor(key: keyof AppearancePalette, value: string) {
     const next = { ...colors, [key]: value };
@@ -326,12 +332,29 @@ function AppearanceColorsCard({ flash }: Pick<Gate, "flash">) {
     }
   }
 
+  async function saveCurrentColorType() {
+    try {
+      const saved = await savePortalColorType({ data: { name: colorTypeName, colors } });
+      setSavedTypes((current) => [...current.filter((type) => type.id !== saved.id), saved].sort((a, b) => a.name.localeCompare(b.name)));
+      setColorTypeName("");
+      flash(`Colour type “${saved.name}” saved centrally for the whole school.`);
+    } catch (error) { flash(errText(error), true); }
+  }
+
   return <section className="rounded-md border border-line bg-card p-4 space-y-4">
     <div>
       <h2 className="font-serif text-xl text-navy">Portal backdrop colours</h2>
       <p className="mt-1 text-sm text-muted">Super admin only. Choose a preset or adjust the decorative backdrop glows. These colours appear behind the large portal page area only; cards, tables, controls, text and report cards keep their existing high-contrast surfaces and colours.</p>
     </div>
     <div className="flex flex-wrap gap-2">{DISPLAY_PALETTES.map((preset) => <button key={preset.id} type="button" className={btnGhost} onClick={() => choosePreset(preset.colors)}>{preset.name}</button>)}</div>
+    <div className="space-y-3 rounded-lg border border-line bg-paper p-3">
+      <div><h3 className="font-semibold text-navy">Saved colour types</h3><p className="mt-1 text-xs text-muted">Save each custom backdrop palette with a name. Saved types are shared centrally and can be selected again by the Super Admin on any device.</p></div>
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <input className={inputClass} value={colorTypeName} onChange={(event) => setColorTypeName(event.target.value)} maxLength={48} placeholder="Name this colour type" aria-label="Name this colour type" />
+        <button className={btnClass} type="button" disabled={!loaded || colorTypeName.trim().length < 2} onClick={() => void saveCurrentColorType()}>Save as colour type</button>
+      </div>
+      {savedTypes.length ? <div className="flex flex-wrap gap-2" aria-label="Saved colour types">{savedTypes.map((type) => <button key={type.id} type="button" className={btnGhost} onClick={() => void choosePreset(type.colors)} title={`Select ${type.name}`}><span className="mr-2 inline-block size-3 rounded-full align-middle" style={{ background: `linear-gradient(135deg, ${type.colors.navy}, ${type.colors.info}, ${type.colors.brass}, ${type.colors.good})` }} aria-hidden="true" />{type.name}</button>)}</div> : <p className="text-xs text-muted">No custom colour types saved yet.</p>}
+    </div>
     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{APPEARANCE_LABELS.map(({ key, label, description }) => <label key={key} className="flex items-center gap-3 rounded-md border border-line p-3 text-sm">
       <input aria-label={label} className="h-11 w-12 shrink-0 cursor-pointer rounded border-0 bg-transparent p-0" type="color" value={colors[key]} disabled={!loaded} onChange={(event) => updateColor(key, event.target.value)} />
       <span className="min-w-0"><span className="block font-semibold">{label}</span><span className="block text-xs text-muted">{description}</span><span className="mt-1 block font-mono text-xs uppercase">{colors[key]}</span></span>

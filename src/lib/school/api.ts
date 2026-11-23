@@ -2566,6 +2566,45 @@ function safeAppearance(value: unknown): AppearancePalette {
   return next;
 }
 
+export type PortalColorType = { id: string; name: string; colors: AppearancePalette; updatedAt: string };
+
+export const getPortalColorTypes = createServerFn({ method: "GET" }).handler(async () => {
+  const me = await requireActor();
+  if (!isTrueSuper(me)) throw new Error("Only the super admin can manage portal colour types.");
+  const sql = await getSql();
+  const rows = await sql<{ id: string; name: string; colorsJson: string; updatedAt: string }>`
+    select id, name, colors_json as "colorsJson", updated_at::text as "updatedAt"
+    from portal_color_types order by name_key`;
+  return rows.map((row) => {
+    let parsed: unknown = {};
+    try { parsed = JSON.parse(row.colorsJson || "{}"); } catch { parsed = {}; }
+    return { id: row.id, name: row.name, colors: safeAppearance(parsed), updatedAt: row.updatedAt };
+  });
+});
+
+export const savePortalColorType = createServerFn({ method: "POST" })
+  .validator((input: { name: string; colors: AppearancePalette }) => input)
+  .handler(async ({ data }) => {
+    const me = await requireActor();
+    if (!isTrueSuper(me)) throw new Error("Only the super admin can save portal colour types.");
+    const name = String(data.name || "").trim().replace(/\s+/g, " ").slice(0, 48);
+    if (name.length < 2) throw new Error("Enter a colour type name with at least two characters.");
+    const nameKey = name.toLocaleLowerCase("en");
+    const colors = safeAppearance(data.colors);
+    const sql = await getSql();
+    const existing = await sql<{ id: string }>`select id from portal_color_types where name_key = ${nameKey} limit 1`;
+    if (!existing.length) {
+      const count = await sql<{ count: number }>`select count(*) as count from portal_color_types`;
+      if (Number(count[0]?.count || 0) >= 40) throw new Error("The saved colour-type limit of 40 has been reached.");
+    }
+    const id = existing[0]?.id || randomBytes(16).toString("hex");
+    await sql`insert into portal_color_types (id, name, name_key, colors_json, updated_at)
+      values (${id}, ${name}, ${nameKey}, ${JSON.stringify(colors)}, now())
+      on conflict (name_key) do update set name = excluded.name, colors_json = excluded.colors_json, updated_at = now()`;
+    const saved = await sql<{ updatedAt: string }>`select updated_at::text as "updatedAt" from portal_color_types where name_key = ${nameKey}`;
+    return { id, name, colors, updatedAt: saved[0]?.updatedAt || new Date().toISOString() } satisfies PortalColorType;
+  });
+
 export const saveAppearance = createServerFn({ method: "POST" })
   .validator((input: { appearance: AppearancePalette }) => input)
   .handler(async ({ data }) => {
