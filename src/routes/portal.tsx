@@ -129,7 +129,20 @@ function PortalPage() {
   if (!ws) {
     return (
       <main className="portal-loading grid min-h-screen place-items-center bg-paper px-6">
+        <div className="portal-loading-aurora" aria-hidden="true" />
+        <div className="portal-loading-ribbon-field" aria-hidden="true">
+          <span className="portal-loading-ribbon portal-loading-ribbon-one" />
+          <span className="portal-loading-ribbon portal-loading-ribbon-two" />
+          <span className="portal-loading-ribbon portal-loading-ribbon-three" />
+          <span className="portal-loading-ribbon portal-loading-ribbon-four" />
+          <span className="portal-loading-ribbon-orb portal-loading-ribbon-orb-one" />
+          <span className="portal-loading-ribbon-orb portal-loading-ribbon-orb-two" />
+        </div>
+        <div className="portal-loading-rays" aria-hidden="true" />
+        <div className="portal-loading-atom" aria-hidden="true" />
+        <div className="portal-loading-orbit-glints" aria-hidden="true" />
         <div className="portal-loading-stars" aria-hidden="true" />
+        <div className="portal-loading-dust" aria-hidden="true" />
         <div className="portal-loading-card text-center" role="status" aria-live="polite">
           <p className="portal-loading-kicker portal-loading-box portal-loading-box-kicker">MUKUYU JUNIOR SCHOOL · LEARNING PORTAL</p>
           <span className="portal-loading-orbit" aria-hidden="true"><SchoolLogo className="size-20" /></span>
