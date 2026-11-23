@@ -293,12 +293,12 @@ function AppearanceColorsCard({ flash }: Pick<Gate, "flash">) {
 
   useEffect(() => {
     getWelcomePage().then((settings) => {
-      const next = { ...DEFAULT_APPEARANCE, ...(settings.appearance || {}), backdropTheme: settings.appearance?.backdropTheme || "starfall" } as AppearancePalette;
+      const next = { ...DEFAULT_APPEARANCE, ...(settings.appearance || {}), backdropTheme: settings.appearance?.backdropTheme || "auto-sections" } as AppearancePalette;
       setColors(next);
       applyAppearance(next);
       setLoaded(true);
     }).catch(() => {
-      applyAppearance({ ...DEFAULT_APPEARANCE, backdropTheme: "starfall" });
+      applyAppearance({ ...DEFAULT_APPEARANCE, backdropTheme: "auto-sections" });
       setLoaded(true);
     });
   }, []);
@@ -323,7 +323,7 @@ function AppearanceColorsCard({ flash }: Pick<Gate, "flash">) {
   }
 
   async function choosePreset(preset: AppearancePalette) {
-    const next = { ...preset, backdropTheme: preset.backdropTheme ?? colors.backdropTheme ?? "starfall" };
+    const next = { ...preset, backdropTheme: preset.backdropTheme ?? colors.backdropTheme ?? "auto-sections" };
     setColors(next);
     applyAppearance(next);
     try {
@@ -360,25 +360,22 @@ function AppearanceColorsCard({ flash }: Pick<Gate, "flash">) {
 
   return <section className="rounded-md border border-line bg-card p-4 space-y-4">
     <div>
-      <h2 className="font-serif text-xl text-navy">Portal backdrop colours</h2>
-      <p className="mt-1 text-sm text-muted">Super admin only. Choose a moving canvas theme or adjust the decorative backdrop glows. The full-page effects stay behind the large inner portal area; cards, tables, controls, text, navigation and report cards keep their existing colours and readability.</p>
+      <h2 className="font-serif text-xl text-navy">Portal backdrop scenes</h2>
+      <p className="mt-1 text-sm text-muted">Super Admin only. This single school-wide control changes the large inner page background—not the cards, tables, forms, controls, navigation or report cards.</p>
     </div>
     <div className="flex flex-wrap gap-2">{DISPLAY_PALETTES.map((preset) => <button key={preset.id} type="button" className={btnGhost} onClick={() => choosePreset(preset.colors)}>{preset.name}</button>)}</div>
     <div className="grid gap-3 rounded-lg border border-line bg-paper p-3 sm:grid-cols-[minmax(0,1fr)_minmax(12rem,0.8fr)]">
       <label className="space-y-2 text-sm font-semibold text-navy" htmlFor="portal-backdrop-theme">
-        <span className="block">Animated canvas themes · 17 choices</span>
-        <select id="portal-backdrop-theme" className={inputClass} value={colors.backdropTheme ?? "starfall"} disabled={!loaded} onChange={(event) => void chooseBackdropTheme(event.target.value as PortalBackdropThemeId)}>
+        <span className="block">Background mode</span>
+        <select id="portal-backdrop-theme" className={inputClass} value={colors.backdropTheme ?? "auto-sections"} disabled={!loaded} onChange={(event) => void chooseBackdropTheme(event.target.value as PortalBackdropThemeId)}>
           {PORTAL_BACKDROP_THEMES.map((theme) => <option key={theme.id} value={theme.id}>{theme.name}</option>)}
         </select>
-        <span className="block text-xs font-normal text-muted">Each tab keeps its own colour signature, while the selected theme changes the mood across all twelve sections. Selection is saved centrally for the whole school.</span>
+        <span className="block text-xs font-normal text-muted">Automatic scenes rotate every five seconds. Overview, Learners, Enter marks, Timetable, School Services, Parents Feedback, Analysis, Report cards, Mark lists, Staff, Mail log and Settings each have a distinct colour identity. The choice is saved centrally.</span>
       </label>
-      {(() => {
-        const preview = PORTAL_BACKDROP_THEMES.find((theme) => theme.id === (colors.backdropTheme ?? "starfall")) ?? PORTAL_BACKDROP_THEMES[0]!;
-        return <div className="flex min-h-24 flex-col justify-between rounded-md border border-line p-3 text-sm text-ink" style={{ background: `linear-gradient(120deg, ${preview.swatches[0]}, ${preview.swatches[1]}, ${preview.swatches[2]})` }}>
-          <span className="w-fit rounded bg-white/85 px-2 py-1 font-semibold">{preview.name}</span>
-          <span className="rounded bg-white/85 px-2 py-1 text-xs">{preview.description}</span>
-        </div>;
-      })()}
+      <div className="flex min-h-24 flex-col justify-center gap-2 rounded-md border border-line bg-card p-3 text-sm text-ink">
+        <span className="font-semibold text-navy">18 moving scene styles</span>
+        <span className="text-xs text-muted">Aurora veils · orbit rings · prism ribbons · rippling water · comet trails · floating light · leaf-like arcs and more.</span>
+      </div>
     </div>
     <div className="space-y-3 rounded-lg border border-line bg-paper p-3">
       <div><h3 className="font-semibold text-navy">Saved colour types</h3><p className="mt-1 text-xs text-muted">Save each custom backdrop palette with a name. Saved types are shared centrally and can be selected again by the Super Admin on any device.</p></div>
@@ -398,7 +395,7 @@ function AppearanceColorsCard({ flash }: Pick<Gate, "flash">) {
       <span className="h-9 w-36 rounded-full" aria-hidden="true" style={{ background: `linear-gradient(110deg, ${colors.navy}, ${colors.info}, ${colors.brass}, ${colors.good})` }} />
       <span className="rounded border border-line bg-card px-3 py-2 text-sm text-ink">Text and content surfaces stay unchanged</span>
     </div>
-    <button className={btnGhost} type="button" onClick={() => choosePreset({ ...DEFAULT_APPEARANCE, backdropTheme: "starfall" })}>Reset to Mukuyu classic · Starfall</button>
+    <button className={btnGhost} type="button" onClick={() => choosePreset({ ...DEFAULT_APPEARANCE, backdropTheme: "starfall" })}>Use original Mukuyu Starfall background</button>
   </section>;
 }
 

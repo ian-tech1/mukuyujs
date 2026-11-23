@@ -57,7 +57,7 @@ function AppearanceBootstrap() {
       }
       saved.backdropTheme = typeof colors.backdropTheme === "string" && PORTAL_BACKDROP_THEME_IDS.includes(colors.backdropTheme as typeof PORTAL_BACKDROP_THEME_IDS[number])
         ? colors.backdropTheme
-        : "starfall";
+        : "auto-sections";
       document.documentElement.dataset.schoolAppearance = JSON.stringify(saved);
       applyPortalBackdropColors(saved as Partial<AppearancePalette>);
     };

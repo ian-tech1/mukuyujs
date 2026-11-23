@@ -552,24 +552,8 @@ html[data-portal-motion="reduced"] .portal-loading-track span { animation:none !
 
 
 /* Section-specific slow color movement is confined to the large inner content canvas. */
-:root { --portal-backdrop-hue: 0deg; --portal-backdrop-saturation: 1; }
-html[data-portal-backdrop-theme="starfall"] { --portal-backdrop-hue: 0deg; --portal-backdrop-saturation: 1; }
-html[data-portal-backdrop-theme="aurora"] { --portal-backdrop-hue: 54deg; --portal-backdrop-saturation: 1.12; }
-html[data-portal-backdrop-theme="rainforest"] { --portal-backdrop-hue: 86deg; --portal-backdrop-saturation: 1.14; }
-html[data-portal-backdrop-theme="coral-reef"] { --portal-backdrop-hue: 128deg; --portal-backdrop-saturation: 1.13; }
-html[data-portal-backdrop-theme="savannah"] { --portal-backdrop-hue: 158deg; --portal-backdrop-saturation: 1.12; }
-html[data-portal-backdrop-theme="sapphire-tide"] { --portal-backdrop-hue: 203deg; --portal-backdrop-saturation: 1.15; }
-html[data-portal-backdrop-theme="violet-galaxy"] { --portal-backdrop-hue: 239deg; --portal-backdrop-saturation: 1.16; }
-html[data-portal-backdrop-theme="sunrise-mist"] { --portal-backdrop-hue: 309deg; --portal-backdrop-saturation: 1.08; }
-html[data-portal-backdrop-theme="emerald-grove"] { --portal-backdrop-hue: 99deg; --portal-backdrop-saturation: 1.17; }
-html[data-portal-backdrop-theme="amethyst-dusk"] { --portal-backdrop-hue: 267deg; --portal-backdrop-saturation: 1.12; }
-html[data-portal-backdrop-theme="arctic-glow"] { --portal-backdrop-hue: 185deg; --portal-backdrop-saturation: 1.08; }
-html[data-portal-backdrop-theme="copper-canyon"] { --portal-backdrop-hue: 348deg; --portal-backdrop-saturation: 1.14; }
-html[data-portal-backdrop-theme="moonlit-lagoon"] { --portal-backdrop-hue: 192deg; --portal-backdrop-saturation: 1.11; }
-html[data-portal-backdrop-theme="rose-quartz"] { --portal-backdrop-hue: 330deg; --portal-backdrop-saturation: 1.09; }
-html[data-portal-backdrop-theme="tropical-orchid"] { --portal-backdrop-hue: 281deg; --portal-backdrop-saturation: 1.18; }
-html[data-portal-backdrop-theme="cosmic-indigo"] { --portal-backdrop-hue: 222deg; --portal-backdrop-saturation: 1.17; }
-html[data-portal-backdrop-theme="golden-hour"] { --portal-backdrop-hue: 22deg; --portal-backdrop-saturation: 1.1; }
+html[data-portal-backdrop-theme="auto-sections"] { --portal-scene-opacity: .78; }
+html[data-portal-backdrop-theme="starfall"] { --portal-scene-opacity: 0; }
 .portal-animated-background {
   --portal-glow-a: rgba(37, 177, 220, .28);
   --portal-glow-b: rgba(91, 104, 227, .24);
@@ -641,9 +625,55 @@ html[data-portal-backdrop-theme="golden-hour"] { --portal-backdrop-hue: 22deg; -
     radial-gradient(ellipse 49% 30% at 48% 48%, transparent 94.8%, rgba(29,78,137,.15) 95.1%, transparent 95.5%),
     radial-gradient(ellipse 35% 53% at 55% 50%, transparent 95%, rgba(154,116,48,.13) 95.3%, transparent 95.7%),
     radial-gradient(ellipse 63% 44% at 50% 47%, transparent 97%, rgba(120,205,218,.17) 97.2%, transparent 97.6%);
-  filter: hue-rotate(var(--portal-backdrop-hue, 0deg)) saturate(var(--portal-backdrop-saturation, 1));
   animation: mukuyu-orbit-drift 78s ease-in-out infinite alternate;
 }
+html[data-portal-backdrop-theme="auto-sections"] .portal-background-scene { display: block; }
+html[data-portal-backdrop-theme="starfall"] .portal-background-scene { display: none; }
+html[data-portal-background-mode="original"] .portal-background-scene { display: none !important; }
+.portal-animated-background[data-portal-section="home"] .portal-page-content::after { background-image: radial-gradient(ellipse at 50% 50%, transparent 38%, color-mix(in srgb, var(--portal-beam-a) 24%, transparent) 39%, transparent 40%), radial-gradient(ellipse at 50% 50%, transparent 58%, color-mix(in srgb, var(--portal-beam-b) 20%, transparent) 59%, transparent 60%), radial-gradient(circle at 50% 50%, var(--portal-glow-d), transparent 72%); }
+.portal-animated-background[data-portal-section="learners"] .portal-page-content::after { background-image: radial-gradient(ellipse at 20% 22%, transparent 26%, color-mix(in srgb, var(--portal-beam-a) 25%, transparent) 27%, transparent 29%), radial-gradient(ellipse at 75% 72%, transparent 31%, color-mix(in srgb, var(--portal-beam-b) 23%, transparent) 32%, transparent 34%), radial-gradient(ellipse at 42% 56%, var(--portal-glow-c), transparent 46%); }
+.portal-animated-background[data-portal-section="marks"] .portal-page-content::after { background-image: repeating-linear-gradient(0deg, transparent 0 48px, color-mix(in srgb, var(--portal-beam-a) 17%, transparent) 49px 51px, transparent 52px 96px), repeating-linear-gradient(90deg, transparent 0 68px, color-mix(in srgb, var(--portal-beam-b) 14%, transparent) 69px 71px, transparent 72px 136px); }
+.portal-animated-background[data-portal-section="timetable"] .portal-page-content::after { background-image: repeating-conic-gradient(from 0deg at 50% 50%, transparent 0deg 28deg, color-mix(in srgb, var(--portal-beam-a) 22%, transparent) 29deg 30deg, transparent 31deg 60deg), radial-gradient(circle at 50% 50%, transparent 0 21%, color-mix(in srgb, var(--portal-beam-b) 23%, transparent) 22% 23%, transparent 24%); }
+.portal-animated-background[data-portal-section="services"] .portal-page-content::after { background-image: linear-gradient(154deg, transparent 26%, color-mix(in srgb, var(--portal-beam-a) 24%, transparent) 38%, transparent 51%), linear-gradient(28deg, transparent 46%, color-mix(in srgb, var(--portal-beam-b) 22%, transparent) 58%, transparent 68%), radial-gradient(ellipse at 78% 70%, var(--portal-glow-d), transparent 38%); }
+.portal-animated-background[data-portal-section="parent-feedback"] .portal-page-content::after { background-image: radial-gradient(ellipse at 28% 38%, transparent 0 15%, color-mix(in srgb, var(--portal-beam-a) 24%, transparent) 16% 17%, transparent 18%), radial-gradient(ellipse at 72% 62%, transparent 0 17%, color-mix(in srgb, var(--portal-beam-b) 22%, transparent) 18% 19%, transparent 20%), radial-gradient(circle at 52% 46%, var(--portal-glow-c), transparent 42%); }
+.portal-animated-background[data-portal-section="analysis"] .portal-page-content::after { background-image: conic-gradient(from 245deg at 50% 55%, transparent 0 34deg, color-mix(in srgb, var(--portal-beam-a) 24%, transparent) 36deg 37deg, transparent 39deg 120deg, color-mix(in srgb, var(--portal-beam-b) 20%, transparent) 122deg 123deg, transparent 125deg 360deg), radial-gradient(circle at 50% 55%, transparent 0 27%, color-mix(in srgb, var(--portal-beam-c) 20%, transparent) 28% 29%, transparent 30%); }
+.portal-animated-background[data-portal-section="reports"] .portal-page-content::after { background-image: linear-gradient(90deg, transparent 12%, color-mix(in srgb, var(--portal-beam-a) 18%, transparent) 13%, transparent 14% 86%, color-mix(in srgb, var(--portal-beam-b) 18%, transparent) 87%, transparent 88%), linear-gradient(0deg, transparent 14%, color-mix(in srgb, var(--portal-beam-c) 17%, transparent) 15%, transparent 16% 84%, color-mix(in srgb, var(--portal-beam-a) 17%, transparent) 85%, transparent 86%), radial-gradient(ellipse at 50% 20%, var(--portal-glow-b), transparent 40%); }
+.portal-animated-background[data-portal-section="marklists"] .portal-page-content::after { background-image: radial-gradient(circle at 18% 25%, var(--portal-beam-a) 0 2px, transparent 3px), radial-gradient(circle at 18% 48%, var(--portal-beam-b) 0 2px, transparent 3px), radial-gradient(circle at 18% 71%, var(--portal-beam-c) 0 2px, transparent 3px), repeating-linear-gradient(0deg, transparent 0 44px, color-mix(in srgb, var(--portal-beam-a) 15%, transparent) 45px 46px, transparent 47px 88px); }
+.portal-animated-background[data-portal-section="staff"] .portal-page-content::after { background-image: radial-gradient(circle at 22% 32%, transparent 0 7%, color-mix(in srgb, var(--portal-beam-a) 25%, transparent) 7.5% 8%, transparent 8.5%), radial-gradient(circle at 50% 56%, transparent 0 9%, color-mix(in srgb, var(--portal-beam-b) 23%, transparent) 9.5% 10%, transparent 10.5%), radial-gradient(circle at 80% 30%, transparent 0 6%, color-mix(in srgb, var(--portal-beam-c) 22%, transparent) 6.5% 7%, transparent 7.5%); }
+.portal-animated-background[data-portal-section="mail"] .portal-page-content::after { background-image: linear-gradient(145deg, transparent 37%, color-mix(in srgb, var(--portal-beam-a) 24%, transparent) 38% 39%, transparent 40%), linear-gradient(35deg, transparent 52%, color-mix(in srgb, var(--portal-beam-b) 22%, transparent) 53% 54%, transparent 55%), radial-gradient(ellipse at 50% 65%, var(--portal-glow-c), transparent 43%); }
+.portal-animated-background[data-portal-section="settings"] .portal-page-content::after { background-image: repeating-conic-gradient(from 12deg at 50% 50%, transparent 0deg 17deg, color-mix(in srgb, var(--portal-beam-a) 19%, transparent) 18deg 20deg, transparent 21deg 36deg), radial-gradient(circle at 50% 50%, transparent 0 19%, color-mix(in srgb, var(--portal-beam-b) 23%, transparent) 20% 21%, transparent 22%), radial-gradient(ellipse at 82% 22%, var(--portal-glow-d), transparent 39%); }
+.portal-background-scene {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  display: none;
+  pointer-events: none;
+  opacity: 0;
+  background-repeat: no-repeat;
+  background-size: 230% 230%;
+  transition: opacity 1200ms ease-in-out;
+  animation: portal-scene-drift 24s ease-in-out infinite alternate;
+  animation-play-state: paused;
+}
+html[data-portal-backdrop-theme="auto-sections"] .portal-background-scene[data-active="true"] { opacity: var(--portal-scene-opacity, .68); animation-play-state: running; }
+.portal-background-scene[data-background-scene="0"] { background-image: linear-gradient(113deg, transparent 19%, color-mix(in srgb, var(--portal-beam-a) 34%, transparent) 34%, transparent 49%), linear-gradient(72deg, transparent 47%, color-mix(in srgb, var(--portal-beam-b) 28%, transparent) 62%, transparent 76%), radial-gradient(ellipse at 68% 18%, var(--portal-glow-c), transparent 42%); }
+.portal-background-scene[data-background-scene="1"] { background-image: radial-gradient(ellipse at 26% 60%, transparent 34%, color-mix(in srgb, var(--portal-beam-a) 36%, transparent) 35%, transparent 35.5%), radial-gradient(ellipse at 75% 40%, transparent 41%, color-mix(in srgb, var(--portal-beam-b) 34%, transparent) 42%, transparent 42.5%), radial-gradient(ellipse at 50% 50%, var(--portal-glow-d), transparent 62%); }
+.portal-background-scene[data-background-scene="2"] { background-image: radial-gradient(2px 2px at 12% 22%, color-mix(in srgb, var(--portal-beam-a) 70%, white), transparent 75%), radial-gradient(2px 2px at 31% 76%, color-mix(in srgb, var(--portal-beam-b) 70%, white), transparent 75%), radial-gradient(2px 2px at 53% 32%, color-mix(in srgb, var(--portal-beam-c) 75%, white), transparent 75%), radial-gradient(2px 2px at 79% 61%, color-mix(in srgb, var(--portal-beam-a) 70%, white), transparent 75%), radial-gradient(ellipse at 50% 50%, var(--portal-glow-a), transparent 55%); }
+.portal-background-scene[data-background-scene="3"] { background-image: linear-gradient(128deg, transparent 29%, color-mix(in srgb, var(--portal-beam-a) 33%, transparent) 36%, transparent 43%), linear-gradient(56deg, transparent 52%, color-mix(in srgb, var(--portal-beam-c) 28%, transparent) 60%, transparent 67%), linear-gradient(163deg, transparent 72%, color-mix(in srgb, var(--portal-beam-b) 25%, transparent) 77%, transparent 83%); }
+.portal-background-scene[data-background-scene="4"] { background-image: radial-gradient(ellipse at 21% 82%, transparent 40%, color-mix(in srgb, var(--portal-beam-a) 38%, transparent) 41%, transparent 44%), radial-gradient(ellipse at 78% 14%, transparent 47%, color-mix(in srgb, var(--portal-beam-b) 32%, transparent) 48%, transparent 51%), radial-gradient(ellipse at 50% 70%, var(--portal-glow-d), transparent 54%); }
+.portal-background-scene[data-background-scene="5"] { background-image: repeating-conic-gradient(from 12deg at 70% 40%, transparent 0deg 14deg, color-mix(in srgb, var(--portal-beam-a) 13%, transparent) 16deg 19deg, transparent 22deg 38deg), radial-gradient(circle at 70% 40%, var(--portal-glow-b), transparent 30%); }
+.portal-background-scene[data-background-scene="6"] { background-image: radial-gradient(circle at 18% 28%, color-mix(in srgb, var(--portal-beam-a) 22%, transparent) 0 7%, transparent 8%), radial-gradient(circle at 42% 68%, color-mix(in srgb, var(--portal-beam-b) 21%, transparent) 0 10%, transparent 11%), radial-gradient(circle at 77% 35%, color-mix(in srgb, var(--portal-beam-c) 18%, transparent) 0 8%, transparent 9%), radial-gradient(circle at 88% 80%, var(--portal-glow-d), transparent 24%); }
+.portal-background-scene[data-background-scene="7"] { background-image: repeating-linear-gradient(133deg, transparent 0 42px, color-mix(in srgb, var(--portal-beam-a) 13%, transparent) 44px 47px, transparent 50px 95px), linear-gradient(40deg, var(--portal-glow-c), transparent 54%); }
+.portal-background-scene[data-background-scene="8"] { background-image: repeating-radial-gradient(ellipse at 25% 65%, transparent 0 25px, color-mix(in srgb, var(--portal-beam-a) 16%, transparent) 27px 29px, transparent 32px 53px), radial-gradient(ellipse at 74% 21%, var(--portal-glow-b), transparent 39%); }
+.portal-background-scene[data-background-scene="9"] { background-image: repeating-linear-gradient(45deg, transparent 0 50px, color-mix(in srgb, var(--portal-beam-a) 15%, transparent) 51px 53px, transparent 54px 100px), repeating-linear-gradient(135deg, transparent 0 50px, color-mix(in srgb, var(--portal-beam-b) 13%, transparent) 51px 53px, transparent 54px 100px); }
+.portal-background-scene[data-background-scene="10"] { background-image: conic-gradient(from 230deg at 30% 55%, transparent 0 42deg, color-mix(in srgb, var(--portal-beam-a) 22%, transparent) 68deg 100deg, transparent 128deg 360deg), conic-gradient(from 30deg at 78% 31%, transparent 0 52deg, color-mix(in srgb, var(--portal-beam-b) 20%, transparent) 77deg 110deg, transparent 137deg 360deg); }
+.portal-background-scene[data-background-scene="11"] { background-image: radial-gradient(ellipse at 12% 30%, var(--portal-glow-a), transparent 30%), radial-gradient(ellipse at 42% 72%, var(--portal-glow-b), transparent 35%), radial-gradient(ellipse at 80% 24%, var(--portal-glow-c), transparent 34%), radial-gradient(ellipse at 91% 84%, var(--portal-glow-d), transparent 29%); }
+.portal-background-scene[data-background-scene="12"] { background-image: repeating-conic-gradient(from 0deg at 52% 52%, color-mix(in srgb, var(--portal-beam-a) 14%, transparent) 0deg 3deg, transparent 4deg 22deg), radial-gradient(circle at 52% 52%, transparent 0 17%, color-mix(in srgb, var(--portal-beam-b) 25%, transparent) 18% 19%, transparent 20%); }
+.portal-background-scene[data-background-scene="13"] { background-image: linear-gradient(180deg, transparent 30%, color-mix(in srgb, var(--portal-beam-a) 18%, transparent) 55%, transparent 76%), linear-gradient(165deg, transparent 36%, color-mix(in srgb, var(--portal-beam-b) 16%, transparent) 62%, transparent 82%), radial-gradient(ellipse at 52% 78%, var(--portal-glow-d), transparent 43%); }
+.portal-background-scene[data-background-scene="14"] { background-image: radial-gradient(1.5px 1.5px at 9% 19%, var(--portal-beam-a) 70%, transparent 100%), radial-gradient(1.5px 1.5px at 21% 71%, var(--portal-beam-b) 70%, transparent 100%), radial-gradient(1.5px 1.5px at 49% 39%, var(--portal-beam-c) 70%, transparent 100%), radial-gradient(1.5px 1.5px at 68% 82%, var(--portal-beam-a) 70%, transparent 100%), radial-gradient(1.5px 1.5px at 91% 29%, var(--portal-beam-b) 70%, transparent 100%); }
+.portal-background-scene[data-background-scene="15"] { background-image: repeating-radial-gradient(ellipse at 76% 56%, transparent 0 16px, color-mix(in srgb, var(--portal-beam-c) 16%, transparent) 18px 20px, transparent 22px 39px), radial-gradient(ellipse at 25% 25%, var(--portal-glow-a), transparent 36%); }
+.portal-background-scene[data-background-scene="16"] { background-image: linear-gradient(105deg, transparent 14%, color-mix(in srgb, var(--portal-beam-a) 22%, transparent) 24%, transparent 35%), linear-gradient(83deg, transparent 43%, color-mix(in srgb, var(--portal-beam-b) 24%, transparent) 53%, transparent 64%), linear-gradient(150deg, transparent 74%, color-mix(in srgb, var(--portal-beam-c) 20%, transparent) 82%, transparent 90%); }
+.portal-background-scene[data-background-scene="17"] { background-image: radial-gradient(ellipse at 50% 50%, transparent 42%, color-mix(in srgb, var(--portal-beam-a) 26%, transparent) 43%, transparent 44%), radial-gradient(ellipse at 50% 50%, transparent 58%, color-mix(in srgb, var(--portal-beam-b) 23%, transparent) 59%, transparent 60%), radial-gradient(ellipse at 50% 50%, transparent 74%, color-mix(in srgb, var(--portal-beam-c) 20%, transparent) 75%, transparent 76%); }
 /* Content keeps Mukuyu's original ink and semantic colors; only the canvas behind it moves. */
 .portal-page-content :is([class*="bg-card"], [class*="bg-white"], [class*="bg-paper"]) { color: var(--color-ink); }
 .portal-page-content :is(th, td)[class*="bg-slate-"] { color: var(--color-ink); }
@@ -655,12 +685,15 @@ html[data-portal-backdrop-theme="golden-hour"] { --portal-backdrop-hue: 22deg; -
 .portal-page-content :is([class*="bg-card"], [class*="bg-white"], [class*="bg-paper"]) .text-bad { color: #9f2d2d; }
 .portal-page-content :is(input, select, textarea) { color: #1c1915; }
 .portal-page-content :is(input, textarea)::placeholder { color: #777066; }
-@keyframes mukuyu-nebula-drift { 0% { background-position: 0% 15%; filter: hue-rotate(var(--portal-backdrop-hue, 0deg)) saturate(calc(var(--portal-backdrop-saturation, 1) * .96)); } 50% { background-position: 100% 85%; filter: hue-rotate(var(--portal-backdrop-hue, 0deg)) saturate(calc(var(--portal-backdrop-saturation, 1) * 1.1)); } 100% { background-position: 8% 100%; filter: hue-rotate(var(--portal-backdrop-hue, 0deg)) saturate(var(--portal-backdrop-saturation, 1)); } }
+@keyframes mukuyu-nebula-drift { 0% { background-position: 0% 15%; filter: saturate(.96); } 50% { background-position: 100% 85%; filter: saturate(1.1); } 100% { background-position: 8% 100%; filter: saturate(1); } }
+@keyframes portal-scene-drift { from { background-position: 0% 10%; } to { background-position: 100% 90%; } }
 @keyframes mukuyu-orbit-drift { from { transform: translate3d(-.45%, .2%, 0) rotate(-1deg); } to { transform: translate3d(.45%, -.2%, 0) rotate(1deg); } }
 @media (prefers-reduced-motion: reduce) {
   .portal-page-content::before, .portal-page-content::after, .portal-loading, .portal-loading::before, .portal-loading::after, .portal-loading-orbit, .portal-loading-track span, .welcome-shell, .welcome-hero, .welcome-login-panel, .welcome-word-panel, .welcome-parent-toggle { animation: none !important; }
 }
 html[data-portal-motion="reduced"] .portal-page-content::before, html[data-portal-motion="reduced"] .portal-page-content::after { animation: none !important; }
+@media (prefers-reduced-motion: reduce) { .portal-background-scene { animation: none !important; transition: none !important; } }
+html[data-portal-motion="reduced"] .portal-background-scene { animation: none !important; transition: none !important; }
 @media print {
   .portal-page-content::before, .portal-page-content::after, .portal-loading::before, .portal-loading::after { display: none !important; }
   .portal-animated-background, .portal-page-content { background: #fff !important; color: #111827 !important; }
