@@ -130,6 +130,12 @@ function LoginPage() {
     saveDisplayPreferences(nextPreferences);
   }
 
+  function changeBackgroundMode(backgroundMode: LocalDisplayPreferences["backgroundMode"]) {
+    const nextPreferences = { ...display, backgroundMode };
+    setDisplay(nextPreferences);
+    saveDisplayPreferences(nextPreferences);
+  }
+
   async function onSubmit(event: React.FormEvent) {
     event.preventDefault();
     setBusy(true);
@@ -257,6 +263,11 @@ function LoginPage() {
           <button type="button" className="welcome-display-switch" style={{ borderColor: welcomeDisplay.accentAltColor }} onClick={cycleWelcomeColour} title="Tap once to change welcome colours on this device" aria-label="Change welcome page colours">
             <span className="welcome-display-dot" style={{ background: `linear-gradient(135deg, ${welcomeDisplay.accentColor}, ${welcomeDisplay.accentAltColor})` }} aria-hidden="true" /> Change colours
           </button>
+        </div>
+        <div className="welcome-background-choice relative z-10 mt-4" role="group" aria-label="Choose large background colours">
+          <span className="welcome-background-choice-label">Large background colours</span>
+          <button type="button" aria-pressed={display.backgroundMode === "animated"} onClick={() => changeBackgroundMode("animated")}>Animated Colours</button>
+          <button type="button" aria-pressed={display.backgroundMode === "original"} onClick={() => changeBackgroundMode("original")}>Original Colours</button>
         </div>
         <div className="welcome-content relative z-10 py-12">
           <h1 className="welcome-title welcome-word-panel welcome-word-panel-title mt-3 font-serif font-black leading-tight" style={{ letterSpacing: `${welcomeDisplay.titleLetterSpacing}em`, textShadow: welcomeDisplay.titleShadow ? "0 3px 22px rgba(4,16,35,.42)" : "none", maxWidth: "var(--welcome-content-width)" }} aria-label={welcome?.title || status?.schoolName || "Mukuyu Junior School"}>{Array.from(welcome?.title || status?.schoolName || "Mukuyu Junior School").map((letter, index) => <span key={`${letter}-${index}`} className={letter === " " ? "welcome-title-space" : "welcome-title-letter"} style={{ "--letter-index": index, color: welcomeDisplay.titleColor } as React.CSSProperties}>{letter === " " ? "\u00a0" : letter}</span>)}</h1>

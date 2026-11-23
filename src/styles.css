@@ -594,3 +594,50 @@ html[data-portal-motion="reduced"] .portal-page-content::before, html[data-porta
   .report-print-area thead th { color: #fff !important; background: #1d4e89 !important; background-image: none !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .report-print-area tbody tr:nth-child(even), .report-print-area tbody tr:hover { background-color: transparent !important; }
 }
+
+
+/* Original Colours restores the static school-paper canvas without recolouring foreground UI. */
+html[data-portal-background-mode="original"] .portal-page-content::before,
+html[data-portal-background-mode="original"] .portal-page-content::after {
+  display: none !important;
+}
+html[data-portal-background-mode="original"] .portal-animated-background {
+  background: #f4f0e6 !important;
+}
+html[data-portal-background-mode="original"] .welcome-shell {
+  background: transparent !important;
+  animation: none !important;
+}
+html[data-portal-background-mode="original"] .welcome-shell::before,
+html[data-portal-background-mode="original"] .welcome-shell::after,
+html[data-portal-background-mode="original"] .welcome-hero::before,
+html[data-portal-background-mode="original"] .welcome-hero::after,
+html[data-portal-background-mode="original"] .welcome-ribbon-field,
+html[data-portal-background-mode="original"] .welcome-login-panel::after {
+  display: none !important;
+}
+html[data-portal-background-mode="original"] .welcome-hero,
+html[data-portal-background-mode="original"] .welcome-login-panel {
+  animation: none !important;
+  background-size: 100% 100% !important;
+}
+html[data-portal-background-mode="original"] .portal-loading {
+  background-color: #030611 !important;
+  background-image: linear-gradient(140deg, #030611 0%, #080b1a 48%, #03050d 100%) !important;
+  animation: none !important;
+}
+html[data-portal-background-mode="original"] .portal-loading::before,
+html[data-portal-background-mode="original"] .portal-loading::after,
+html[data-portal-background-mode="original"] .portal-loading-ribbon-field,
+html[data-portal-background-mode="original"] .portal-loading-rays,
+html[data-portal-background-mode="original"] .portal-loading-atom,
+html[data-portal-background-mode="original"] .portal-loading-orbit-glints,
+html[data-portal-background-mode="original"] .portal-loading-aurora,
+html[data-portal-background-mode="original"] .portal-loading-stars,
+html[data-portal-background-mode="original"] .portal-loading-dust {
+  display: none !important;
+}
+@media (max-width: 640px) {
+  .welcome-background-choice { gap: .35rem; }
+  .welcome-background-choice button { padding-inline: .55rem; font-size: .64rem; }
+}

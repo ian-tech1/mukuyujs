@@ -2,9 +2,11 @@ import { DEFAULT_APPEARANCE, type AppearancePalette } from "@/lib/school/model";
 
 export type DisplayThemeId = "classic" | "forest" | "royal" | "burgundy";
 export type DisplayDensity = "comfortable" | "compact";
+export type BackgroundMode = "animated" | "original";
 export type LocalDisplayPreferences = {
   theme: DisplayThemeId | null;
   density: DisplayDensity;
+  backgroundMode: BackgroundMode;
   motion: boolean;
   fontFamily: "sans" | "serif" | "system" | "mono";
   fontScale: "small" | "normal" | "large";
@@ -15,6 +17,7 @@ export const DISPLAY_PREFERENCES_KEY = "mukuyu-display-preferences-v1";
 export const DEFAULT_DISPLAY_PREFERENCES: LocalDisplayPreferences = {
   theme: null,
   density: "comfortable",
+  backgroundMode: "animated",
   motion: true,
   fontFamily: "sans",
   fontScale: "normal",
@@ -46,6 +49,9 @@ export function normalizeDisplayPreferences(value: unknown): LocalDisplayPrefere
   return {
     theme,
     density: source.density === "compact" ? "compact" : "comfortable",
+    backgroundMode: source.backgroundMode === "original" || source.backgroundMode === "animated"
+      ? source.backgroundMode
+      : source.accentMotion === false ? "original" : DEFAULT_DISPLAY_PREFERENCES.backgroundMode,
     motion: typeof source.motion === "boolean" ? source.motion : DEFAULT_DISPLAY_PREFERENCES.motion,
     fontFamily: source.fontFamily === "serif" || source.fontFamily === "system" || source.fontFamily === "mono" ? source.fontFamily : "sans",
     fontScale: source.fontScale === "small" || source.fontScale === "large" ? source.fontScale : "normal",
@@ -89,6 +95,7 @@ export function applyDisplayPreferences(value: LocalDisplayPreferences) {
   })();
   applyPortalBackdropColors(colors ?? DEFAULT_APPEARANCE);
   root.dataset.portalDensity = preferences.density;
+  root.dataset.portalBackgroundMode = preferences.backgroundMode;
   root.dataset.portalMotion = preferences.motion ? "full" : "reduced";
   root.dataset.portalAccentMotion = preferences.accentMotion ? "on" : "off";
   root.dataset.portalFont = preferences.fontFamily;
