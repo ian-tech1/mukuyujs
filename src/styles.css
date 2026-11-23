@@ -799,21 +799,21 @@ html[data-portal-background-mode="original"] .welcome-login-panel {
 
 /* A welcoming, colourful surface for the portal navigation shown on mobile. */
 .portal-navigation-drawer {
-  --portal-nav-base: #0b2543;
-  --portal-nav-blue: #123b62;
-  --portal-nav-teal: #2dd4bf;
-  --portal-nav-gold: #fbbf24;
-  --portal-nav-violet: #818cf8;
+  --portal-nav-base: #09213f;
+  --portal-nav-blue: #17466e;
+  --portal-nav-teal: #42e6cf;
+  --portal-nav-gold: #ffd166;
+  --portal-nav-violet: #a394ff;
   background-color: var(--portal-nav-base);
   background-image:
-    radial-gradient(ellipse at 92% 2%, color-mix(in srgb, var(--portal-nav-gold) 40%, transparent), transparent 27%),
-    radial-gradient(ellipse at 3% 28%, color-mix(in srgb, var(--portal-nav-teal) 34%, transparent), transparent 30%),
-    radial-gradient(ellipse at 88% 76%, color-mix(in srgb, var(--portal-nav-violet) 32%, transparent), transparent 34%),
+    radial-gradient(ellipse at 92% 2%, color-mix(in srgb, var(--portal-nav-gold) 54%, transparent), transparent 29%),
+    radial-gradient(ellipse at 3% 28%, color-mix(in srgb, var(--portal-nav-teal) 48%, transparent), transparent 32%),
+    radial-gradient(ellipse at 88% 76%, color-mix(in srgb, var(--portal-nav-violet) 46%, transparent), transparent 36%),
     linear-gradient(155deg, var(--portal-nav-base) 0%, var(--portal-nav-blue) 52%, #102d51 100%);
-  background-size: 180% 180%, 180% 180%, 180% 180%, 100% 100%;
+  background-size: 220% 220%, 220% 220%, 220% 220%, 100% 100%;
   background-position: 0% 0%, 100% 20%, 0% 100%, 50% 50%;
-  animation: mukuyu-navigation-colour-flow 20s ease-in-out infinite alternate;
-  box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.12);
+  animation: mukuyu-navigation-colour-flow 16s ease-in-out infinite alternate;
+  box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.18), inset 0 0 70px rgba(65, 220, 207, 0.1);
 }
 
 .portal-navigation-drawer .portal-nav-item {
@@ -865,9 +865,14 @@ html[data-portal-background-mode="original"] .welcome-login-panel {
 }
 
 html[data-portal-background-mode="original"] .portal-navigation-drawer {
-  background-color: var(--color-navy, #0e2a4a);
-  background-image: none;
-  animation: none;
+  background-color: var(--portal-nav-base, #09213f);
+  background-image:
+    radial-gradient(ellipse at 92% 2%, color-mix(in srgb, var(--portal-nav-gold, #ffd166) 54%, transparent), transparent 29%),
+    radial-gradient(ellipse at 3% 28%, color-mix(in srgb, var(--portal-nav-teal, #42e6cf) 48%, transparent), transparent 32%),
+    radial-gradient(ellipse at 88% 76%, color-mix(in srgb, var(--portal-nav-violet, #a394ff) 46%, transparent), transparent 36%),
+    linear-gradient(155deg, var(--portal-nav-base, #09213f) 0%, var(--portal-nav-blue, #17466e) 52%, #102d51 100%);
+  background-size: 220% 220%, 220% 220%, 220% 220%, 100% 100%;
+  animation: mukuyu-navigation-colour-flow 16s ease-in-out infinite alternate;
 }
 
 html[data-portal-motion="reduced"] .portal-navigation-drawer {

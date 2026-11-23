@@ -275,7 +275,7 @@ function PortalPage() {
             <button
               key={item}
               type="button"
-              className={`portal-nav-item flex h-[3.25rem] w-full items-center rounded-xl px-4 text-left text-lg font-bold ${current === item ? "portal-nav-item-active text-paper" : "text-paper/90"}`}
+              className={`portal-nav-item flex h-14 w-full items-center rounded-xl px-4 text-left text-xl font-bold ${current === item ? "portal-nav-item-active text-paper" : "text-paper/90"}`}
               aria-current={current === item ? "page" : undefined}
               onClick={() => {
                 setOpen(false);
