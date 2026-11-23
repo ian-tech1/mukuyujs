@@ -1,0 +1,179 @@
+{
+  "purpose": "Live-action nature footage used only as the Mukuyu Nature Motion portal background.",
+  "processing": {
+    "container": "MP4",
+    "videoCodec": "H.264 Baseline",
+    "maximumDimensionPixels": 720,
+    "frameRateFps": 20,
+    "durationSeconds": 5,
+    "audio": "Removed"
+  },
+  "licenseNote": "Each clip is from a source page that identifies it as free stock footage under the linked Pexels or Pixabay license. The files are trimmed, resized, transcoded, and embedded as part of the website background; do not resell or redistribute the stock clips as standalone assets. Check source and license terms before reuse in another context.",
+  "clips": [
+    {
+      "id": "rainfall-forest",
+      "file": "public/nature-scenes/rainfall-forest.mp4",
+      "title": "Tranquil Rainfall in Lush Forest Setting",
+      "creator": "Kris Møklebust",
+      "pageUrl": "https://www.pexels.com/video/tranquil-rainfall-in-lush-forest-setting-33303250/",
+      "downloadUrl": "https://www.pexels.com/download/video/33303250/",
+      "directSourceUrl": "https://videos.pexels.com/video-files/33303250/14184662_1920_1080_25fps.mp4",
+      "licenseName": "Pexels License",
+      "licenseUrl": "https://www.pexels.com/license/"
+    },
+    {
+      "id": "raindrops-leaves",
+      "file": "public/nature-scenes/raindrops-leaves.mp4",
+      "title": "Raindrops Falling on Green Leaves Closeup",
+      "creator": "Nothing Ahead",
+      "pageUrl": "https://www.pexels.com/video/raindrops-falling-on-green-leaves-closeup-39485460/",
+      "downloadUrl": "https://www.pexels.com/download/video/39485460/",
+      "directSourceUrl": "https://videos.pexels.com/video-files/39485460/16819881_1920_1080_60fps.mp4",
+      "licenseName": "Pexels License",
+      "licenseUrl": "https://www.pexels.com/license/"
+    },
+    {
+      "id": "forest-waterfall",
+      "file": "public/nature-scenes/forest-waterfall.mp4",
+      "title": "Serene Forest Waterfall Surrounded by Greenery",
+      "creator": "Hasan İNCE",
+      "pageUrl": "https://www.pexels.com/video/serene-forest-waterfall-surrounded-by-greenery-37894886/",
+      "downloadUrl": "https://www.pexels.com/download/video/37894886/",
+      "directSourceUrl": "https://videos.pexels.com/video-files/37894886/16077918_1080_1920_60fps.mp4",
+      "licenseName": "Pexels License",
+      "licenseUrl": "https://www.pexels.com/license/"
+    },
+    {
+      "id": "mountain-waterfall",
+      "file": "public/nature-scenes/mountain-waterfall.mp4",
+      "title": "Stunning Mountain Cascade Waterfall in Summer",
+      "creator": "Niko Prodan",
+      "pageUrl": "https://www.pexels.com/video/stunning-mountain-cascade-waterfall-in-summer-38636417/",
+      "downloadUrl": "https://www.pexels.com/download/video/38636417/",
+      "directSourceUrl": "https://videos.pexels.com/video-files/38636417/16410243_1080_1920_30fps.mp4",
+      "licenseName": "Pexels License",
+      "licenseUrl": "https://www.pexels.com/license/"
+    },
+    {
+      "id": "river-rapids",
+      "file": "public/nature-scenes/river-rapids.mp4",
+      "title": "Scenic river rapids flowing through rocks",
+      "creator": "Roger Madura",
+      "pageUrl": "https://www.pexels.com/video/scenic-river-rapids-flowing-through-rocks-40375135/",
+      "downloadUrl": "https://www.pexels.com/download/video/40375135/",
+      "directSourceUrl": "https://videos.pexels.com/video-files/40375135/17251702_1920_1080_25fps.mp4",
+      "licenseName": "Pexels License",
+      "licenseUrl": "https://www.pexels.com/license/"
+    },
+    {
+      "id": "elephant",
+      "file": "public/nature-scenes/elephant.mp4",
+      "title": "African Elephant Walking in Lush Greenery",
+      "creator": "leader k",
+      "pageUrl": "https://www.pexels.com/video/african-elephant-walking-in-lush-greenery-30418797/",
+      "downloadUrl": "https://www.pexels.com/download/video/30418797/",
+      "directSourceUrl": "https://videos.pexels.com/video-files/30418797/13035221_1080_1920_30fps.mp4",
+      "licenseName": "Pexels License",
+      "licenseUrl": "https://www.pexels.com/license/"
+    },
+    {
+      "id": "giraffe",
+      "file": "public/nature-scenes/giraffe.mp4",
+      "title": "A Giraffe Walking In The Wilderness",
+      "creator": "Taryn Elliott",
+      "pageUrl": "https://www.pexels.com/video/a-giraffe-walking-in-the-wilderness-5220298/",
+      "downloadUrl": "https://www.pexels.com/download/video/5220298/",
+      "directSourceUrl": "https://videos.pexels.com/video-files/5220298/5220298-hd_1920_1080_25fps.mp4",
+      "licenseName": "Pexels License",
+      "licenseUrl": "https://www.pexels.com/license/"
+    },
+    {
+      "id": "lion",
+      "file": "public/nature-scenes/lion.mp4",
+      "title": "A Lion Walkin in a Field",
+      "creator": "lifeofhicham Globetrotter Culture",
+      "pageUrl": "https://www.pexels.com/video/a-lion-walkin-in-a-field-11528208/",
+      "downloadUrl": "https://www.pexels.com/download/video/11528208/",
+      "directSourceUrl": "https://videos.pexels.com/video-files/11528208/11528208-uhd_1440_2562_30fps.mp4",
+      "licenseName": "Pexels License",
+      "licenseUrl": "https://www.pexels.com/license/"
+    },
+    {
+      "id": "deer",
+      "file": "public/nature-scenes/deer.mp4",
+      "title": "Peaceful Deer Grazing in Forested Park",
+      "creator": "Cheng Shi Song",
+      "pageUrl": "https://www.pexels.com/video/peaceful-deer-grazing-in-forested-park-30780348/",
+      "downloadUrl": "https://www.pexels.com/download/video/30780348/",
+      "directSourceUrl": "https://videos.pexels.com/video-files/30780348/13166082_1440_2560_30fps.mp4",
+      "licenseName": "Pexels License",
+      "licenseUrl": "https://www.pexels.com/license/"
+    },
+    {
+      "id": "zebra",
+      "file": "public/nature-scenes/zebra.mp4",
+      "title": "Zebras on Dirt Road in Savannah",
+      "creator": "ROMAN ODINTSOV",
+      "pageUrl": "https://www.pexels.com/video/zebras-on-dirt-road-in-savannah-11025401/",
+      "downloadUrl": "https://www.pexels.com/download/video/11025401/",
+      "directSourceUrl": "https://videos.pexels.com/video-files/11025401/11025401-hd_2732_1440_30fps.mp4",
+      "licenseName": "Pexels License",
+      "licenseUrl": "https://www.pexels.com/license/"
+    },
+    {
+      "id": "monkeys",
+      "file": "public/nature-scenes/monkeys.mp4",
+      "title": "Monkeys, trees, mammals",
+      "creator": "raudhran",
+      "pageUrl": "https://pixabay.com/videos/monkeys-trees-mammals-animals-200390/",
+      "downloadUrl": "https://pixabay.com/videos/download/video-200390_medium.mp4",
+      "directSourceUrl": "https://cdn.pixabay.com/video/2024/02/13/200390-912684118_large.mp4",
+      "licenseName": "Pixabay Content License",
+      "licenseUrl": "https://pixabay.com/service/license-summary/"
+    },
+    {
+      "id": "birds",
+      "file": "public/nature-scenes/birds.mp4",
+      "title": "Flock of Birds Flying Over Forest at Dusk",
+      "creator": "Vinay Kodape",
+      "pageUrl": "https://www.pexels.com/video/flock-of-birds-flying-over-forest-at-dusk-35240127/",
+      "downloadUrl": "https://www.pexels.com/download/video/35240127/",
+      "directSourceUrl": "https://videos.pexels.com/video-files/35240127/14929315_1080_1920_30fps.mp4",
+      "licenseName": "Pexels License",
+      "licenseUrl": "https://www.pexels.com/license/"
+    },
+    {
+      "id": "flamingos",
+      "file": "public/nature-scenes/flamingos.mp4",
+      "title": "Flamingos in Tranquil Water Setting",
+      "creator": "György Lakatos",
+      "pageUrl": "https://www.pexels.com/video/flamingos-in-tranquil-water-setting-36207991/",
+      "downloadUrl": "https://www.pexels.com/download/video/36207991/",
+      "directSourceUrl": "https://videos.pexels.com/video-files/36207991/15354490_1080_1920_30fps.mp4",
+      "licenseName": "Pexels License",
+      "licenseUrl": "https://www.pexels.com/license/"
+    },
+    {
+      "id": "squirrel",
+      "file": "public/nature-scenes/squirrel.mp4",
+      "title": "A red squirrel energetically climbs a tree in a serene winter forest setting",
+      "creator": "Ahmet Yüksek",
+      "pageUrl": "https://www.pexels.com/video/red-squirrel-climbing-a-tree-in-winter-forest-38777837/",
+      "downloadUrl": "https://www.pexels.com/download/video/38777837/",
+      "directSourceUrl": "https://videos.pexels.com/video-files/38777837/16477100_1920_1080_30fps.mp4",
+      "licenseName": "Pexels License",
+      "licenseUrl": "https://www.pexels.com/license/"
+    },
+    {
+      "id": "butterflies",
+      "file": "public/nature-scenes/butterflies.mp4",
+      "title": "Vibrant butterflies on summer blossoms",
+      "creator": "Maurice Supple",
+      "pageUrl": "https://www.pexels.com/video/vibrant-butterflies-on-summer-blossoms-31226490/",
+      "downloadUrl": "https://www.pexels.com/download/video/31226490/",
+      "directSourceUrl": "https://videos.pexels.com/video-files/31226490/13337601_2730_1440_25fps.mp4",
+      "licenseName": "Pexels License",
+      "licenseUrl": "https://www.pexels.com/license/"
+    }
+  ]
+}

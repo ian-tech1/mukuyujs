@@ -34,14 +34,28 @@ export const DISPLAY_PALETTES: Array<{ id: DisplayThemeId; name: string; colors:
 export const PORTAL_BACKDROP_THEMES: Array<{ id: PortalBackdropThemeId; name: string; description: string }> = [
   { id: "auto-sections", name: "Automatic section scenes", description: "Rotate 18 distinct moving background treatments every 5 seconds. Each portal section keeps its own colour identity and ornamental style." },
   { id: "starfall", name: "Mukuyu Starfall", description: "The original Mukuyu Starfall canvas, preserved as a steady alternative." },
-  { id: "nature-cycle", name: "Mukuyu Nature Motion", description: "Cycle through 15 monochrome nature and wildlife scenes every 5 seconds, with no colour gradients or glow layers." },
+  { id: "nature-cycle", name: "Mukuyu Nature Motion", description: "Cycle through 15 real wildlife, rainfall and waterfall video scenes every 5 seconds. Natural footage only, with no illustrations, added gradients or audio." },
 ];
 
-export const NATURE_BACKDROP_SCENE_LABELS = [
-  "Rainfall", "Wind through trees", "Starry night", "Drifting clouds", "Flying birds",
-  "Elephant", "Giraffe", "Butterfly", "River fish", "Lion", "Rabbits", "Deer",
-  "Mountain forest", "Falling leaves", "Owl at night",
+export const NATURE_BACKDROP_SCENES = [
+  { id: "rainfall-forest", label: "Rain falling through forest", src: "/nature-scenes/rainfall-forest.mp4" },
+  { id: "raindrops-leaves", label: "Rain drops on leaves", src: "/nature-scenes/raindrops-leaves.mp4" },
+  { id: "forest-waterfall", label: "Forest waterfall", src: "/nature-scenes/forest-waterfall.mp4" },
+  { id: "mountain-waterfall", label: "Mountain waterfall", src: "/nature-scenes/mountain-waterfall.mp4" },
+  { id: "river-rapids", label: "River rapids", src: "/nature-scenes/river-rapids.mp4" },
+  { id: "elephant", label: "Elephant in the wild", src: "/nature-scenes/elephant.mp4" },
+  { id: "giraffe", label: "Giraffe in the wild", src: "/nature-scenes/giraffe.mp4" },
+  { id: "lion", label: "Lion in the wild", src: "/nature-scenes/lion.mp4" },
+  { id: "deer", label: "Deer in woodland", src: "/nature-scenes/deer.mp4" },
+  { id: "zebra", label: "Zebra herd", src: "/nature-scenes/zebra.mp4" },
+  { id: "monkeys", label: "Monkeys in trees", src: "/nature-scenes/monkeys.mp4" },
+  { id: "birds", label: "Birds in flight", src: "/nature-scenes/birds.mp4" },
+  { id: "flamingos", label: "Flamingos by the water", src: "/nature-scenes/flamingos.mp4" },
+  { id: "squirrel", label: "Squirrel in woodland", src: "/nature-scenes/squirrel.mp4" },
+  { id: "butterflies", label: "Butterflies among flowers", src: "/nature-scenes/butterflies.mp4" },
 ] as const;
+
+export const NATURE_BACKDROP_SCENE_LABELS = NATURE_BACKDROP_SCENES.map(({ label }) => label);
 
 export function applyPortalBackdropColors(colors: Partial<AppearancePalette> = DEFAULT_APPEARANCE) {
   if (typeof document === "undefined") return;
@@ -49,7 +63,7 @@ export function applyPortalBackdropColors(colors: Partial<AppearancePalette> = D
   if (colors.backdropTheme && PORTAL_BACKDROP_THEMES.some((theme) => theme.id === colors.backdropTheme)) {
     const previousTheme = root.dataset.portalBackdropTheme;
     root.dataset.portalBackdropTheme = colors.backdropTheme;
-    if (previousTheme && previousTheme !== colors.backdropTheme && typeof window !== "undefined") {
+    if (previousTheme !== colors.backdropTheme && typeof window !== "undefined") {
       window.dispatchEvent(new Event("mukuyu-portal-backdrop-change"));
     }
   }
