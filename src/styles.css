@@ -784,12 +784,20 @@ html[data-portal-background-mode="original"] .portal-loading-monogram > span {
 
 /* A welcoming, colourful surface for the portal navigation shown on mobile. */
 .portal-navigation-drawer {
-  background-color: #0e2a4a;
+  --portal-nav-base: #0b2543;
+  --portal-nav-blue: #123b62;
+  --portal-nav-teal: #2dd4bf;
+  --portal-nav-gold: #fbbf24;
+  --portal-nav-violet: #818cf8;
+  background-color: var(--portal-nav-base);
   background-image:
-    radial-gradient(ellipse at 92% 2%, rgba(251, 191, 36, 0.28), transparent 27%),
-    radial-gradient(ellipse at 3% 28%, rgba(45, 212, 191, 0.22), transparent 30%),
-    radial-gradient(ellipse at 88% 76%, rgba(129, 140, 248, 0.2), transparent 34%),
-    linear-gradient(155deg, #0b2543 0%, #123b62 52%, #102d51 100%);
+    radial-gradient(ellipse at 92% 2%, color-mix(in srgb, var(--portal-nav-gold) 28%, transparent), transparent 27%),
+    radial-gradient(ellipse at 3% 28%, color-mix(in srgb, var(--portal-nav-teal) 22%, transparent), transparent 30%),
+    radial-gradient(ellipse at 88% 76%, color-mix(in srgb, var(--portal-nav-violet) 20%, transparent), transparent 34%),
+    linear-gradient(155deg, var(--portal-nav-base) 0%, var(--portal-nav-blue) 52%, #102d51 100%);
+  background-size: 180% 180%, 180% 180%, 180% 180%, 100% 100%;
+  background-position: 0% 0%, 100% 20%, 0% 100%, 50% 50%;
+  animation: mukuyu-navigation-colour-flow 20s ease-in-out infinite alternate;
   box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.12);
 }
 
@@ -819,5 +827,34 @@ html[data-portal-background-mode="original"] .portal-loading-monogram > span {
 @media (max-width: 1023px) {
   .portal-navigation-drawer {
     padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+}
+
+
+@keyframes mukuyu-navigation-colour-flow {
+  0% {
+    background-position: 0% 0%, 100% 20%, 0% 100%, 50% 50%;
+  }
+  50% {
+    background-position: 35% 10%, 55% 85%, 100% 35%, 50% 50%;
+  }
+  100% {
+    background-position: 100% 100%, 0% 80%, 72% 0%, 50% 50%;
+  }
+}
+
+html[data-portal-background-mode="original"] .portal-navigation-drawer {
+  background-color: var(--color-navy, #0e2a4a);
+  background-image: none;
+  animation: none;
+}
+
+html[data-portal-motion="reduced"] .portal-navigation-drawer {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .portal-navigation-drawer {
+    animation: none;
   }
 }
