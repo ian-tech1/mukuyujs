@@ -654,6 +654,14 @@ html[data-portal-backdrop-theme="starfall"] { --portal-scene-opacity: 0; }
   color: var(--color-ink);
   background: rgba(244, 240, 230, .78);
 }
+.portal-page-content h1 {
+  position: relative;
+  z-index: 1;
+  max-width: 100%;
+  padding-block: .08em;
+  line-height: 1.25;
+  text-shadow: 0 1px 0 rgba(255,255,255,.9), 0 0 .5rem rgba(244,240,230,.8);
+}
 .portal-page-content::before,
 .portal-page-content::after {
   content: "";

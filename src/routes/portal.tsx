@@ -142,6 +142,8 @@ function PortalPage() {
     setOpen(false);
     setDisplaySettingsOpen(false);
     window.scrollTo(0, 0);
+    const frame = window.requestAnimationFrame(() => window.scrollTo(0, 0));
+    return () => window.cancelAnimationFrame(frame);
   }, [view]);
 
   useEffect(() => {
