@@ -86,7 +86,7 @@ function OpeningIntro({ title, motto, logoSrc, durationSeconds }: { title: strin
       <span className="portal-loading-object portal-loading-object-hex portal-loading-object-twenty" />
     </div>
     <div className="portal-loading-card text-center">
-      <p className="portal-loading-monogram" aria-label="MJS">MJS</p>
+      <p className="portal-loading-monogram" aria-label="MJS"><span>MJS</span></p>
       <p className="portal-loading-kicker">MUKUYU JUNIOR SCHOOL · LEARNING PORTAL</p>
       <span className="portal-loading-orbit" aria-hidden="true"><SchoolLogo src={logoSrc} className="size-24" /></span>
       <h1 id="opening-intro-title" className="portal-loading-title mt-5">{title}</h1>
