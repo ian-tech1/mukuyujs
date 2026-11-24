@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { SchoolLogo } from "@/components/school/logo";
 import { PublicReport } from "@/components/school/public-report";
 import { btnClass, errText, inputClass } from "@/components/school/gate";
-import { getWorkspace, getWelcomePage, login, loginParent, portalStatus, requestParentLoginCode, requestParentPasswordResetCode, resetParentPassword, verifyParentLoginCode } from "@/lib/school/api";
+import { completeParentFirstLoginPasswordChange, getParentPasswordChangeStatus, getWorkspace, getWelcomePage, login, loginParent, logout, portalStatus, requestParentLoginCode, requestParentPasswordResetCode, resetParentPassword, verifyParentLoginCode } from "@/lib/school/api";
 import { applyDisplayPreferences, DEFAULT_DISPLAY_PREFERENCES, DISPLAY_PALETTES, readDisplayPreferences, saveDisplayPreferences, type LocalDisplayPreferences } from "@/lib/school/display";
 import { DEFAULT_WELCOME_DISPLAY, hexToRgba, normalizeWelcomeDisplay, type WelcomeDisplayOptions } from "@/lib/school/welcome-display";
 
@@ -129,6 +129,12 @@ function LoginPage() {
   const [parentEmail, setParentEmail] = useState("");
   const [parentPassword, setParentPassword] = useState("");
   const [parentPasswordVisible, setParentPasswordVisible] = useState(false);
+  const [parentPasswordChangeRequired, setParentPasswordChangeRequired] = useState(false);
+  const [parentPasswordChangeEmail, setParentPasswordChangeEmail] = useState("");
+  const [parentFirstPassword, setParentFirstPassword] = useState("");
+  const [parentConfirmFirstPassword, setParentConfirmFirstPassword] = useState("");
+  const [parentPasswordChangeBusy, setParentPasswordChangeBusy] = useState(false);
+  const [parentPasswordChangeError, setParentPasswordChangeError] = useState("");
   const [parentName, setParentName] = useState("");
   const [parentPhone, setParentPhone] = useState("");
   const [parentLearnerName, setParentLearnerName] = useState("");
@@ -178,6 +184,12 @@ function LoginPage() {
     getWorkspace()
       .then(() => navigate({ to: "/portal", search: { view: "home" } }))
       .catch(() => undefined);
+    getParentPasswordChangeStatus().then((result) => {
+      if (result.required) {
+        setParentPasswordChangeRequired(true);
+        setParentPasswordChangeEmail(result.email);
+      }
+    }).catch(() => undefined);
     const preferences = readDisplayPreferences();
     setDisplay(preferences);
     applyDisplayPreferences(preferences);
@@ -268,7 +280,7 @@ function LoginPage() {
         return;
       }
       setParentCodeRequested(true);
-      setParentNotice("A verification code has been sent to your email. It expires in 10 minutes. After verification, use that code as your initial password whenever you sign in to the parent portal.");
+      setParentNotice("A verification code has been sent to your email. It expires in 10 minutes and is for email verification only, not for signing in. New parent accounts will be asked to choose a private password after verification.");
     } catch (reason) {
       setParentError(errText(reason));
     } finally {
@@ -281,8 +293,18 @@ function LoginPage() {
     setParentBusy(true);
     setParentError("");
     try {
-      await verifyParentLoginCode({ data: { email: parentEmail, code: parentCode } });
-      navigate({ to: "/portal", search: { view: "results" } });
+      const result = await verifyParentLoginCode({ data: { email: parentEmail, code: parentCode } });
+      if (result.requiresPasswordSignIn) {
+        setParentCodeRequested(false);
+        setParentCode("");
+        setParentPasswordLoginOpen(true);
+        setParentNotice("Your email is verified and the learner is linked. Sign in with your parent portal password to continue.");
+      } else if (result.mustChangePassword) {
+        setParentPasswordChangeEmail(parentEmail);
+        setParentPasswordChangeRequired(true);
+      } else {
+        navigate({ to: "/portal", search: { view: "results" } });
+      }
     } catch (reason) {
       setParentError(errText(reason));
     } finally {
@@ -296,8 +318,14 @@ function LoginPage() {
     setParentError("");
     setParentNotice("");
     try {
-      await loginParent({ data: { email: parentEmail, password: parentPassword } });
-      navigate({ to: "/portal", search: { view: "results" } });
+      const result = await loginParent({ data: { email: parentEmail, password: parentPassword } });
+      if (result.mustChangePassword) {
+        setParentPasswordChangeEmail(parentEmail);
+        setParentPasswordChangeRequired(true);
+        setParentPassword("");
+      } else {
+        navigate({ to: "/portal", search: { view: "results" } });
+      }
     } catch (reason) {
       setParentError(errText(reason));
     } finally {
@@ -345,6 +373,45 @@ function LoginPage() {
     } finally {
       setParentBusy(false);
     }
+  }
+
+  async function onCompleteParentFirstPasswordChange(event: React.FormEvent) {
+    event.preventDefault();
+    if (parentFirstPassword !== parentConfirmFirstPassword) {
+      setParentPasswordChangeError("The new passwords do not match.");
+      return;
+    }
+    setParentPasswordChangeBusy(true);
+    setParentPasswordChangeError("");
+    try {
+      await completeParentFirstLoginPasswordChange({ data: { password: parentFirstPassword } });
+      setParentPasswordChangeRequired(false);
+      setParentFirstPassword("");
+      setParentConfirmFirstPassword("");
+      navigate({ to: "/portal", search: { view: "results" } });
+    } catch (reason) {
+      setParentPasswordChangeError(errText(reason));
+    } finally {
+      setParentPasswordChangeBusy(false);
+    }
+  }
+
+  if (parentPasswordChangeRequired) {
+    return <main className="welcome-login-panel flex min-h-screen items-center justify-center px-6 py-12" style={welcomeHeroStyle}>
+      <form className="w-full max-w-lg space-y-4" onSubmit={onCompleteParentFirstPasswordChange}>
+        <div className="welcome-word-panel welcome-word-panel-parent-intro">
+          <p className="text-xs font-bold uppercase tracking-[.18em] text-info">Parent account security</p>
+          <h1 className="mt-1 font-serif text-3xl text-navy">Choose your new password</h1>
+          <p className="mt-2 text-sm text-muted">Before opening the parent portal, replace your initial password with a private password only you know. Use 12–128 characters.</p>
+          {parentPasswordChangeEmail ? <p className="mt-2 text-sm font-semibold text-navy">{parentPasswordChangeEmail}</p> : null}
+        </div>
+        <label className="block text-sm font-medium">New password (12–128 characters)<input className={`${inputClass} mt-1.5`} type="password" autoComplete="new-password" minLength={12} maxLength={128} value={parentFirstPassword} onChange={(event) => setParentFirstPassword(event.target.value)} required /></label>
+        <label className="block text-sm font-medium">Confirm new password<input className={`${inputClass} mt-1.5`} type="password" autoComplete="new-password" minLength={12} maxLength={128} value={parentConfirmFirstPassword} onChange={(event) => setParentConfirmFirstPassword(event.target.value)} required /></label>
+        {parentPasswordChangeError ? <p className="text-sm text-bad" role="alert">{parentPasswordChangeError}</p> : null}
+        <button className={`${btnClass} w-full`} style={{ backgroundColor: welcomeDisplay.accentColor }} disabled={parentPasswordChangeBusy} type="submit">{parentPasswordChangeBusy ? "Saving password…" : "Save new password and continue"}</button>
+        <button className="w-full text-sm font-semibold text-info" type="button" onClick={async () => { await logout(); setParentPasswordChangeRequired(false); setParentPasswordChangeEmail(""); setParentPasswordChangeError(""); }}>Sign out instead</button>
+      </form>
+    </main>;
   }
 
   return (
@@ -425,8 +492,8 @@ function LoginPage() {
               <p className="mt-1 text-sm text-muted">{parentPasswordResetOpen
               ? "Enter the email address on your active parent account. We’ll send a short-lived code to verify access to that email before allowing a new password."
               : parentPasswordLoginOpen
-                ? "Sign in with the email address you verified and your parent portal password. If you just created your account, your verification code is your initial password; reset it any time to choose a longer one."
-                : "Enter your email, contact number, and Learner’s Name. A first name or surname can work if it uniquely identifies the learner. Spelling match is at least 60%; equally close candidates are not auto-linked. We’ll email a verification code to confirm your email and create your account."}</p>
+                ? "Sign in with the email address you verified and your parent portal password. On your first sign-in, you’ll be asked to choose a new password before opening the portal."
+                : "Enter your email, contact number, and Learner’s Name. A first name or surname can work if it uniquely identifies the learner. Spelling match is at least 60%; equally close candidates are not auto-linked. We’ll email a verification code to confirm your email and create your account. Existing accounts must sign in with their parent portal password."}</p>
             </div>
             <form className="mt-4 space-y-3" onSubmit={parentPasswordResetOpen
               ? (parentResetCodeRequested ? onResetParentPassword : onRequestParentResetCode)
@@ -449,7 +516,7 @@ function LoginPage() {
               <button className={`${btnClass} w-full`} style={{ backgroundColor: welcomeDisplay.accentColor }} disabled={parentBusy} type="submit">{parentBusy ? "Please wait…" : parentPasswordResetOpen
                 ? (parentResetCodeRequested ? "Verify email and set new password" : "Email me a reset code")
                 : parentPasswordLoginOpen ? "Sign in to parent portal"
-                  : (parentCodeRequested ? "Verify email and open parent portal" : "Match learner and email me a verification code")}</button>
+                  : (parentCodeRequested ? "Verify email and continue" : "Match learner and email me a verification code")}</button>
               {parentPasswordResetOpen
                 ? <button type="button" className="w-full text-sm font-semibold text-info" onClick={() => { setParentPasswordResetOpen(false); setParentPasswordLoginOpen(true); setParentResetCodeRequested(false); setParentResetCode(""); setParentNewPassword(""); setParentConfirmPassword(""); setParentNotice(""); setParentError(""); }}>Back to parent sign in</button>
                 : <>

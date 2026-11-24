@@ -211,6 +211,7 @@ export type Me = {
   email: string;
   fullName: string;
   role: Role;
+  mustChangePassword?: boolean;
   learnerId: string | null;
   active: boolean;
   privSettings: boolean;

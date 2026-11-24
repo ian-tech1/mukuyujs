@@ -272,7 +272,7 @@ function LoginCard({ learnerId, name, flash, onCreated, onClose }: { learnerId: 
       try {
         const result = await createLearnerLogin({ data: { learnerId, email, password, kind, parentName } });
         onCreated({ name: result.name || name, email: result.email || email, password: result.password || password });
-        flash(kind === "student" ? "Student login created. Copy the credentials shown above." : "Parent login created. Copy the credentials shown above.");
+        flash(kind === "student" ? "Student login created. Copy the credentials shown above." : "Parent login created. Share the initial password securely; the parent will be asked to choose a new password at first sign-in.");
         onClose();
       } catch (error) { flash(errText(error), true); }
     }}>

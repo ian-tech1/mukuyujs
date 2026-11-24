@@ -78,6 +78,12 @@
 - Environment limitations: full `pnpm test` remains blocked by unrelated existing Grok/PWA and app-environment assertions; `build:dev` cannot load the sandbox's missing ARM64 Rolldown native binding; live Resend delivery was not tested.
 - Source ZIP `mukuyujs-parent-access-updated.zip` passed `zip -T` and excludes environment files, dependencies, build output and Git metadata.
 
+## User-requested parent normal-password sign-in and first-login change
+
+- [x] “enable parents login to receive normal passwords for login, but after login they are requested to enter new password”: allow parents to sign in with a regular password; after the first successful login, require each parent to choose a new 12–128 character password before any parent-portal data or action is available.
+- [x] Keep one-time email verification for parent onboarding and learner linking, but do not make its six-digit verification code a sign-in credential or silently overwrite an established parent password during verification. Existing accounts use password sign-in; preserve self-service reset (which already requires the parent to choose a new password) and require a change after admin-issued parent credentials or resets.
+- [x] Enforce the requirement server-side, provide a clear first-login password form, backfill existing parent accounts safely, and validate with a PGlite migration regression test, 21 focused tests, TypeScript checking, and a successful production Vite build.
+
 ## User-requested spreadsheet, report-date and visual branding fixes
 
 - [x] “update under enter marks by pasting or uploading excel file some subjects marks are not being recorded eg English, intergrate science, agriculture,pretech”: recognize official subject names, short names, and safe common heading aliases for pasted/uploaded spreadsheets; show every detected header and reject truly unknown or ambiguous subjects explicitly; confirm successful saved-mark counts. Added conservative matching for English, Integrated Science (including the common misspelling), Agriculture, and Pretech; clear unknown/ambiguous errors remain. Focused parser and header tests pass (8).

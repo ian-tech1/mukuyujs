@@ -125,7 +125,8 @@ async function readActor(): Promise<Me | null> {
     priv_calendar: boolean;
     is_deputy: boolean;
     delegated_responsibilities: string[];
-  }>`select id, email, full_name, role, learner_id, active, session_version, priv_settings, priv_staff, priv_import, priv_calendar, is_deputy, delegated_responsibilities from users where id = ${session.data.userId}`;
+    must_change_password: boolean;
+  }>`select id, email, full_name, role, learner_id, active, session_version, priv_settings, priv_staff, priv_import, priv_calendar, is_deputy, delegated_responsibilities, must_change_password from users where id = ${session.data.userId}`;
   const row = rows[0];
   if (!row || !row.active || Number(row.session_version) !== Number(session.data.v)) return null;
   return {
@@ -133,6 +134,7 @@ async function readActor(): Promise<Me | null> {
     email: row.email,
     fullName: row.full_name,
     role: asRole(row.role),
+    mustChangePassword: Boolean(row.must_change_password),
     learnerId: row.learner_id,
     active: row.active,
     privSettings: row.role === "super_admin" ? true : Boolean(row.priv_settings),
@@ -144,9 +146,12 @@ async function readActor(): Promise<Me | null> {
   };
 }
 
-async function requireActor() {
+async function requireActor(options: { allowParentPasswordChange?: boolean } = {}) {
   const me = await readActor();
   if (!me) throw new Error("Sign in required.");
+  if (me.role === "parent" && me.mustChangePassword && !options.allowParentPasswordChange) {
+    throw new Error("Please choose a new password before continuing to the parent portal.");
+  }
   return me;
 }
 
@@ -372,12 +377,40 @@ export const loginParent = createServerFn({ method: "POST" })
     const password = String(data.password ?? "");
     if (!isValidParentEmail(email) || !password) throw new Error("Enter your parent email and password.");
     const sql = await getSql();
-    const rows = await sql<{ id: string; password_hash: string; active: boolean; role: string; session_version: number }>`select id, password_hash, active, role, session_version from users where email = ${email}`;
+    const rows = await sql<{ id: string; password_hash: string; active: boolean; role: string; session_version: number; must_change_password: boolean }>`select id, password_hash, active, role, session_version, must_change_password from users where email = ${email}`;
     const user = rows[0];
     if (!user || user.role !== "parent" || !verifyPassword(password, user.password_hash)) throw new Error("Parent email or password is not correct.");
     if (!user.active) throw new Error("This parent account is disabled. Please contact the school office.");
     const session = await sessionApi();
     await session.update({ userId: user.id, v: Number(user.session_version) });
+    return { ok: true, mustChangePassword: Boolean(user.must_change_password) };
+  });
+
+export const getParentPasswordChangeStatus = createServerFn({ method: "GET" }).handler(async () => {
+  const me = await readActor();
+  if (!me || me.role !== "parent") return { required: false, email: "", fullName: "" };
+  return { required: Boolean(me.mustChangePassword), email: me.email, fullName: me.fullName };
+});
+
+export const completeParentFirstLoginPasswordChange = createServerFn({ method: "POST" })
+  .validator((input: { password: string }) => input)
+  .handler(async ({ data }) => {
+    const me = await requireActor({ allowParentPasswordChange: true });
+    if (me.role !== "parent" || !me.mustChangePassword) {
+      throw new Error("This parent account does not need a first-login password change.");
+    }
+    const password = String(data.password ?? "");
+    if (password.length < 12 || password.length > 128) {
+      throw new Error("New password must be between 12 and 128 characters.");
+    }
+    const sql = await getSql();
+    const rows = await sql<{ password_hash: string }>`select password_hash from users where id = ${me.id} and role = 'parent' and must_change_password = true`;
+    if (!rows[0]) throw new Error("This parent account no longer needs a first-login password change.");
+    if (verifyPassword(password, rows[0].password_hash)) {
+      throw new Error("Choose a password different from your initial password.");
+    }
+    const updated = await sql<{ id: string }>`update users set password_hash = ${hashPassword(password)}, must_change_password = false where id = ${me.id} and role = 'parent' and must_change_password = true returning id`;
+    if (!updated[0]) throw new Error("The password could not be changed. Please sign in again.");
     return { ok: true };
   });
 
@@ -424,7 +457,7 @@ export const requestParentLoginCode = createServerFn({ method: "POST" })
     if (!matched) return { matched: false, reason: "learner_not_found" as const };
 
     const code = String(randomInt(100000, 1000000));
-    const delivery = await sendPasswordEmail(email, "Your Mukuyu parent account code", `Your parent account verification code is ${code}. Enter it on the parent sign-in page within 10 minutes to verify your email and create or access your parent account. After successful verification, this same six-digit code is also your initial parent portal password. Keep it private; you can replace it any time using Forgot or reset parent password. If you did not request it, ignore this email.`);
+    const delivery = await sendPasswordEmail(email, "Your Mukuyu parent account code", `Your parent account verification code is ${code}. Enter it on the parent sign-in page within 10 minutes to verify your email and create or access your parent account. This code is for email verification only; it is not your parent portal password. If you are creating an account, you will choose a private password after verifying your email. If you did not request it, ignore this email.`);
     if (!delivery.sent) throw new Error("We could not send a verification code to that email. Please try again later or contact the school office.");
     await sql`delete from parent_login_codes where expires_at < now() - interval '1 day'`;
     await sql`update parent_login_codes set consumed_at = now() where email = ${email} and consumed_at is null`;
@@ -454,44 +487,46 @@ export const verifyParentLoginCode = createServerFn({ method: "POST" })
         await tx`update parent_login_codes set consumed_at = now() where id = ${challenge.id}`;
         return null;
       }
-      let users = await tx<{ id: string; role: string; active: boolean; session_version: number }>`select id, role, active, session_version from users where email = ${email} for update`;
+      let users = await tx<{ id: string; role: string; active: boolean; session_version: number; must_change_password: boolean }>`select id, role, active, session_version, must_change_password from users where email = ${email} for update`;
       let user = users[0];
       let sessionVersion: number;
+      let createdFromVerification = false;
       if (user && (user.role !== "parent" || !user.active)) {
         await tx`update parent_login_codes set consumed_at = now() where id = ${challenge.id}`;
         return null;
       }
       if (!user) {
         const userId = newId("usr");
-        const inserted = await tx<{ id: string }>`insert into users (id, email, password_hash, full_name, role, active) values (${userId}, ${email}, ${hashPassword(code)}, ${challenge.parent_name}, 'parent', true) on conflict (email) do nothing returning id`;
+        const inserted = await tx<{ id: string }>`insert into users (id, email, password_hash, full_name, role, active, must_change_password) values (${userId}, ${email}, ${hashPassword(tempPassword())}, ${challenge.parent_name}, 'parent', true, true) on conflict (email) do nothing returning id`;
         if (inserted[0]) {
-          user = { id: inserted[0].id, role: "parent", active: true, session_version: 1 };
+          createdFromVerification = true;
+          user = { id: inserted[0].id, role: "parent", active: true, session_version: 1, must_change_password: true };
           sessionVersion = 1;
         } else {
-          users = await tx<{ id: string; role: string; active: boolean; session_version: number }>`select id, role, active, session_version from users where email = ${email} for update`;
+          users = await tx<{ id: string; role: string; active: boolean; session_version: number; must_change_password: boolean }>`select id, role, active, session_version, must_change_password from users where email = ${email} for update`;
           user = users[0];
           if (!user || user.role !== "parent" || !user.active) {
             await tx`update parent_login_codes set consumed_at = now() where id = ${challenge.id}`;
             return null;
           }
-          const updated = await tx<{ session_version: number }>`update users set password_hash = ${hashPassword(code)}, session_version = session_version + 1 where id = ${user.id} returning session_version`;
-          sessionVersion = Number(updated[0]?.session_version ?? Number(user.session_version) + 1);
+          sessionVersion = Number(user.session_version);
         }
       } else {
-        const updated = await tx<{ session_version: number }>`update users set password_hash = ${hashPassword(code)}, session_version = session_version + 1 where id = ${user.id} returning session_version`;
-        sessionVersion = Number(updated[0]?.session_version ?? Number(user.session_version) + 1);
+        sessionVersion = Number(user.session_version);
       }
       await tx`update users set full_name = ${challenge.parent_name} where id = ${user.id} and full_name = 'Parent account'`;
       await tx`insert into parent_links (parent_user_id, learner_id) select ${user.id}, learner_id from unnest(${challenge.learner_ids}::text[]) as learner_id on conflict do nothing`;
       const learner = await tx<{ full_name: string }>`select full_name from learners where id = ${challenge.learner_ids[0]}`;
       await tx`insert into parent_login_events (parent_user_id, parent_name, parent_email, parent_phone, learner_id, learner_name) values (${user.id}, ${challenge.parent_name}, ${email}, ${challenge.parent_phone}, ${challenge.learner_ids[0]}, ${learner[0]?.full_name ?? "Learner"})`;
       await tx`update parent_login_codes set consumed_at = now() where id = ${challenge.id}`;
-      return { userId: user.id, version: sessionVersion };
+      return { userId: user.id, version: sessionVersion, mustChangePassword: Boolean(user.must_change_password), createdFromVerification };
     });
     if (!signedIn) throw new Error("That email or code is not valid. Request a new code and try again.");
-    const session = await sessionApi();
-    await session.update({ userId: signedIn.userId, v: signedIn.version });
-    return { ok: true };
+    if (signedIn.createdFromVerification) {
+      const session = await sessionApi();
+      await session.update({ userId: signedIn.userId, v: signedIn.version });
+    }
+    return { ok: true, mustChangePassword: signedIn.mustChangePassword, requiresPasswordSignIn: !signedIn.createdFromVerification };
   });
 
 function parentPasswordResetDigest(email: string, code: string) {
@@ -554,7 +589,7 @@ export const resetParentPassword = createServerFn({ method: "POST" })
         return null;
       }
       const sessionVersion = Number(user.session_version) + 1;
-      await tx`update users set password_hash = ${hashPassword(password)}, session_version = ${sessionVersion} where id = ${user.id}`;
+      await tx`update users set password_hash = ${hashPassword(password)}, session_version = ${sessionVersion}, must_change_password = false where id = ${user.id}`;
       await tx`update parent_password_reset_codes set consumed_at = now() where id = ${challenge.id}`;
       return { userId: user.id, sessionVersion };
     });
@@ -1250,7 +1285,7 @@ export const resetPassword = createServerFn({ method: "POST" })
       if (!assignment[0]) throw new Error("Only the student's class teacher can reset this password.");
     }
     const password = tempPassword();
-    await sql`update users set password_hash = ${hashPassword(password)}, session_version = session_version + 1, active = true where id = ${target.id}`;
+    await sql`update users set password_hash = ${hashPassword(password)}, session_version = session_version + 1, active = true, must_change_password = ${target.role === "parent"} where id = ${target.id}`;
     const school = await sql<{ name: string }>`select name from school_profile where id = 1`;
     const portalUrl = await schoolPortalUrl(sql);
     const body = [
@@ -1306,10 +1341,10 @@ export const createLearnerLogin = createServerFn({ method: "POST" })
     if (!parentId) {
       parentId = newId("usr");
       await sql`
-        insert into users (id, email, password_hash, full_name, role, active)
-        values (${parentId}, ${email}, ${hashPassword(data.password)}, ${parentName}, 'parent', true)`;
+        insert into users (id, email, password_hash, full_name, role, active, must_change_password)
+        values (${parentId}, ${email}, ${hashPassword(data.password)}, ${parentName}, 'parent', true, true)`;
     } else {
-      await sql`update users set password_hash = ${hashPassword(data.password)}, session_version = session_version + 1, active = true where id = ${parentId}`;
+      await sql`update users set password_hash = ${hashPassword(data.password)}, session_version = session_version + 1, active = true, must_change_password = true where id = ${parentId}`;
     }
     await sql`
       insert into parent_links (parent_user_id, learner_id) values (${parentId}, ${data.learnerId})
