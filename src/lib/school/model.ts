@@ -24,6 +24,8 @@ export type AppearancePalette = {
   bad: string;
   info: string;
   backdropTheme?: PortalBackdropThemeId;
+  autoTextContrast?: boolean;
+  textColorCycle?: boolean;
 };
 
 export const DEFAULT_APPEARANCE: AppearancePalette = {
@@ -40,6 +42,8 @@ export const DEFAULT_APPEARANCE: AppearancePalette = {
   warn: "#9a5410",
   bad: "#9f2d2d",
   info: "#1d4e89",
+  autoTextContrast: true,
+  textColorCycle: true,
 };
 
 export type Profile = {

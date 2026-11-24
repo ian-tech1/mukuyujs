@@ -705,6 +705,56 @@ html[data-portal-backdrop-theme="starfall"] { --portal-scene-opacity: 0; }
   line-height: 1.25;
   text-shadow: 0 1px 0 rgba(255,255,255,.9), 0 0 .5rem rgba(244,240,230,.8);
 }
+/* School-wide contrast guard for page titles and lead copy over animated canvases. */
+html:not([data-portal-text-contrast="off"]) .portal-page-content > div > header:not(.school-services-hero):not(.analysis-school-header) > h1,
+html:not([data-portal-text-contrast="off"]) .portal-page-content > div > header:not(.school-services-hero):not(.analysis-school-header) > p,
+html:not([data-portal-text-contrast="off"]) .portal-page-content > div > header:not(.school-services-hero):not(.analysis-school-header) > div > h1,
+html:not([data-portal-text-contrast="off"]) .portal-page-content > div > header:not(.school-services-hero):not(.analysis-school-header) > div > p {
+  display: table;
+  max-width: 100%;
+  border: 1px solid rgba(255,255,255,.24);
+  border-radius: .48rem;
+  background: linear-gradient(105deg, rgba(3,14,30,.94), rgba(9,28,50,.86));
+  box-shadow: 0 8px 24px rgba(2,8,20,.24), inset 0 1px rgba(255,255,255,.1);
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  text-shadow: 0 2px 3px rgba(0,0,0,.92), 0 0 10px rgba(0,0,0,.72);
+}
+html:not([data-portal-text-contrast="off"]) .portal-page-content > div > header:not(.school-services-hero):not(.analysis-school-header) > h1,
+html:not([data-portal-text-contrast="off"]) .portal-page-content > div > header:not(.school-services-hero):not(.analysis-school-header) > div > h1 {
+  margin-block: .08em .2em;
+  padding: .08em .38em;
+  color: #f8fbff;
+  -webkit-text-stroke: .45px rgba(1,10,22,.8);
+}
+html:not([data-portal-text-contrast="off"]) .portal-page-content > div > header:not(.school-services-hero):not(.analysis-school-header) > p,
+html:not([data-portal-text-contrast="off"]) .portal-page-content > div > header:not(.school-services-hero):not(.analysis-school-header) > div > p {
+  padding: .28rem .52rem;
+  color: #f3f7ff;
+  font-weight: 600;
+  line-height: 1.55;
+}
+html:not([data-portal-text-contrast="off"]):not([data-portal-text-cycle="off"]) .portal-page-content > div > header:not(.school-services-hero):not(.analysis-school-header) > h1,
+html:not([data-portal-text-contrast="off"]):not([data-portal-text-cycle="off"]) .portal-page-content > div > header:not(.school-services-hero):not(.analysis-school-header) > div > h1 {
+  animation: portal-title-color-cycle 4s steps(1,end) infinite;
+}
+html:not([data-portal-text-contrast="off"]):not([data-portal-text-cycle="off"]) .portal-page-content > div > header:not(.school-services-hero):not(.analysis-school-header) > p,
+html:not([data-portal-text-contrast="off"]):not([data-portal-text-cycle="off"]) .portal-page-content > div > header:not(.school-services-hero):not(.analysis-school-header) > div > p {
+  animation: portal-message-color-cycle 4s steps(1,end) infinite;
+  animation-delay: -1s;
+}
+@keyframes portal-title-color-cycle {
+  0%,100% { color:#f8fbff; }
+  25% { color:#75eaff; }
+  50% { color:#ffe08a; }
+  75% { color:#f5bdff; }
+}
+@keyframes portal-message-color-cycle {
+  0%,100% { color:#f3f7ff; }
+  25% { color:#b1f0ff; }
+  50% { color:#ffe7b0; }
+  75% { color:#e5d2ff; }
+}
 .portal-page-content::before,
 .portal-page-content::after {
   content: "";
@@ -818,9 +868,11 @@ html[data-portal-backdrop-theme="nature-cycle"] .portal-nature-scene[data-active
 @media (prefers-reduced-motion: reduce) {
   .portal-page-content::before, .portal-page-content::after, .portal-animated-background, .portal-loading, .portal-loading::before, .portal-loading::after, .portal-loading-orbit, .portal-loading-track span, .welcome-shell, .welcome-hero, .welcome-login-panel, .welcome-word-panel, .welcome-parent-toggle { animation: none !important; }
   .portal-loading * { animation:none !important; transition:none !important; }
+  .portal-page-content > div > header:not(.school-services-hero):not(.analysis-school-header) > h1, .portal-page-content > div > header:not(.school-services-hero):not(.analysis-school-header) > p, .portal-page-content > div > header:not(.school-services-hero):not(.analysis-school-header) > div > h1, .portal-page-content > div > header:not(.school-services-hero):not(.analysis-school-header) > div > p { animation:none !important; }
 }
 html[data-portal-motion="reduced"] .portal-page-content::before, html[data-portal-motion="reduced"] .portal-page-content::after, html[data-portal-motion="reduced"] .portal-animated-background { animation: none !important; }
 html[data-portal-motion="reduced"] .portal-loading * { animation:none !important; transition:none !important; }
+html[data-portal-motion="reduced"] .portal-page-content > div > header:not(.school-services-hero):not(.analysis-school-header) > h1, html[data-portal-motion="reduced"] .portal-page-content > div > header:not(.school-services-hero):not(.analysis-school-header) > p, html[data-portal-motion="reduced"] .portal-page-content > div > header:not(.school-services-hero):not(.analysis-school-header) > div > h1, html[data-portal-motion="reduced"] .portal-page-content > div > header:not(.school-services-hero):not(.analysis-school-header) > div > p { animation:none !important; }
 @media (prefers-reduced-motion: reduce) { .portal-background-scene { animation: none !important; transition: none !important; } }
 html[data-portal-motion="reduced"] .portal-background-scene { animation: none !important; transition: none !important; }
 @media (prefers-reduced-motion: reduce) { .portal-nature-scene { transition: none !important; } }

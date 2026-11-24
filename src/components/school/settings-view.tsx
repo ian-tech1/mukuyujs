@@ -272,7 +272,7 @@ function WelcomeDisplayControls({ value, onChange }: { value: WelcomeDisplayOpti
   </section>;
 }
 
-const APPEARANCE_LABELS: Array<{ key: keyof AppearancePalette; label: string; description: string }> = [
+const APPEARANCE_LABELS: Array<{ key: "navy" | "info" | "brass" | "good"; label: string; description: string }> = [
   { key: "navy", label: "Backdrop glow 1", description: "Decorative canvas only" },
   { key: "info", label: "Backdrop glow 2", description: "Decorative canvas only" },
   { key: "brass", label: "Backdrop glow 3", description: "Decorative canvas only" },
@@ -283,6 +283,8 @@ function applyAppearance(colors: AppearancePalette) {
   if (typeof document === "undefined") return;
   applyPortalBackdropColors(colors);
   document.documentElement.dataset.schoolAppearance = JSON.stringify(colors);
+  document.documentElement.dataset.portalTextContrast = colors.autoTextContrast === false ? "off" : "on";
+  document.documentElement.dataset.portalTextCycle = colors.textColorCycle === false ? "off" : "on";
 }
 
 function AppearanceColorsCard({ flash }: Pick<Gate, "flash">) {
@@ -290,6 +292,7 @@ function AppearanceColorsCard({ flash }: Pick<Gate, "flash">) {
   const [loaded, setLoaded] = useState(false);
   const [savedTypes, setSavedTypes] = useState<Awaited<ReturnType<typeof getPortalColorTypes>>>([]);
   const [colorTypeName, setColorTypeName] = useState("");
+  const [textSettingsSaving, setTextSettingsSaving] = useState(false);
 
   useEffect(() => {
     getWelcomePage().then((settings) => {
@@ -307,10 +310,34 @@ function AppearanceColorsCard({ flash }: Pick<Gate, "flash">) {
     getPortalColorTypes().then(setSavedTypes).catch((error) => flash(errText(error), true));
   }, [flash]);
 
-  function updateColor(key: keyof AppearancePalette, value: string) {
+  function updateColor(key: "navy" | "info" | "brass" | "good", value: string) {
     const next = { ...colors, [key]: value };
     setColors(next);
     applyAppearance(next);
+  }
+
+  async function updateTextOption(key: "autoTextContrast" | "textColorCycle", value: boolean) {
+    const previous = colors;
+    const next: AppearancePalette = {
+      ...colors,
+      [key]: value,
+      ...(key === "autoTextContrast" && !value ? { textColorCycle: false } : {}),
+    };
+    setColors(next);
+    applyAppearance(next);
+    setTextSettingsSaving(true);
+    try {
+      await saveAppearance({ data: { appearance: next } });
+      flash(key === "autoTextContrast"
+        ? `Automatic text contrast ${value ? "enabled" : "disabled"} school-wide.`
+        : `One-second title and message colour cycling ${value ? "enabled" : "disabled"} school-wide.`);
+    } catch (error) {
+      setColors(previous);
+      applyAppearance(previous);
+      flash(errText(error), true);
+    } finally {
+      setTextSettingsSaving(false);
+    }
   }
 
   async function saveColors() {
@@ -323,7 +350,7 @@ function AppearanceColorsCard({ flash }: Pick<Gate, "flash">) {
   }
 
   async function choosePreset(preset: AppearancePalette) {
-    const next = { ...preset, backdropTheme: preset.backdropTheme ?? colors.backdropTheme ?? "auto-sections" };
+    const next = { ...preset, autoTextContrast: colors.autoTextContrast ?? true, textColorCycle: colors.textColorCycle ?? true, backdropTheme: preset.backdropTheme ?? colors.backdropTheme ?? "auto-sections" };
     setColors(next);
     applyAppearance(next);
     try {
@@ -382,6 +409,12 @@ function AppearanceColorsCard({ flash }: Pick<Gate, "flash">) {
         })}
       </div>
       <p className="text-xs text-muted">All modes are school-wide and stay behind the large inner page only; cards and tables remain unchanged. The 15 nature scenes are: {NATURE_BACKDROP_SCENE_LABELS.join(" · ")}.</p>
+    </div>
+    <div className="space-y-3 rounded-lg border border-cyan-200 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 p-4 text-white shadow-card">
+      <div><h3 className="font-semibold text-white">Automatic text clarity &amp; colour motion</h3><p className="mt-1 text-sm text-slate-200">School-wide controls for page titles and their lead messages. The contrast guard adds a dark, soft backing and crisp outline so moving backgrounds cannot wash the words out.</p></div>
+      <label className="flex items-start gap-3 rounded-md border border-white/15 bg-white/5 p-3 text-sm"><input className="mt-1" type="checkbox" checked={colors.autoTextContrast !== false} disabled={!loaded || textSettingsSaving} onChange={(event) => void updateTextOption("autoTextContrast", event.target.checked)} /><span><span className="block font-semibold">Protect page titles and lead messages</span><span className="block text-xs text-slate-300">Keeps text clear over the selected animated scene, without recolouring cards, tables, buttons, inputs, or report-card content.</span></span></label>
+      <label className="flex items-start gap-3 rounded-md border border-white/15 bg-white/5 p-3 text-sm"><input className="mt-1" type="checkbox" checked={colors.textColorCycle !== false} disabled={!loaded || textSettingsSaving || colors.autoTextContrast === false} onChange={(event) => void updateTextOption("textColorCycle", event.target.checked)} /><span><span className="block font-semibold">Rotate title and message colours every second</span><span className="block text-xs text-slate-300">Titles and lead messages use separate high-contrast colour sequences. The animation pauses when reduced motion is requested.</span></span></label>
+      <p className="text-xs text-slate-300">This uses the existing secure appearance settings service and CSS contrast guard—no external AI, extra server, or database migration is required. Changes save centrally for the whole school.</p>
     </div>
     <div className="space-y-3 rounded-lg border border-line bg-paper p-3">
       <div><h3 className="font-semibold text-navy">Saved colour types</h3><p className="mt-1 text-xs text-muted">Save each custom backdrop palette with a name. Saved types are shared centrally and can be selected again by the Super Admin on any device.</p></div>

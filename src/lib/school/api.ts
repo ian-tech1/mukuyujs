@@ -2559,14 +2559,16 @@ export const getMissingMarks = createServerFn({ method: "GET" })
 function safeAppearance(value: unknown): AppearancePalette {
   const source = value && typeof value === "object" ? value as Record<string, unknown> : {};
   const next = { ...DEFAULT_APPEARANCE } as AppearancePalette;
-  const paletteValues = next as Record<keyof typeof DEFAULT_APPEARANCE, string>;
-  for (const key of Object.keys(DEFAULT_APPEARANCE) as Array<keyof typeof DEFAULT_APPEARANCE>) {
+  const colorKeys = ["navy", "navy2", "brass", "brassSoft", "paper", "card", "ink", "muted", "line", "good", "warn", "bad", "info"] as const;
+  for (const key of colorKeys) {
     const candidate = source[key];
-    if (typeof candidate === "string" && /^#[0-9a-f]{6}$/i.test(candidate)) paletteValues[key] = candidate;
+    if (typeof candidate === "string" && /^#[0-9a-f]{6}$/i.test(candidate)) next[key] = candidate;
   }
   if (typeof source.backdropTheme === "string" && PORTAL_BACKDROP_THEME_IDS.includes(source.backdropTheme as typeof PORTAL_BACKDROP_THEME_IDS[number])) {
     next.backdropTheme = source.backdropTheme as AppearancePalette["backdropTheme"];
   }
+  next.autoTextContrast = source.autoTextContrast !== false;
+  next.textColorCycle = source.textColorCycle !== false && next.autoTextContrast;
   return next;
 }
 

@@ -99,7 +99,7 @@ export function SchoolServicesView({ ws, refresh, flash }: Gate) {
   if (loadError) return <div className="rounded-2xl border border-bad/30 bg-card p-8 text-sm"><h1 className="font-serif text-2xl text-navy">School Services</h1><p className="mt-2 text-bad">{loadError}</p><button className={btnClass + " mt-4"} type="button" onClick={() => setRetry((count) => count + 1)}>Try again</button></div>;
   if (!service) return <div className="rounded-2xl border border-line bg-card p-8 text-sm text-muted">Loading School Services…</div>;
   return <div className="space-y-6 pb-12">
-    <header className="rounded-3xl bg-gradient-to-br from-navy via-[#1b4774] to-[#2e7182] p-6 text-white shadow-card sm:p-8">
+    <header className="school-services-hero rounded-3xl bg-gradient-to-br from-navy via-[#1b4774] to-[#2e7182] p-6 text-white shadow-card sm:p-8">
       <p className="text-xs font-semibold uppercase tracking-[0.22em] text-brass-soft">School office · connected workflows</p>
       <h1 className="mt-2 font-serif text-3xl sm:text-4xl">School Services</h1>
       <p className="mt-2 max-w-3xl text-sm text-white/80">Attendance, homework, family engagement, staff requests, learner support and progress tools—kept separate from existing marks and timetable records.</p>

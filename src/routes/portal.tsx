@@ -157,6 +157,8 @@ function PortalPage() {
       setDashboardPanelColorsEnabled(normalizeWelcomeDisplay(settings.display).dashboardPanelColorsEnabled);
       setStaffMusic({ enabled: Boolean(settings.musicEnabled), url: settings.musicUrl || "", options: music.options });
       document.documentElement.dataset.schoolAppearance = JSON.stringify(settings.appearance);
+      document.documentElement.dataset.portalTextContrast = settings.appearance.autoTextContrast === false ? "off" : "on";
+      document.documentElement.dataset.portalTextCycle = settings.appearance.textColorCycle === false ? "off" : "on";
       applyDisplayPreferences(readDisplayPreferences());
     }).catch(() => undefined);
   }, [refresh, navigate]);

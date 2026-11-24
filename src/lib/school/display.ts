@@ -118,9 +118,9 @@ export function applyDisplayPreferences(value: LocalDisplayPreferences) {
       const raw = JSON.parse(root.dataset.schoolAppearance || "null") as Record<string, unknown> | null;
       if (!raw) return null;
       const schoolColors = { ...DEFAULT_APPEARANCE };
-      const paletteValues = schoolColors as Record<keyof typeof DEFAULT_APPEARANCE, string>;
-      (Object.keys(DEFAULT_APPEARANCE) as Array<keyof typeof DEFAULT_APPEARANCE>).forEach((key) => {
-        if (typeof raw[key] === "string" && /^#[0-9a-f]{6}$/i.test(raw[key] as string)) paletteValues[key] = raw[key] as string;
+      const colorKeys = ["navy", "navy2", "brass", "brassSoft", "paper", "card", "ink", "muted", "line", "good", "warn", "bad", "info"] as const;
+      colorKeys.forEach((key) => {
+        if (typeof raw[key] === "string" && /^#[0-9a-f]{6}$/i.test(raw[key] as string)) schoolColors[key] = raw[key] as string;
       });
       if (typeof raw.backdropTheme === "string" && PORTAL_BACKDROP_THEMES.some((theme) => theme.id === raw.backdropTheme)) {
         schoolColors.backdropTheme = raw.backdropTheme as PortalBackdropThemeId;
