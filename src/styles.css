@@ -1069,3 +1069,20 @@ html[data-portal-motion="reduced"] .portal-loading-track span { animation:none !
 @media (prefers-reduced-motion: reduce) {
   .portal-loading-track span { animation:none !important; transition:none !important; }
 }
+
+
+/* Keep the complete welcome stack visible on short Android portrait screens. */
+@media (max-width:480px) and (max-height:720px) {
+  .portal-loading-card { padding:1.2rem .75rem 1rem; }
+  .portal-loading-card .portal-loading-monogram { margin-bottom:.15rem; font-size:clamp(3.25rem,10vh,4.5rem); }
+  .portal-loading-card .portal-loading-kicker { margin-bottom:.55rem; font-size:.62rem; letter-spacing:.1em; }
+  .portal-loading-card .portal-loading-orbit { width:min(7.2rem,30vw); height:min(7.2rem,30vw); border-width:4px; }
+  .portal-loading-card .portal-loading-title { margin-top:.75rem; font-size:clamp(1.55rem,7vw,2.2rem); }
+  .portal-loading-card .portal-loading-tagline { margin-top:.15rem; font-size:.9rem; }
+  .portal-loading-card .portal-loading-message { margin-top:.55rem; font-size:.88rem; line-height:1.4; }
+  .portal-loading-progress-meta { margin-top:.7rem; font-size:.66rem; letter-spacing:.04em; }
+  .portal-loading-track { height:.45rem; }
+  .portal-loading-card .portal-loading-continue { margin-top:.9rem; min-height:2.65rem; padding:.55rem 1.1rem; font-size:.72rem; }
+  .portal-loading-card .portal-loading-footnote { margin-top:.65rem; padding-top:.5rem; gap:.45rem; font-size:.62rem; }
+  .portal-loading-card .portal-loading-credit { margin-top:.45rem; font-size:.88rem; letter-spacing:.08em; }
+}
