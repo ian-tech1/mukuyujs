@@ -470,7 +470,10 @@ function LoginPage() {
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
             {PUBLIC_PORTAL_FEATURES.map((feature, index) => <article key={feature.title} className="welcome-feature-card welcome-word-panel welcome-word-panel-feature" style={{ "--feature-index": index } as React.CSSProperties}>
               <span className="welcome-feature-number" aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
-              <h3 className="font-semibold text-navy">{feature.title}</h3><p className="mt-1 text-sm text-muted">{feature.description}</p>
+              <div className="welcome-feature-copy">
+                <h3 className="font-semibold text-navy">{feature.title}</h3>
+                <p className="mt-1 text-sm text-muted">{feature.description}</p>
+              </div>
             </article>)}
           </div>
           <p className="mt-5 rounded-xl border border-line bg-paper/70 p-3 text-xs text-muted">Sign-in protects learner results and staff records. The features above describe portal tools only; access depends on each account’s role and permissions.</p>
