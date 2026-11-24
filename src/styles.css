@@ -333,6 +333,8 @@ html[data-portal-accent-motion="off"] .portal-page-content.portal-panel-color-mo
 
 /* Mukuyu loading entrance: reference-inspired night sky, soft neon beams and orbital rings. */
 .portal-loading {
+  isolation: isolate;
+  overflow: hidden;
   width: 100%;
   min-height: 100vh;
   min-height: 100svh;
@@ -359,6 +361,7 @@ html[data-portal-accent-motion="off"] .portal-page-content.portal-panel-color-mo
   background-repeat: no-repeat;
   animation: portal-loading-spectrum 22s ease-in-out infinite alternate;
 }
+.portal-loading-backdrop { position:absolute; inset:0; z-index:0; overflow:hidden; pointer-events:none; }
 .portal-loading::before { background: radial-gradient(ellipse, color-mix(in srgb, var(--portal-user-glow-a, #20c9e8) 82%, white 18%) 0%, color-mix(in srgb, var(--portal-user-glow-b, #5268ef) 38%, transparent) 42%, transparent 74%); opacity: .72; filter: blur(48px); animation: portal-loading-cloud-a 18s ease-in-out infinite alternate; }
 .portal-loading::after { background: radial-gradient(ellipse, color-mix(in srgb, var(--portal-user-glow-c, #f3b747) 76%, white 24%) 0%, color-mix(in srgb, var(--portal-user-glow-d, #d74db8) 44%, transparent) 44%, transparent 76%); opacity: .6; filter: blur(52px); animation: portal-loading-cloud-b 23s ease-in-out infinite alternate; }
 
@@ -848,14 +851,14 @@ html[data-portal-background-mode="original"] .welcome-login-panel {
   height: 100vh;
   height: 100svh;
   height: 100dvh;
-  background-color: #071225;
-  background-image: var(--portal-cosmic-sky);
-  background-size: 180% 180%;
-  background-position: center;
-  background-repeat: no-repeat;
-  animation: portal-loading-spectrum 22s ease-in-out infinite alternate;
-  box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.18), inset 0 0 70px rgba(65, 220, 207, 0.1);
+  isolation: isolate;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
+.portal-navigation-drawer > :not(.portal-loading-backdrop) { position:relative; z-index:1; }
+.portal-navigation-backdrop { display:none; }
 
 .portal-navigation-drawer .portal-nav-item {
   border: 1px solid transparent;
@@ -884,6 +887,11 @@ html[data-portal-background-mode="original"] .welcome-login-panel {
   .portal-navigation-drawer {
     padding-bottom: max(1rem, env(safe-area-inset-bottom));
   }
+  .portal-navigation-backdrop { display:block; }
+}
+
+@media (min-width: 1024px) {
+  .portal-navigation-drawer.portal-loading { background:var(--color-navy,#0e2a4a); background-image:none; animation:none; }
 }
 
 
@@ -905,23 +913,16 @@ html[data-portal-background-mode="original"] .welcome-login-panel {
   100% { background-position: 100% 90%, 0% 100%, 95% 0%, 50% 50%; }
 }
 
-html[data-portal-background-mode="original"] .portal-navigation-drawer {
-  background-color: #071225;
-  background-image: var(--portal-cosmic-sky);
-  background-size: 180% 180%;
-  background-position: center;
-  background-repeat: no-repeat;
-  animation: none;
-}
-
 html[data-portal-motion="reduced"] .portal-navigation-drawer {
   animation: none;
 }
+html[data-portal-motion="reduced"] .portal-navigation-drawer .portal-loading-backdrop * { animation:none !important; }
 
 @media (prefers-reduced-motion: reduce) {
   .portal-navigation-drawer {
     animation: none;
   }
+  .portal-navigation-drawer .portal-loading-backdrop * { animation:none !important; }
 }
 
 html[data-portal-motion="reduced"] .portal-loading-orbit::before,

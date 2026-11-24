@@ -73,6 +73,62 @@ function NatureBackdropVideo({ scene, visible, motionEnabled }: { scene: number;
   </div>;
 }
 
+function PortalLoadingBackdrop({ className = "" }: { className?: string }) {
+  return (
+    <div className={`portal-loading-backdrop ${className}`} aria-hidden="true">
+      <div className="portal-loading-aurora" />
+      <div className="portal-loading-ribbon-field">
+        <span className="portal-loading-ribbon portal-loading-ribbon-one" />
+        <span className="portal-loading-ribbon portal-loading-ribbon-two" />
+        <span className="portal-loading-ribbon portal-loading-ribbon-three" />
+        <span className="portal-loading-ribbon portal-loading-ribbon-four" />
+        <span className="portal-loading-ribbon-orb portal-loading-ribbon-orb-one" />
+        <span className="portal-loading-ribbon-orb portal-loading-ribbon-orb-two" />
+      </div>
+      <div className="portal-loading-rays" />
+      <div className="portal-loading-atom" />
+      <div className="portal-loading-orbit-glints" />
+      <div className="portal-loading-stars" />
+      <div className="portal-loading-dust" />
+      <div className="portal-loading-motes">
+        <span className="portal-loading-mote portal-loading-mote-one" />
+        <span className="portal-loading-mote portal-loading-mote-two" />
+        <span className="portal-loading-mote portal-loading-mote-three" />
+        <span className="portal-loading-mote portal-loading-mote-four" />
+        <span className="portal-loading-mote portal-loading-mote-five" />
+        <span className="portal-loading-mote portal-loading-mote-six" />
+      </div>
+      <div className="portal-loading-comets">
+        <span className="portal-loading-comet portal-loading-comet-one" />
+        <span className="portal-loading-comet portal-loading-comet-two" />
+        <span className="portal-loading-comet portal-loading-comet-three" />
+      </div>
+      <div className="portal-loading-orbiting-objects">
+        <span className="portal-loading-object portal-loading-object-diamond portal-loading-object-one" />
+        <span className="portal-loading-object portal-loading-object-diamond portal-loading-object-two" />
+        <span className="portal-loading-object portal-loading-object-diamond portal-loading-object-three" />
+        <span className="portal-loading-object portal-loading-object-diamond portal-loading-object-four" />
+        <span className="portal-loading-object portal-loading-object-ring portal-loading-object-five" />
+        <span className="portal-loading-object portal-loading-object-ring portal-loading-object-six" />
+        <span className="portal-loading-object portal-loading-object-ring portal-loading-object-seven" />
+        <span className="portal-loading-object portal-loading-object-ring portal-loading-object-eight" />
+        <span className="portal-loading-object portal-loading-object-star portal-loading-object-nine" />
+        <span className="portal-loading-object portal-loading-object-star portal-loading-object-ten" />
+        <span className="portal-loading-object portal-loading-object-hex portal-loading-object-eleven" />
+        <span className="portal-loading-object portal-loading-object-hex portal-loading-object-twelve" />
+        <span className="portal-loading-object portal-loading-object-diamond portal-loading-object-thirteen" />
+        <span className="portal-loading-object portal-loading-object-ring portal-loading-object-fourteen" />
+        <span className="portal-loading-object portal-loading-object-star portal-loading-object-fifteen" />
+        <span className="portal-loading-object portal-loading-object-hex portal-loading-object-sixteen" />
+        <span className="portal-loading-object portal-loading-object-diamond portal-loading-object-seventeen" />
+        <span className="portal-loading-object portal-loading-object-ring portal-loading-object-eighteen" />
+        <span className="portal-loading-object portal-loading-object-star portal-loading-object-nineteen" />
+        <span className="portal-loading-object portal-loading-object-hex portal-loading-object-twenty" />
+      </div>
+    </div>
+  );
+}
+
 function PortalPage() {
   const navigate = useNavigate();
   const { view } = Route.useSearch();
@@ -189,55 +245,7 @@ function PortalPage() {
   if (!ws) {
     return (
       <main className="portal-loading grid min-h-screen place-items-center bg-paper px-6">
-        <div className="portal-loading-aurora" aria-hidden="true" />
-        <div className="portal-loading-ribbon-field" aria-hidden="true">
-          <span className="portal-loading-ribbon portal-loading-ribbon-one" />
-          <span className="portal-loading-ribbon portal-loading-ribbon-two" />
-          <span className="portal-loading-ribbon portal-loading-ribbon-three" />
-          <span className="portal-loading-ribbon portal-loading-ribbon-four" />
-          <span className="portal-loading-ribbon-orb portal-loading-ribbon-orb-one" />
-          <span className="portal-loading-ribbon-orb portal-loading-ribbon-orb-two" />
-        </div>
-        <div className="portal-loading-rays" aria-hidden="true" />
-        <div className="portal-loading-atom" aria-hidden="true" />
-        <div className="portal-loading-orbit-glints" aria-hidden="true" />
-        <div className="portal-loading-stars" aria-hidden="true" />
-        <div className="portal-loading-dust" aria-hidden="true" />
-        <div className="portal-loading-motes" aria-hidden="true">
-          <span className="portal-loading-mote portal-loading-mote-one" />
-          <span className="portal-loading-mote portal-loading-mote-two" />
-          <span className="portal-loading-mote portal-loading-mote-three" />
-          <span className="portal-loading-mote portal-loading-mote-four" />
-          <span className="portal-loading-mote portal-loading-mote-five" />
-          <span className="portal-loading-mote portal-loading-mote-six" />
-        </div>
-        <div className="portal-loading-comets" aria-hidden="true">
-          <span className="portal-loading-comet portal-loading-comet-one" />
-          <span className="portal-loading-comet portal-loading-comet-two" />
-          <span className="portal-loading-comet portal-loading-comet-three" />
-        </div>
-        <div className="portal-loading-orbiting-objects" aria-hidden="true">
-          <span className="portal-loading-object portal-loading-object-diamond portal-loading-object-one" />
-          <span className="portal-loading-object portal-loading-object-diamond portal-loading-object-two" />
-          <span className="portal-loading-object portal-loading-object-diamond portal-loading-object-three" />
-          <span className="portal-loading-object portal-loading-object-diamond portal-loading-object-four" />
-          <span className="portal-loading-object portal-loading-object-ring portal-loading-object-five" />
-          <span className="portal-loading-object portal-loading-object-ring portal-loading-object-six" />
-          <span className="portal-loading-object portal-loading-object-ring portal-loading-object-seven" />
-          <span className="portal-loading-object portal-loading-object-ring portal-loading-object-eight" />
-          <span className="portal-loading-object portal-loading-object-star portal-loading-object-nine" />
-          <span className="portal-loading-object portal-loading-object-star portal-loading-object-ten" />
-          <span className="portal-loading-object portal-loading-object-hex portal-loading-object-eleven" />
-          <span className="portal-loading-object portal-loading-object-hex portal-loading-object-twelve" />
-          <span className="portal-loading-object portal-loading-object-diamond portal-loading-object-thirteen" />
-          <span className="portal-loading-object portal-loading-object-ring portal-loading-object-fourteen" />
-          <span className="portal-loading-object portal-loading-object-star portal-loading-object-fifteen" />
-          <span className="portal-loading-object portal-loading-object-hex portal-loading-object-sixteen" />
-          <span className="portal-loading-object portal-loading-object-diamond portal-loading-object-seventeen" />
-          <span className="portal-loading-object portal-loading-object-ring portal-loading-object-eighteen" />
-          <span className="portal-loading-object portal-loading-object-star portal-loading-object-nineteen" />
-          <span className="portal-loading-object portal-loading-object-hex portal-loading-object-twenty" />
-        </div>
+        <PortalLoadingBackdrop />
         <div className="portal-loading-card text-center" role="status" aria-live="polite">
           <p className="portal-loading-monogram" aria-label="Mukuyu Junior School initials"><span>MJS</span></p>
           <p className="portal-loading-kicker portal-loading-box portal-loading-box-kicker">MUKUYU JUNIOR SCHOOL · LEARNING PORTAL</p>
@@ -258,7 +266,8 @@ function PortalPage() {
 
   return (
     <div className="portal-animated-background min-h-screen w-full min-w-0 max-w-none overflow-x-clip bg-paper lg:grid lg:grid-cols-[16rem_minmax(0,1fr)]" data-portal-section={current}>
-      <aside id="portal-navigation" aria-label="Main navigation" className={`portal-navigation-drawer flex min-h-screen flex-col overflow-y-auto ${open ? "fixed inset-0 z-20" : "hidden"} bg-navy text-paper lg:sticky lg:top-0 lg:block lg:h-screen`}>
+      <aside id="portal-navigation" aria-label="Main navigation" className={`portal-navigation-drawer flex min-h-screen flex-col overflow-y-auto ${open ? "portal-loading fixed inset-0 z-20" : "hidden"} bg-navy text-paper lg:sticky lg:top-0 lg:block lg:h-screen`}>
+        <PortalLoadingBackdrop className="portal-navigation-backdrop" />
         <div className="flex items-center justify-between border-b border-white/10 px-5 py-5 lg:border-b-0">
           <div className="flex items-center gap-2">
             <SchoolLogo className="size-12" />
