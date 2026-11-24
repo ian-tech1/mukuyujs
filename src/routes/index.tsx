@@ -23,12 +23,21 @@ function GatePage() {
 
 function OpeningIntro({ title, motto, logoSrc, durationSeconds }: { title: string; motto: string; logoSrc?: string; durationSeconds: number }) {
   const [visible, setVisible] = useState(true);
+  const [progress, setProgress] = useState(0);
   const startedAt = useRef(Date.now());
   useEffect(() => {
+    if (!visible) return;
+    const durationMs = Math.max(1, durationSeconds * 1000);
     const remaining = Math.max(0, durationSeconds * 1000 - (Date.now() - startedAt.current));
+    const updateProgress = () => setProgress(Math.min(100, Math.round(((Date.now() - startedAt.current) / durationMs) * 100)));
+    updateProgress();
+    const interval = window.setInterval(updateProgress, 100);
     const timeout = window.setTimeout(() => setVisible(false), remaining);
-    return () => window.clearTimeout(timeout);
-  }, [durationSeconds]);
+    return () => {
+      window.clearInterval(interval);
+      window.clearTimeout(timeout);
+    };
+  }, [durationSeconds, visible]);
 
   function continueToSignIn() {
     setVisible(false);
@@ -85,6 +94,7 @@ function OpeningIntro({ title, motto, logoSrc, durationSeconds }: { title: strin
       <span className="portal-loading-object portal-loading-object-star portal-loading-object-nineteen" />
       <span className="portal-loading-object portal-loading-object-hex portal-loading-object-twenty" />
     </div>
+    <div className="portal-loading-center-shade" aria-hidden="true" />
     <div className="portal-loading-card text-center">
       <p className="portal-loading-monogram" aria-label="MJS"><span>MJS</span></p>
       <p className="portal-loading-kicker">MUKUYU JUNIOR SCHOOL · LEARNING PORTAL</p>
@@ -92,7 +102,8 @@ function OpeningIntro({ title, motto, logoSrc, durationSeconds }: { title: strin
       <h1 id="opening-intro-title" className="portal-loading-title mt-5">{title}</h1>
       <p className="portal-loading-tagline mt-2">{motto}</p>
       <p id="opening-intro-description" className="portal-loading-message mt-4 text-sm">A brighter school day starts here. Welcome to the Mukuyu Junior School portal.</p>
-      <div className="portal-loading-track mt-6" aria-hidden="true"><span /></div>
+      <div className="portal-loading-progress-meta mt-6" aria-hidden="true"><span>Preparing your sign-in</span><strong>{progress}%</strong></div>
+      <div className="portal-loading-track mt-2" role="progressbar" aria-label="Welcome screen progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress}><span style={{ width: `${progress}%` }} /></div>
       <button className="portal-loading-continue mt-6" type="button" autoFocus onClick={continueToSignIn}>Continue to sign in</button>
       <p className="portal-loading-footnote mt-4 justify-center">MUKUYU JUNIOR SCHOOL · LEARN WITH PURPOSE</p>
       <p className="portal-loading-credit mt-2">PORTAL DEVELOPED BY IAN TECH</p>

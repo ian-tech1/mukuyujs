@@ -1039,3 +1039,33 @@ html[data-portal-motion="reduced"] .portal-loading-orbit::after {
     radial-gradient(ellipse at 50% 50%, transparent 58%, color-mix(in srgb, var(--portal-beam-b) 42%, transparent) 59%, transparent 60%),
     radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--portal-glow-d) 36%, transparent), transparent 72%);
 }
+
+
+/* Night-sky splash refinement: preserve the Mukuyu palette while keeping copy clear. */
+.portal-loading {
+  background-color: #030914;
+  background-image: linear-gradient(140deg, #050d1c 0%, #0b1530 42%, #081a26 72%, #090f21 100%);
+}
+.portal-loading::before { opacity:.24; filter:blur(76px); }
+.portal-loading::after { opacity:.17; filter:blur(84px); }
+.portal-loading-ribbon-field { opacity:.38; }
+.portal-loading-ribbon { border-top-color:rgba(255,255,255,.22); border-bottom-color:rgba(255,255,255,.1); filter:drop-shadow(0 0 10px rgba(89,214,255,.24)); box-shadow:0 0 20px rgba(139,213,255,.12),0 0 42px rgba(164,85,165,.09); }
+.portal-loading-ribbon::after { opacity:.48; box-shadow:0 0 8px rgba(255,255,255,.5),0 0 18px rgba(101,220,255,.36); }
+.portal-loading-ribbon-orb { opacity:.28; }
+.portal-loading-rays { opacity:.34; }
+.portal-loading-aurora { opacity:.3 !important; filter:blur(32px) saturate(1.05); }
+.portal-loading-center-shade { position:absolute; left:50%; top:50%; z-index:0; width:min(66rem,140vw); height:min(92vh,56rem); border-radius:50%; background:radial-gradient(ellipse at 50% 48%,rgba(2,7,16,.8) 0%,rgba(3,9,20,.7) 38%,rgba(3,10,22,.42) 58%,rgba(3,10,22,.14) 76%,transparent 100%); filter:blur(10px); pointer-events:none; transform:translate(-50%,-50%); }
+.portal-loading-atom,
+.portal-loading-orbit-glints,
+.portal-loading-orbiting-objects { z-index:1; }
+.portal-loading-atom::before { border:2px solid rgba(164,232,255,.68); box-shadow:0 0 22px rgba(53,190,255,.28),inset 0 0 18px rgba(53,190,255,.08); }
+.portal-loading-atom::after { border:2px dashed rgba(255,195,234,.58); box-shadow:0 0 22px rgba(212,89,255,.24),inset 0 0 18px rgba(212,89,255,.07); }
+.portal-loading-progress-meta { display:flex; align-items:center; justify-content:space-between; width:min(100%,30rem); margin-inline:auto; color:rgba(237,244,255,.8); font-size:.75rem; font-weight:600; letter-spacing:.08em; }
+.portal-loading-progress-meta strong { color:#c8f5ff; font-variant-numeric:tabular-nums; text-shadow:0 0 10px rgba(82,203,255,.32); }
+.portal-loading-track { width:min(100%,30rem); height:.55rem; overflow:hidden; border:1px solid rgba(188,224,255,.42); border-radius:999px; background:rgba(255,255,255,.1); box-shadow:inset 0 1px 3px rgba(0,0,0,.35),0 0 14px rgba(58,133,228,.16); }
+.portal-loading-track span { display:block; height:100%; border-radius:inherit; background:linear-gradient(90deg,#35d7ee,#61baff,#828cf8,#d980d5,#ffd274); background-size:200% 100%; box-shadow:0 0 11px rgba(82,203,255,.62); transition:width .12s linear; animation:portal-loading-track-flow 5s linear infinite; }
+@keyframes portal-loading-track-flow { to { background-position:200% 50%; } }
+html[data-portal-motion="reduced"] .portal-loading-track span { animation:none !important; transition:none !important; }
+@media (prefers-reduced-motion: reduce) {
+  .portal-loading-track span { animation:none !important; transition:none !important; }
+}
