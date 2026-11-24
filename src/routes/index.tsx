@@ -464,7 +464,7 @@ function LoginPage() {
       {featuresOpen ? <div className="welcome-features-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setFeaturesOpen(false); }}>
         <section className="welcome-features-dialog" role="dialog" aria-modal="true" aria-labelledby="welcome-features-title" aria-describedby="welcome-features-description">
           <div className="flex items-start justify-between gap-4">
-            <div><p className="text-xs font-bold uppercase tracking-[.18em] text-info">A quick tour</p><h2 id="welcome-features-title" className="mt-1 font-serif text-2xl text-navy">Explore the school portal</h2><p id="welcome-features-description" className="mt-2 max-w-2xl text-sm text-muted">These features are available after signing in with school-issued access. This overview uses no real learner records and does not open a sample account.</p></div>
+            <div><p className="text-xs font-bold uppercase tracking-[.18em] text-info">A quick tour</p><h2 id="welcome-features-title" className="mt-1 font-serif text-2xl text-navy">Explore the school portal</h2><p id="welcome-features-description" className="mt-2 max-w-2xl text-sm text-muted">The portal includes the tools below. What you can open or change depends on your role, school settings, and optional services configured by the school. This overview uses no real learner records and does not open a sample account.</p></div>
             <button type="button" className="welcome-features-close" autoFocus onClick={() => setFeaturesOpen(false)} aria-label="Close portal features">Close</button>
           </div>
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
@@ -481,12 +481,24 @@ function LoginPage() {
 }
 
 const PUBLIC_PORTAL_FEATURES = [
-  { title: "Learner records", description: "Manage class rosters, admission numbers, learner imports and placements with review steps." },
-  { title: "Spreadsheet-friendly marks", description: "Paste subject marks in a familiar grid, preview imports and review row-level issues before saving." },
-  { title: "Reports and progress", description: "Prepare results, report cards, mark lists and class summaries using the access granted to your account." },
-  { title: "Family feedback by QR", description: "Families can send a named message about the learner on a scanned report; school routing rules determine who sees it." },
-  { title: "School office tools", description: "Coordinate staff, delegated permissions, school calendars and timetable planning from one portal." },
-  { title: "Recovery controls", description: "Super admins can make records exports and schedule private backup emails when the deployment is configured." },
+  { title: "Welcome and sign-in", description: "Staff, administrators and learner accounts use the school sign-in. Parents can create an account after email verification or sign in to their parent portal." },
+  { title: "Overview dashboard", description: "See school-office summaries and current academic context, with sections and details shown according to your account permissions." },
+  { title: "Learner records and imports", description: "Manage learner records, class rosters, admission numbers and placements, and review bulk imports before saving." },
+  { title: "Enter marks", description: "Record assessment results individually or paste spreadsheet data into a grid, preview it and review subject or row-level issues." },
+  { title: "Marks permissions and locks", description: "Where enabled, Super Admins can control who enters, edits or views marks and apply term- or assessment-specific access rules." },
+  { title: "Analysis and progress", description: "Review learner, class and subject performance summaries for the academic year and term available to your account." },
+  { title: "Report cards and QR links", description: "Prepare report cards and QR links; public viewing and downloading follow the school's report-access settings." },
+  { title: "Learner and parent results", description: "Learners can view their results, while parents can access linked learners through the parent portal after email verification and sign-in." },
+  { title: "Mark lists and merit", description: "Create and review mark lists and merit rankings for the classes, subjects and academic periods you are permitted to access." },
+  { title: "Timetable", description: "Plan and review school timetables using the subjects, classes, teachers and scheduling options configured by the school." },
+  { title: "School Services", description: "Open the school's services area to manage or review the service information available to your role." },
+  { title: "Staff and delegated access", description: "Manage staff records and, for authorized administrators, role-based access and delegated permissions." },
+  { title: "Parents Feedback", description: "Review messages sent from report-card QR pages; messages can be routed to selected teachers, while Super Admins can oversee feedback." },
+  { title: "Mail log", description: "Review the portal's recorded email activity and delivery status where mail services are configured." },
+  { title: "Music player and studio", description: "An optional in-portal music player can be enabled and its playlist and playback settings configured by the school." },
+  { title: "School settings and appearance", description: "Authorized administrators can manage school and term settings, report access, welcome-page design, colours and portal backdrops." },
+  { title: "Backups and recovery", description: "Super Admins can export and restore school records and configure scheduled backup emails when the deployment is set up for delivery." },
+  { title: "Installable portal", description: "On supported browsers and devices, use the install prompt to add a convenient portal shortcut to your home screen." },
 ];
 
 function applyPublicSchoolIdentity(rawName: string) {
