@@ -17,6 +17,28 @@ export function subjectLevelSubjectColumnWidth(tableWidth: number, identityWidth
   return Math.max(1, availableWidth / Math.max(subjectCount, 1));
 }
 
+/** Split variable-height analytics rows into page-sized groups without dropping or reordering items. */
+export function paginateMeritAnalyticsItems<T>(items: readonly T[], maxPageHeight: number, itemHeight: (item: T) => number): T[][] {
+  const pageLimit = Math.max(1, maxPageHeight);
+  const pages: T[][] = [];
+  let page: T[] = [];
+  let usedHeight = 0;
+
+  for (const item of items) {
+    const height = Math.max(1, itemHeight(item));
+    if (page.length && usedHeight + height > pageLimit) {
+      pages.push(page);
+      page = [];
+      usedHeight = 0;
+    }
+    page.push(item);
+    usedHeight += height;
+  }
+
+  if (page.length) pages.push(page);
+  return pages;
+}
+
 /**
  * Calculate the number of subject-level learner rows that fit without moving the
  * existing text baseline or crowding the fixed footer.

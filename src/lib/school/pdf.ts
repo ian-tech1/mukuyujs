@@ -2,7 +2,7 @@ import type { Decorated, Exam, Grade, Profile, ReportExtras, Stream, Subject } f
 import { fmt } from "@/lib/school/model";
 import { remarkBody, reportFootnote } from "@/lib/school/extras";
 import { chunkMarklistRows } from "@/lib/school/marklist.ts";
-import { paginateSubjectLevelRows, subjectLevelBandCode, subjectLevelSubjectColumnWidth, subjectLevelSubjectSections, SUBJECT_LEVEL_ROW_HEIGHT_MM } from "@/lib/school/merit-pdf-layout.ts";
+import { paginateMeritAnalyticsItems, paginateSubjectLevelRows, subjectLevelBandCode, subjectLevelSubjectColumnWidth, subjectLevelSubjectSections, SUBJECT_LEVEL_ROW_HEIGHT_MM } from "@/lib/school/merit-pdf-layout.ts";
 
 type DrawInput = {
   profile: Profile;
@@ -453,9 +453,11 @@ export async function qrFor(text: string) {
 export type MeritPdfAnalytics = {
   summary: Array<{ label: string; value: string }>;
   subjectMeans: Array<{ name: string; mean: number }>;
+  subjectMeanMax?: number;
   subjectPositions?: Array<{ position: string; name: string; mean: number | null }>;
   levelDistribution?: Array<{ level: string; students: number; boys: number; girls: number; other: number }>;
   streamMeans: Array<{ name: string; mean: number }>;
+  streamMeanMax?: number;
   scoreBands: Array<{ label: string; count: number }>;
   insights: Array<{ label: string; value: string; detail: string }>;
   trend: string;
@@ -503,7 +505,7 @@ function drawSubjectPositionColumn(
       }
       doc.setFontSize(Math.max(4.5, Math.min(7, subjectRowHeight * 1.35)));
       doc.text(subject.position, x + 2, y);
-      doc.text(subject.name.slice(0, 48), x + 14, y);
+      doc.text(subject.name, x + 14, y, { maxWidth: 62 });
       doc.text(subject.mean == null ? "—" : subject.mean.toFixed(2), x + 79, y, { align: "right" });
       y += subjectRowHeight;
     });
@@ -554,7 +556,7 @@ function drawSubjectPositionColumn(
       doc.rect(x, y - 3.2, 83, levelRowHeight, "F");
     }
     doc.setFontSize(Math.max(4.5, Math.min(6.3, levelRowHeight * 1.25)));
-    const levelLabel = item.level === "No recorded level" ? "NO LEVEL" : item.level.slice(0, 24);
+    const levelLabel = item.level === "No recorded level" ? "NO LEVEL" : item.level;
     doc.text(levelLabel, x + 2, y, { maxWidth: 38 });
     doc.text(String(item.students), x + 49, y, { align: "right" });
     doc.text(String(item.boys), x + 60, y, { align: "right" });
@@ -661,8 +663,7 @@ export async function downloadMeritListPdf(options: {
     doc.setFontSize(orientation === "portrait" ? 5 : 6.5);
     const cells = [row.position, String(row.roll), row.admission || "—", row.name, row.stream, ...row.scores, row.mean, row.level];
     cells.forEach((cell, i) => {
-      const limit = i === 3 ? (orientation === "portrait" ? 22 : 30) : i === 2 ? (orientation === "portrait" ? 10 : 14) : orientation === "portrait" && i >= 5 && i < 5 + subjects.length ? 9 : 12;
-      doc.text(String(cell).slice(0, limit), xs[i] + 0.5, y, { maxWidth: Math.max(1, widths[i] - 1) });
+      doc.text(String(cell), xs[i] + 0.5, y, { maxWidth: Math.max(1, widths[i] - 1) });
     });
     y += rowH;
   });
@@ -694,10 +695,10 @@ export async function downloadMeritListPdf(options: {
     if (y > pageH - 10) { doc.addPage(); letterhead(); y = 43; }
     if (index % 2 === 1) { doc.setFillColor(246, 244, 238); doc.rect(left, y - 3.5, pageW - 10, 5.5, "F"); }
     doc.setFontSize(7);
-    doc.text(item.name.slice(0, 28), left + 2, y);
+    doc.text(item.name, left + 2, y, { maxWidth: streamSummaryColumns.learners - left - 4 });
     doc.text(String(item.learnerCount), streamSummaryColumns.learners, y);
     doc.text(item.meanLabel, streamSummaryColumns.mean, y);
-    doc.text(item.topLearner.slice(0, orientation === "portrait" ? 34 : 48), streamSummaryColumns.topLearner, y, { maxWidth: pageW - streamSummaryColumns.topLearner - 8 });
+    doc.text(item.topLearner, streamSummaryColumns.topLearner, y, { maxWidth: pageW - streamSummaryColumns.topLearner - 8 });
     y += 5.5;
   });
   if (!options.streamSummary.length) { doc.setFontSize(7); doc.text("No stream results available for this grade.", left + 2, y); y += 5; }
@@ -718,24 +719,53 @@ export async function downloadMeritListPdf(options: {
       doc.setFont("helvetica", "normal");
       y += 5;
     };
-    heading("Class summary");
-    doc.setFontSize(8);
-    const colW = (pageW - 10) / 4;
-    a.summary.forEach((item, i) => {
-      const cx = left + (i % 4) * colW;
-      const cy = y + Math.floor(i / 4) * 12;
-      doc.setDrawColor(200, 195, 180);
-      doc.rect(cx, cy - 4, colW - 3, 10);
-      doc.setFontSize(6.5);
-      doc.setTextColor(110, 110, 110);
-      doc.text(item.label.toUpperCase(), cx + 2, cy);
-      doc.setTextColor(20, 20, 20);
-      doc.setFontSize(9);
+    const addAnalyticsContinuation = (text: string) => {
+      doc.addPage();
+      letterhead();
+      y = 43;
       doc.setFont("helvetica", "bold");
-      doc.text(item.value.slice(0, 28), cx + 2, cy + 4.5);
+      doc.setFontSize(10);
+      doc.setTextColor(14, 42, 74);
+      doc.text(`${text} (continued)`, left, y);
+      doc.setTextColor(20, 20, 20);
       doc.setFont("helvetica", "normal");
-    });
-    y += Math.ceil(a.summary.length / 4) * 12 + 4;
+      y += 5;
+    };
+    heading("Class summary");
+    const colW = (pageW - 10) / 4;
+    const summarySegmentLines = 36;
+    for (let start = 0; start < a.summary.length; start += 4) {
+      const items = a.summary.slice(start, start + 4).map((item) => ({
+        ...item,
+        labelLines: doc.splitTextToSize(item.label.toUpperCase(), colW - 7) as string[],
+        valueLines: doc.splitTextToSize(item.value, colW - 7) as string[],
+      }));
+      const longest = Math.max(1, ...items.map((item) => item.valueLines.length));
+      for (let offset = 0; offset < longest; offset += summarySegmentLines) {
+        const prepared = items.map((item) => {
+          const valueLines = item.valueLines.slice(offset, offset + summarySegmentLines);
+          const labelLines = offset === 0 ? item.labelLines : valueLines.length ? ["(continued)"] : [];
+          return { ...item, labelLines, valueLines };
+        });
+        const rowHeight = Math.max(10, ...prepared.map((item) => 4 + item.labelLines.length * 2.5 + item.valueLines.length * 3.3));
+        if (y + rowHeight > pageH - 12) addAnalyticsContinuation("Class summary");
+        prepared.forEach((item, index) => {
+          const cx = left + index * colW;
+          doc.setDrawColor(200, 195, 180);
+          doc.rect(cx, y, colW - 3, rowHeight);
+          doc.setFontSize(6.5);
+          doc.setTextColor(110, 110, 110);
+          if (item.labelLines.length) doc.text(item.labelLines, cx + 2, y + 2.8);
+          doc.setTextColor(20, 20, 20);
+          doc.setFontSize(8.5);
+          doc.setFont("helvetica", "bold");
+          if (item.valueLines.length) doc.text(item.valueLines, cx + 2, y + 3 + item.labelLines.length * 2.6);
+          doc.setFont("helvetica", "normal");
+        });
+        y += rowHeight + 2;
+      }
+    }
+    y += 2;
 
     const bars = (title: string, data: Array<{ label: string; value: number; text: string }>, max: number, color: [number, number, number]) => {
       heading(title);
@@ -744,7 +774,7 @@ export async function downloadMeritListPdf(options: {
       doc.setFontSize(7);
       data.forEach((item) => {
         if (y > pageH - 12) { doc.addPage(); letterhead(); y = 43; }
-        doc.text(item.label.slice(0, 22), left, y);
+        doc.text(item.label, left, y, { maxWidth: labelW - 2 });
         doc.setDrawColor(225, 220, 208);
         doc.rect(left + labelW, y - 3.2, barMax, 3.8);
         doc.setFillColor(...color);
@@ -754,8 +784,8 @@ export async function downloadMeritListPdf(options: {
       });
       y += 3;
     };
-    bars("Subject means", a.subjectMeans.map((item) => ({ label: item.name, value: item.mean, text: item.mean ? item.mean.toFixed(1) : "—" })), 100, [29, 78, 137]);
-    bars("Stream means", a.streamMeans.map((item) => ({ label: item.name, value: item.mean, text: item.mean ? item.mean.toFixed(1) : "—" })), 100, [31, 122, 77]);
+    bars("Subject means", a.subjectMeans.map((item) => ({ label: item.name, value: item.mean, text: item.mean ? item.mean.toFixed(1) : "—" })), a.subjectMeanMax ?? 100, [29, 78, 137]);
+    bars("Stream means", a.streamMeans.map((item) => ({ label: item.name, value: item.mean, text: item.mean ? item.mean.toFixed(1) : "—" })), a.streamMeanMax ?? 100, [31, 122, 77]);
     const total = Math.max(1, a.scoreBands.reduce((sum, band) => sum + band.count, 0));
     bars("Score distribution (learners per mean-score band)", a.scoreBands.map((band) => ({ label: band.label, value: band.count, text: `${band.count} (${Math.round((band.count / total) * 100)}%)` })), total, [180, 100, 20]);
 
@@ -763,39 +793,59 @@ export async function downloadMeritListPdf(options: {
     const subjectColumnX = pageW - 88;
     let subjectColumnBottom = drawSubjectPositionColumn(doc, a.subjectPositions ?? [], a.levelDistribution ?? [], subjectColumnX, y - 5, pageH);
     doc.setFontSize(7.5);
-    a.insights.forEach((item) => {
-      const detailWidth = subjectColumnX - left - 85 - 4;
-      const detail = doc.splitTextToSize(item.detail, detailWidth) as string[];
-      const needed = Math.max(5, detail.length * 3.8 + 1.5);
-      if (y + needed > pageH - 10) {
-        doc.addPage();
-        letterhead();
-        y = 43;
+    const detailWidth = Math.max(10, subjectColumnX - left - 89);
+    const insightLineHeight = 3.5;
+    for (const item of a.insights) {
+      const labelLines = doc.splitTextToSize(item.label, 48) as string[];
+      const valueLines = doc.splitTextToSize(item.value, 28) as string[];
+      const detailLines = doc.splitTextToSize(item.detail, detailWidth) as string[];
+      const totalLines = Math.max(labelLines.length, valueLines.length, detailLines.length, 1);
+      let offset = 0;
+      while (offset < totalLines) {
+        const availableLines = Math.floor((pageH - 10 - y - 2) / insightLineHeight);
+        if (availableLines < 1) {
+          addAnalyticsContinuation("Advanced learner analytics");
+          subjectColumnBottom = drawSubjectPositionColumn(doc, a.subjectPositions ?? [], a.levelDistribution ?? [], subjectColumnX, y - 5, pageH, "SUBJECT POSITIONS (continued)");
+          continue;
+        }
+        const lineCount = Math.min(availableLines, totalLines - offset);
+        const labelChunk = labelLines.slice(offset, offset + lineCount);
+        const valueChunk = valueLines.slice(offset, offset + lineCount);
+        const detailChunk = detailLines.slice(offset, offset + lineCount);
+        const renderedLines = Math.max(labelChunk.length, valueChunk.length, detailChunk.length, 1);
+        const needed = Math.max(5, renderedLines * insightLineHeight + 1.5);
         doc.setFont("helvetica", "bold");
-        doc.setFontSize(10);
-        doc.setTextColor(14, 42, 74);
-        doc.text("Advanced learner analytics (continued)", left, y);
-        doc.setTextColor(20, 20, 20);
-        y += 5;
-        subjectColumnBottom = drawSubjectPositionColumn(doc, a.subjectPositions ?? [], a.levelDistribution ?? [], subjectColumnX, y - 5, pageH, "SUBJECT POSITIONS (continued)");
+        if (labelChunk.length) doc.text(labelChunk, left, y);
+        if (valueChunk.length) doc.text(valueChunk, left + 52, y);
+        doc.setFont("helvetica", "normal");
+        if (detailChunk.length) doc.text(detailChunk, left + 85, y);
+        doc.setDrawColor(230, 226, 214);
+        doc.line(left, y + needed - 3.2, subjectColumnX - 4, y + needed - 3.2);
+        y += needed;
+        offset += lineCount;
       }
-      doc.setFont("helvetica", "bold");
-      doc.text(item.label, left, y);
-      doc.text(item.value.slice(0, 30), left + 52, y);
-      doc.setFont("helvetica", "normal");
-      doc.text(detail, left + 85, y);
-      doc.setDrawColor(230, 226, 214);
-      doc.line(left, y + needed - 3.2, subjectColumnX - 4, y + needed - 3.2);
-      y += needed;
-    });
+    }
     y = Math.max(y + 3, subjectColumnBottom + 3);
     heading("Term trend");
-    doc.setFontSize(8);
-    doc.text(doc.splitTextToSize(a.trend || "No term results available.", pageW - 10) as string[], left, y);
-    y += 8;
+    const drawFullWidthText = (text: string, continuationTitle: string) => {
+      const lines = doc.splitTextToSize(text, pageW - 10) as string[];
+      let offset = 0;
+      while (offset < lines.length) {
+        let availableLines = Math.floor((pageH - 12 - y - 2) / 3.5);
+        if (availableLines < 1) {
+          addAnalyticsContinuation(continuationTitle);
+          availableLines = Math.floor((pageH - 12 - y - 2) / 3.5);
+        }
+        const chunk = lines.slice(offset, offset + Math.max(1, availableLines));
+        doc.setFontSize(8);
+        doc.text(chunk, left, y);
+        y += chunk.length * 3.5 + 2;
+        offset += chunk.length;
+      }
+    };
+    drawFullWidthText(a.trend || "No term results available.", "Term trend");
     heading("Learners needing review");
-    doc.setFontSize(8);
-    doc.text(doc.splitTextToSize(a.review || "No learners currently fall below the intervention threshold.", pageW - 10) as string[], left, y);
+    drawFullWidthText(a.review || "No learners currently fall below the intervention threshold.", "Learners needing review");
   }
 
   const pages = doc.getNumberOfPages();
@@ -901,12 +951,12 @@ export async function downloadSubjectLevelMeritListPdf(options: {
             const bandCode = subjectLevelBandCode(String(cell));
             doc.setTextColor(...tone(bandCode === "—" ? null : bandCode));
             doc.setFont("helvetica", "bold");
-            const compactValue = String(cell).replace(/\s*·\s*/g, "·").slice(0, 12);
+            const compactValue = String(cell).replace(/\s*·\s*/g, "·");
             doc.text(compactValue, xPositions[index] + widths[index] / 2, y, { align: "center", maxWidth: widths[index] - 1 });
             doc.setFont("helvetica", "normal");
             doc.setTextColor(20, 20, 20);
           } else {
-            const value = String(cell || (index === 3 ? "—" : "")).slice(0, index === 3 ? 35 : 15);
+            const value = String(cell || (index === 3 ? "—" : ""));
             if (index === 3) doc.setFont("helvetica", "bold");
             doc.text(value, xPositions[index] + 1, y, { maxWidth: widths[index] - 2 });
             if (index === 3) doc.setFont("helvetica", "normal");
@@ -941,44 +991,196 @@ export async function downloadSubjectLevelMeritListPdf(options: {
 }
 
 function drawMeritAnalyticsPages(doc: import("jspdf").jsPDF, analytics: MeritPdfAnalytics, letterhead: (sectionNumber: number, sectionCount: number) => void, pageW: number, pageH: number, left: number) {
-  doc.addPage();
-  letterhead(1, 1);
+  const bottom = pageH - 10;
   let y = 43;
-  const heading = (text: string) => { if (y > pageH - 22) { doc.addPage(); letterhead(1, 1); y = 43; } doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.setTextColor(14, 42, 74); doc.text(text, left, y); y += 5; };
-  const bars = (title: string, data: Array<{ label: string; value: number; text: string }>, max: number, color: [number, number, number]) => { heading(title); const labelW = 42; const barMax = pageW - left - 10 - labelW - 22; doc.setFont("helvetica", "normal"); doc.setFontSize(7); for (const item of data) { if (y > pageH - 12) { doc.addPage(); letterhead(1, 1); y = 43; } doc.text(item.label.slice(0, 24), left, y); doc.setDrawColor(225, 220, 208); doc.rect(left + labelW, y - 3.2, barMax, 3.8); doc.setFillColor(...color); doc.rect(left + labelW, y - 3.2, Math.max(0.3, Math.min(1, item.value / Math.max(max, 1)) * barMax), 3.8, "F"); doc.text(item.text, left + labelW + barMax + 2, y); y += 5.2; } y += 3; };
-  heading("Class summary"); doc.setFontSize(8); analytics.summary.forEach((item, index) => { const x = left + (index % 4) * ((pageW - left - 5) / 4); const yy = y + Math.floor(index / 4) * 12; doc.setDrawColor(200, 195, 180); doc.rect(x, yy - 4, (pageW - left - 5) / 4 - 3, 10); doc.setFontSize(6.5); doc.setTextColor(110, 110, 110); doc.text(item.label.toUpperCase(), x + 2, yy); doc.setTextColor(20, 20, 20); doc.setFontSize(8.5); doc.setFont("helvetica", "bold"); doc.text(item.value.slice(0, 25), x + 2, yy + 4.5); doc.setFont("helvetica", "normal"); }); y += Math.ceil(analytics.summary.length / 4) * 12 + 4;
-  bars("Subject means", analytics.subjectMeans.map((item) => ({ label: item.name, value: item.mean, text: item.mean ? item.mean.toFixed(1) : "—" })), 100, [29, 78, 137]);
-  bars("Stream means", analytics.streamMeans.map((item) => ({ label: item.name, value: item.mean, text: item.mean ? item.mean.toFixed(1) : "—" })), 100, [31, 122, 77]);
-  const total = Math.max(1, analytics.scoreBands.reduce((sum, item) => sum + item.count, 0)); bars("Score distribution", analytics.scoreBands.map((item) => ({ label: item.label, value: item.count, text: `${item.count} (${Math.round(item.count / total * 100)}%)` })), total, [180, 100, 20]);
-  heading("Advanced learner analytics");
-  const subjectColumnX = pageW - 88;
-  let subjectColumnBottom = drawSubjectPositionColumn(doc, analytics.subjectPositions ?? [], analytics.levelDistribution ?? [], subjectColumnX, y - 5, pageH);
-  doc.setFontSize(7.5);
-  for (const item of analytics.insights) {
-    const detailWidth = subjectColumnX - left - 85 - 4;
-    const detail = doc.splitTextToSize(item.detail, detailWidth) as string[];
-    const needed = Math.max(5, detail.length * 3.8 + 1.5);
-    if (y + needed > pageH - 10) {
-      doc.addPage();
-      letterhead(1, 1);
-      y = 43;
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(10);
-      doc.setTextColor(14, 42, 74);
-      doc.text("Advanced learner analytics (continued)", left, y);
-      doc.setTextColor(20, 20, 20);
-      y += 5;
-      subjectColumnBottom = drawSubjectPositionColumn(doc, analytics.subjectPositions ?? [], analytics.levelDistribution ?? [], subjectColumnX, y - 5, pageH, "SUBJECT POSITIONS (continued)");
-    }
+  const addPage = () => {
+    doc.addPage();
+    letterhead(1, 1);
+    y = 43;
+  };
+  const heading = (text: string) => {
+    if (y + 8 > bottom) addPage();
     doc.setFont("helvetica", "bold");
-    doc.text(item.label, left, y);
-    doc.text(item.value.slice(0, 30), left + 52, y);
-    doc.setFont("helvetica", "normal");
-    doc.text(detail, left + 85, y);
-    doc.setDrawColor(230, 226, 214);
-    doc.line(left, y + needed - 3.2, subjectColumnX - 4, y + needed - 3.2);
-    y += needed;
+    doc.setFontSize(10);
+    doc.setTextColor(14, 42, 74);
+    doc.text(text, left, y);
+    doc.setTextColor(20, 20, 20);
+    y += 5;
+  };
+  const wrap = (text: string, width: number, fontSize: number, bold = false) => {
+    doc.setFont("helvetica", bold ? "bold" : "normal");
+    doc.setFontSize(fontSize);
+    return doc.splitTextToSize(String(text || "—"), Math.max(2, width)) as string[];
+  };
+  const bars = (title: string, data: Array<{ label: string; value: number; text: string }>, max: number, color: [number, number, number]) => {
+    heading(title);
+    const labelW = Math.min(48, Math.max(34, pageW * 0.2));
+    const barMax = Math.max(20, pageW - left - 10 - labelW - 24);
+    if (!data.length) {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7);
+      doc.text("No results available.", left, y + 1);
+      y += 8;
+      return;
+    }
+    for (let index = 0; index < data.length; index += 1) {
+      const item = data[index];
+      const labelLines = wrap(item.label, labelW - 2, 6.8);
+      const rowHeight = Math.max(6, labelLines.length * 3.4 + 1);
+      if (y + rowHeight > bottom) {
+        addPage();
+        heading(`${title} (continued)`);
+      }
+      if (index % 2) {
+        doc.setFillColor(249, 247, 241);
+        doc.rect(left, y - 3.6, pageW - left - 5, rowHeight, "F");
+      }
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(6.8);
+      doc.setTextColor(35, 35, 35);
+      doc.text(labelLines, left, y);
+      doc.setDrawColor(225, 220, 208);
+      doc.rect(left + labelW, y - 3.2, barMax, 3.8);
+      doc.setFillColor(...color);
+      doc.rect(left + labelW, y - 3.2, Math.max(0.3, (Math.min(item.value, Math.max(max, 1)) / Math.max(max, 1)) * barMax), 3.8, "F");
+      doc.setFontSize(6.8);
+      doc.text(item.text, left + labelW + barMax + 2, y, { maxWidth: pageW - left - (left + labelW + barMax + 2) - 4 });
+      y += rowHeight + 1;
+    }
+    y += 2;
+  };
+
+  addPage();
+  heading("Class summary");
+  const cardWidth = (pageW - left - 5) / 4;
+  const summarySegmentLines = 42;
+  for (let start = 0; start < analytics.summary.length; start += 4) {
+    const items = analytics.summary.slice(start, start + 4).map((item) => ({
+      item,
+      labelLines: wrap(item.label.toUpperCase(), cardWidth - 4, 6.2, true),
+      valueLines: wrap(item.value, cardWidth - 4, 7.1, true),
+    }));
+    const longest = Math.max(1, ...items.map((card) => card.valueLines.length));
+    for (let offset = 0; offset < longest; offset += summarySegmentLines) {
+      const cards = items.map((card) => {
+        const valueLines = card.valueLines.slice(offset, offset + summarySegmentLines);
+        const labelLines = offset === 0 ? card.labelLines : valueLines.length ? ["(continued)"] : [];
+        const height = Math.max(10, 3 + labelLines.length * 2.6 + valueLines.length * 2.8);
+        return { ...card, labelLines, valueLines, height };
+      });
+      const rowHeight = Math.max(...cards.map((card) => card.height));
+      if (y + rowHeight > bottom) {
+        addPage();
+        heading("Class summary (continued)");
+      }
+      cards.forEach((card, index) => {
+        const x = left + index * cardWidth;
+        doc.setFillColor(255, 253, 248);
+        doc.setDrawColor(200, 195, 180);
+        doc.roundedRect(x, y - 3.5, cardWidth - 3, rowHeight, 1.2, 1.2, "FD");
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(6.2);
+        doc.setTextColor(110, 110, 110);
+        if (card.labelLines.length) doc.text(card.labelLines, x + 2, y);
+        doc.setFontSize(7.1);
+        doc.setTextColor(20, 20, 20);
+        if (card.valueLines.length) doc.text(card.valueLines, x + 2, y + card.labelLines.length * 2.6 + 1.5);
+      });
+      y += rowHeight + 2;
+    }
   }
-  y = Math.max(y + 3, subjectColumnBottom + 3);
-  heading("Term trend"); doc.setFontSize(8); doc.text(doc.splitTextToSize(analytics.trend || "No term results available.", pageW - left - 5) as string[], left, y); y += 8; heading("Learners needing review"); doc.text(doc.splitTextToSize(analytics.review || "No learners currently fall below the intervention threshold.", pageW - left - 5) as string[], left, y);
+
+  bars("Subject means", analytics.subjectMeans.map((item) => ({ label: item.name, value: item.mean, text: item.mean ? item.mean.toFixed(1) : "—" })), analytics.subjectMeanMax ?? 100, [29, 78, 137]);
+  bars("Stream means", analytics.streamMeans.map((item) => ({ label: item.name, value: item.mean, text: item.mean ? item.mean.toFixed(1) : "—" })), analytics.streamMeanMax ?? 100, [31, 122, 77]);
+  const total = Math.max(1, analytics.scoreBands.reduce((sum, item) => sum + item.count, 0));
+  bars("Score distribution (learners per mean-score band)", analytics.scoreBands.map((item) => ({ label: item.label, value: item.count, text: `${item.count} (${Math.round(item.count / total * 100)}%)` })), total, [180, 100, 20]);
+
+  const subjectColumnX = pageW - 88;
+  const labelWidth = pageW < 250 ? 32 : 46;
+  const valueWidth = pageW < 250 ? 27 : 30;
+  const valueX = left + labelWidth + 2;
+  const detailX = valueX + valueWidth + 2;
+  const detailWidth = Math.max(10, subjectColumnX - detailX - 5);
+  const preparedInsights = analytics.insights.map((item) => {
+    const labelLines = wrap(item.label, labelWidth, 6.3, true);
+    const valueLines = wrap(item.value, valueWidth, 6.3, true);
+    const detailLines = wrap(item.detail, detailWidth, 6.3);
+    const longest = Math.max(labelLines.length, valueLines.length, detailLines.length, 1);
+    const maxLinesPerSegment = Math.max(1, Math.floor((Math.max(1, bottom - 48) - 1.6) / 3.2));
+    return Array.from({ length: Math.ceil(longest / maxLinesPerSegment) }, (_, segmentIndex) => {
+      const offset = segmentIndex * maxLinesPerSegment;
+      const next = offset + maxLinesPerSegment;
+      const labelChunk = labelLines.slice(offset, next);
+      const valueChunk = valueLines.slice(offset, next);
+      const detailChunk = detailLines.slice(offset, next);
+      const visibleLabel = labelChunk.length ? labelChunk : offset > 0 ? ["(continued)"] : [];
+      const lineCount = Math.max(visibleLabel.length, valueChunk.length, detailChunk.length, 1);
+      return { item, labelLines: visibleLabel, valueLines: valueChunk, detailLines: detailChunk, height: Math.max(5.6, lineCount * 3.2 + 1.6) };
+    });
+  });
+  const insightPages = paginateMeritAnalyticsItems(preparedInsights.flat(), Math.max(1, bottom - 48), (item) => item.height);
+  const pages = insightPages.length ? insightPages : [[]];
+  pages.forEach((pageItems, pageIndex) => {
+    if (pageIndex > 0) addPage();
+    heading(pageIndex ? "Advanced learner analytics (continued)" : "Advanced learner analytics");
+    const subjectColumnBottom = drawSubjectPositionColumn(
+      doc,
+      analytics.subjectPositions ?? [],
+      analytics.levelDistribution ?? [],
+      subjectColumnX,
+      y - 5,
+      pageH,
+      pageIndex ? "SUBJECT POSITIONS (continued)" : "SUBJECT POSITIONS",
+    );
+    if (!pageItems.length) {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7);
+      doc.text("No advanced insights are available for this roster.", left, y + 2);
+      y = Math.max(y + 8, subjectColumnBottom + 3);
+      return;
+    }
+    for (const entry of pageItems) {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(6.3);
+      doc.setTextColor(25, 35, 48);
+      doc.text(entry.labelLines, left, y);
+      doc.text(entry.valueLines, valueX, y);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(40, 40, 40);
+      doc.text(entry.detailLines, detailX, y);
+      doc.setDrawColor(230, 226, 214);
+      doc.line(left, y + entry.height - 2.5, subjectColumnX - 4, y + entry.height - 2.5);
+      y += entry.height;
+    }
+    y = Math.max(y + 3, subjectColumnBottom + 3);
+  });
+
+  const drawWideSection = (title: string, content: string, fallback: string) => {
+    addPage();
+    heading(title);
+    const lines = wrap(content || fallback, pageW - left - 10, 8);
+    const lineHeight = 4.1;
+    let offset = 0;
+    while (offset < lines.length) {
+      const available = Math.max(1, Math.floor((bottom - y) / lineHeight));
+      if (y + lineHeight > bottom) {
+        addPage();
+        heading(`${title} (continued)`);
+        continue;
+      }
+      const pageLines = lines.slice(offset, offset + available);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+      doc.setTextColor(30, 30, 30);
+      doc.text(pageLines, left, y);
+      y += pageLines.length * lineHeight + 4;
+      offset += pageLines.length;
+      if (offset < lines.length) {
+        addPage();
+        heading(`${title} (continued)`);
+      }
+    }
+  };
+  drawWideSection("Term trend", analytics.trend, "No term results available.");
+  drawWideSection("Learners needing review", analytics.review, "No learners currently fall below the intervention threshold.");
 }

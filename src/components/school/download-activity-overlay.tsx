@@ -1,0 +1,117 @@
+import { useEffect, useRef, useState } from "react";
+import { SchoolLogo } from "@/components/school/logo";
+
+const DOWNLOAD_LABEL = /\b(download|export)\b/i;
+
+export function DownloadActivityOverlay() {
+  const [label, setLabel] = useState("");
+  const labelRef = useRef("");
+
+  useEffect(() => {
+    let dismissTimer = 0;
+    let safetyTimer = 0;
+    const dismiss = () => {
+      window.clearTimeout(dismissTimer);
+      window.clearTimeout(safetyTimer);
+      labelRef.current = "";
+      setLabel("");
+    };
+
+    const start = (nextLabel: string) => {
+      window.clearTimeout(dismissTimer);
+      window.clearTimeout(safetyTimer);
+      labelRef.current = nextLabel.trim() || "Preparing your download";
+      setLabel(labelRef.current);
+      safetyTimer = window.setTimeout(dismiss, 12000);
+    };
+
+    const onDocumentClick = (event: MouseEvent) => {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+
+      const downloadLink = target.closest<HTMLAnchorElement>("a[download], a[href]");
+      if (downloadLink) {
+        const linkLabel = downloadLink.getAttribute("aria-label") || downloadLink.textContent || "";
+        if (!downloadLink.hasAttribute("download") && !DOWNLOAD_LABEL.test(linkLabel)) return;
+        if (!labelRef.current) start(linkLabel || "Preparing your download");
+        window.clearTimeout(safetyTimer);
+        dismissTimer = window.setTimeout(dismiss, 900);
+        return;
+      }
+
+      const button = target.closest<HTMLButtonElement>("button");
+      if (!button || button.disabled) return;
+      const buttonLabel = button.getAttribute("aria-label") || button.textContent || "";
+      if (!DOWNLOAD_LABEL.test(buttonLabel)) return;
+      start(`Preparing ${buttonLabel.trim().replace(/\s+/g, " ")}`);
+    };
+    const onDownloadReady = () => {
+      if (labelRef.current) {
+        window.clearTimeout(dismissTimer);
+        dismissTimer = window.setTimeout(dismiss, 500);
+      }
+    };
+
+    document.addEventListener("click", onDocumentClick, true);
+    window.addEventListener("mukuyu-download-ready", onDownloadReady);
+    return () => {
+      document.removeEventListener("click", onDocumentClick, true);
+      window.removeEventListener("mukuyu-download-ready", onDownloadReady);
+      window.clearTimeout(dismissTimer);
+      window.clearTimeout(safetyTimer);
+    };
+  }, []);
+
+  if (!label) return null;
+
+  return (
+    <div className="portal-loading pointer-events-none fixed inset-0 z-[200] grid min-h-[100svh] w-full place-items-center overflow-hidden px-6" role="status" aria-live="polite" aria-label="Preparing download">
+      <div className="portal-loading-aurora" aria-hidden="true" />
+      <div className="portal-loading-ribbon-field" aria-hidden="true">
+        <span className="portal-loading-ribbon portal-loading-ribbon-one" />
+        <span className="portal-loading-ribbon portal-loading-ribbon-two" />
+        <span className="portal-loading-ribbon portal-loading-ribbon-three" />
+        <span className="portal-loading-ribbon portal-loading-ribbon-four" />
+        <span className="portal-loading-ribbon-orb portal-loading-ribbon-orb-one" />
+        <span className="portal-loading-ribbon-orb portal-loading-ribbon-orb-two" />
+      </div>
+      <div className="portal-loading-rays" aria-hidden="true" />
+      <div className="portal-loading-atom" aria-hidden="true" />
+      <div className="portal-loading-orbit-glints" aria-hidden="true" />
+      <div className="portal-loading-stars" aria-hidden="true" />
+      <div className="portal-loading-dust" aria-hidden="true" />
+      <div className="portal-loading-motes" aria-hidden="true">
+        <span className="portal-loading-mote portal-loading-mote-one" />
+        <span className="portal-loading-mote portal-loading-mote-two" />
+        <span className="portal-loading-mote portal-loading-mote-three" />
+        <span className="portal-loading-mote portal-loading-mote-four" />
+        <span className="portal-loading-mote portal-loading-mote-five" />
+        <span className="portal-loading-mote portal-loading-mote-six" />
+      </div>
+      <div className="portal-loading-comets" aria-hidden="true">
+        <span className="portal-loading-comet portal-loading-comet-one" />
+        <span className="portal-loading-comet portal-loading-comet-two" />
+        <span className="portal-loading-comet portal-loading-comet-three" />
+      </div>
+      <div className="portal-loading-orbiting-objects" aria-hidden="true">
+        <span className="portal-loading-object portal-loading-object-diamond portal-loading-object-one" />
+        <span className="portal-loading-object portal-loading-object-ring portal-loading-object-five" />
+        <span className="portal-loading-object portal-loading-object-star portal-loading-object-nine" />
+        <span className="portal-loading-object portal-loading-object-hex portal-loading-object-eleven" />
+        <span className="portal-loading-object portal-loading-object-ring portal-loading-object-fourteen" />
+        <span className="portal-loading-object portal-loading-object-star portal-loading-object-fifteen" />
+      </div>
+      <div className="portal-loading-center-shade" aria-hidden="true" />
+      <div className="portal-loading-card text-center">
+        <p className="portal-loading-monogram" aria-hidden="true"><span>MJS</span></p>
+        <p className="portal-loading-kicker">MUKUYU JUNIOR SCHOOL · LEARNING PORTAL</p>
+        <span className="portal-loading-orbit" aria-hidden="true"><SchoolLogo className="size-20" /></span>
+        <h2 className="portal-loading-title mt-5">Preparing your download</h2>
+        <p className="portal-loading-tagline mt-2">{label}</p>
+        <p className="portal-loading-message mt-4 text-sm">Your file is being prepared. The download will start shortly.</p>
+        <div className="portal-loading-track mt-6" aria-hidden="true"><span className="download-activity-progress" /></div>
+        <p className="portal-loading-footnote mt-4 justify-center">MUKUYU JUNIOR SCHOOL · LEARN WITH PURPOSE</p>
+      </div>
+    </div>
+  );
+}

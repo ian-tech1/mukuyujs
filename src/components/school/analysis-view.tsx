@@ -4,13 +4,17 @@ import type { Gate } from "@/components/school/gate";
 import { btnGhost, errText, inputClass } from "@/components/school/gate";
 import { logoDataUrl } from "@/lib/school/brand";
 import { writeXlsxFromMatrix } from "@/lib/school/sheet";
-import { downloadMeritListPdf, downloadSubjectLevelMeritListPdf } from "@/lib/school/pdf";
-import { rankMeritRows } from "@/lib/school/analysis-merit-rows";
+import { downloadMeritListPdf, downloadSubjectLevelMeritListPdf, type MeritPdfAnalytics } from "@/lib/school/pdf";
+import { rankMeritRows, selectMeritExportRows } from "@/lib/school/analysis-merit-rows";
 import { summarizeLearnersByLevel } from "@/lib/school/analysis-level-distribution";
 import { PeriodBar, useSchoolPeriod } from "@/components/school/period-bar";
 import { canActorAccess } from "@/lib/school/role-access";
 import { bandFor, buildBoards, decorate, fmt, meanOf, periodMarks, sortByPerformance, type Decorated, learnersForYear } from "@/lib/school/model";
 import { rankSubjectsByMean } from "@/lib/school/subject-position";
+
+function notifyDownloadReady() {
+  window.dispatchEvent(new Event("mukuyu-download-ready"));
+}
 
 export function AnalysisView({ ws, flash }: Gate) {
   const canDownload = canActorAccess(ws.roleAccess, ws.me.role, "analysis", "download");
@@ -43,7 +47,6 @@ export function AnalysisView({ ws, flash }: Gate) {
     return row.means[currentMode];
   }
   const rankedAll = rankMeritRows(decorated, valueOf);
-  const levelDistribution = summarizeLearnersByLevel(rankedAll.map((row) => ({ level: row.level, gender: row.learner.gender })));
   const ranked = rankedAll.filter((row) => {
     const query = learnerSearch.trim().toLocaleLowerCase();
     const matchesSearch = !query || [row.learner.fullName, row.learner.admissionNumber ?? "", String(row.learner.roll)].some((value) => value.toLocaleLowerCase().includes(query));
@@ -72,27 +75,11 @@ export function AnalysisView({ ws, flash }: Gate) {
     const streamLeader = [...group].sort((a, b) => ((currentMode === "avg" ? b.avgMean : b.means[currentMode]) ?? -1) - ((currentMode === "avg" ? a.avgMean : a.means[currentMode]) ?? -1))[0];
     return { name: stream.name, mean: mean ?? 0, meanLabel: fmt(mean), learnerCount: group.length, topLearner: streamLeader?.learner.fullName ?? "—" };
   });
-  const subjectPointChart = subjects.map((subject) => {
-    const values = rankedAll.flatMap((row) => {
-      const points = row.cells.find((cell) => cell.subjectId === subject.id)?.points;
-      return points == null ? [] : [points];
-    });
-    return { name: subject.shortName, mean: values.length ? Math.round((values.reduce((a, b) => a + b, 0) / values.length) * 10) / 10 : 0 };
-  });
-  const pointsStreamCompare = streams.map((stream) => {
-    const group = rankedAll.filter((row) => row.learner.streamId === stream.id);
-    const scored = group.filter((row) => row.totalPoints != null);
-    const mean = meanOf(group.map((row) => row.totalPoints));
-    const leader = [...scored].sort((a, b) => (b.totalPoints ?? -1) - (a.totalPoints ?? -1))[0];
-    return { name: stream.name, mean: mean ?? 0, meanLabel: fmt(mean, 0), learnerCount: group.length, topLearner: leader?.learner.fullName ?? "—" };
-  });
   const pointsRanked = [...rankedAll].sort((a, b) => (b.totalPoints ?? -1) - (a.totalPoints ?? -1) || a.learner.fullName.localeCompare(b.learner.fullName));
-  const scoredPointsRanked = pointsRanked.filter((row) => row.totalPoints != null);
   const pointsRankOf = (row: Decorated) => {
     if (row.totalPoints == null) return "—";
     return String(pointsRanked.findIndex((item) => item.totalPoints === row.totalPoints) + 1);
   };
-  const classPointsMean = meanOf(pointsRanked.map((row) => row.totalPoints));
   const bestStream = [...streamCompare].sort((a, b) => b.mean - a.mean)[0];
   const girls = meanOf(rankedAll.filter((row) => row.learner.gender === "FEMALE").map(valueOf));
   const boys = meanOf(rankedAll.filter((row) => row.learner.gender === "MALE").map(valueOf));
@@ -102,30 +89,32 @@ export function AnalysisView({ ws, flash }: Gate) {
   const [pdfWithAnalytics, setPdfWithAnalytics] = useState(true);
   const [meritOrientation, setMeritOrientation] = useState<"landscape" | "portrait">("landscape");
   const [pdfBusy, setPdfBusy] = useState(false);
+  const [includeUnmarked, setIncludeUnmarked] = useState(true);
 
   function download() {
     if (!canDownload) return;
     const header = ["Position", "Roll", "Admission Number", "Name", "Gender", "Stream", ...subjects.map((subject) => subject.shortName), "Mean", "Level"];
     const csvCell = (value: unknown) => `"${String(value ?? "").replaceAll('"', '""').replaceAll("\r", " ").replaceAll("\n", " ")}"`;
-    const lines = rankedAll.map((row) => {
+    const lines = downloadRows.map((row) => {
       const stream = ws.streams.find((item) => item.id === row.learner.streamId)?.name ?? "";
       const scores = subjects.map((subject) => {
         const cell = row.cells.find((item) => item.subjectId === subject.id);
         const score = currentMode === "avg" ? cell?.avg : cell?.byExam[currentMode];
         return score == null ? "" : score.toFixed(2);
       });
-      return [rankOf(row), row.learner.roll, row.learner.admissionNumber ?? "", row.learner.fullName, row.learner.gender, stream, ...scores, valueOf(row)?.toFixed(2) ?? "", row.level ?? ""].map(csvCell).join(",");
+      return [downloadRankOf(row), row.learner.roll, row.learner.admissionNumber ?? "", row.learner.fullName, row.learner.gender, stream, ...scores, valueOf(row)?.toFixed(2) ?? "", row.level ?? ""].map(csvCell).join(",");
     });
     // Keep the learner table rectangular: the header is first and each learner is one complete CSV row.
     const metadata = [["School", ws.profile.name], ["Report", meritTitle], ["Period", meritPeriod]].map((row) => row.map(csvCell).join(","));
-    const streamLines = ["", ["STREAM PERFORMANCE SUMMARY", "", "", ""].map(csvCell).join(","), ["Stream", "Learners", "Mean", "Top learner"].map(csvCell).join(","), ...streamCompare.map((item) => [item.name, item.learnerCount, item.meanLabel, item.topLearner].map(csvCell).join(","))];
+    const streamLines = ["", ["STREAM PERFORMANCE SUMMARY", "", "", ""].map(csvCell).join(","), ["Stream", "Learners", "Mean", "Top learner"].map(csvCell).join(","), ...downloadStreamSummary.map((item) => [item.name, item.learnerCount, item.meanLabel, item.topLearner].map(csvCell).join(","))];
     const blob = new Blob(["\uFEFF" + [header.map(csvCell).join(","), ...lines, ...metadata, ...streamLines].join("\r\n") + "\r\n"], { type: "text/csv;charset=utf-8" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
     link.download = `${grade?.name ?? "class"}-${currentMode}-merit.csv`;
     link.click();
+    notifyDownloadReady();
     URL.revokeObjectURL(link.href);
-    flash(`Analysis merit list downloaded with all ${rankedAll.length} learners in the selected grade/stream, including learners without marks.`);
+    flash(`Analysis merit list downloaded with ${downloadRows.length} learners, ${includeUnmarked ? "including" : "excluding"} those without marks.`);
   }
 
   const termBook = ws.terms.map((term) => {
@@ -181,6 +170,136 @@ export function AnalysisView({ ws, flash }: Gate) {
     return { subject, rows: high == null ? [] : candidates.filter((item) => item.score === high).map((item) => item.row), score: high };
   });
   const names = (rows: Decorated[]) => rows.map((row) => row.learner.fullName).join(", ") || "—";
+  const buildCompleteAnalytics = (): MeritPdfAnalytics => {
+    const scopedScores = downloadRows.map((row) => row.avgMean).filter((value): value is number => value != null);
+    const scopedPassCount = scopedScores.filter((score) => score >= 50).length;
+    const scopedPassRate = scopedScores.length ? Math.round((scopedPassCount / scopedScores.length) * 100) : null;
+    const scopedStreamGap = downloadStreamSummary.length > 1 ? Math.max(...downloadStreamSummary.map((row) => row.mean)) - Math.min(...downloadStreamSummary.map((row) => row.mean)) : 0;
+    const scopedSubjectCoverage = subjects.length && downloadRows.length
+      ? Math.round((downloadRows.reduce((sum, row) => sum + row.cells.filter((cell) => cell.avg != null).length, 0) / (subjects.length * downloadRows.length)) * 100)
+      : 0;
+    return {
+      levelDistribution: downloadLevelDistribution,
+      summary: [
+        { label: "Class mean", value: fmt(classMean) },
+        { label: "Learners in selected roster", value: String(downloadRows.length) },
+        { label: "Learners with marks", value: String(downloadRows.length - downloadUnscored.length) },
+        { label: "Learners without marks", value: String(downloadUnscored.length) },
+        { label: "Top learner", value: names(bestOverall) },
+        { label: "Best boy — North", value: names(bestBoyNorth) },
+        { label: "Best boy — South", value: names(bestBoySouth) },
+        { label: "Best boy overall", value: names(bestBoysOverall) },
+        { label: "Best girl — North", value: names(bestGirlNorth) },
+        { label: "Best girl — South", value: names(bestGirlSouth) },
+        { label: "Best girl overall", value: names(bestGirlsOverall) },
+        { label: "Best student overall", value: names(bestOverall) },
+        { label: "Top stream", value: [...downloadStreamSummary].sort((a, b) => b.mean - a.mean)[0]?.name ?? "—" },
+        { label: "Girls / boys", value: `${fmt(girls)} / ${fmt(boys)}` },
+        { label: "Pass rate", value: scopedPassRate == null ? "—" : `${scopedPassRate}%` },
+        { label: "Marks coverage", value: `${downloadCoverage}%` },
+      ],
+      subjectMeans: subjectChart,
+      subjectPositions,
+      streamMeans: downloadStreamSummary,
+      scoreBands,
+      insights: [
+        { label: "Marks coverage", value: `${downloadCoverage}%`, detail: `${downloadEnteredMarks} of ${downloadPossibleMarks} expected score cells entered for this export roster` },
+        { label: "Learners at risk", value: String(downloadAtRisk.length), detail: "Mean below 50; review support needs" },
+        { label: "High achievers", value: String(downloadHighAchievers.length), detail: "Mean of 80 or above" },
+        { label: "No recorded marks", value: String(downloadUnscored.length), detail: "No recorded marks in the selected term and active assessments" },
+        { label: "Strongest subject", value: strongestSubject?.name ?? "—", detail: strongestSubject ? `Mean ${fmt(strongestSubject.mean)}` : "No scores yet" },
+        { label: "Priority subject", value: supportSubject?.name ?? "—", detail: supportSubject ? `Mean ${fmt(supportSubject.mean)}; consider intervention` : "No scores yet" },
+        { label: "Score spread", value: fmt(scoreSpread), detail: "Difference between highest and lowest learner mean" },
+        { label: "Stream performance gap", value: fmt(scopedStreamGap), detail: "Difference between highest and lowest stream means in this export roster" },
+        { label: "CAT improvement", value: catDelta == null ? "—" : `${catDelta > 0 ? "+" : ""}${fmt(catDelta)}`, detail: examMeans.length > 1 ? `${examMeans[0].name} compared with ${examMeans[1].name}` : "Add another CAT to compare" },
+        { label: "Female / male mean", value: `${fmt(girls)} / ${fmt(boys)}`, detail: girls != null && boys != null ? `Difference ${fmt(girls - boys)}` : "Not enough gender-separated scores" },
+        { label: "Median learner score", value: fmt(medianScore), detail: "Middle score after ordering learner averages" },
+        { label: "Below class mean", value: String(learnersBelowClassMean), detail: "Scored learners below the selected class mean" },
+        { label: "Pass rate", value: scopedPassRate == null ? "—" : `${scopedPassRate}%`, detail: `${scopedPassCount} of ${scopedScores.length} learners with marks at 50 or above` },
+        { label: "Subject marks coverage", value: `${scopedSubjectCoverage}%`, detail: "Share of learners with a mean recorded for each subject" },
+        { label: "Subject mean spread", value: fmt(subjectMeanSpread), detail: "Difference between strongest and lowest scored subject means" },
+        { label: "Best assessment", value: bestExam?.name ?? "—", detail: bestExam ? `Class mean ${fmt(bestExam.mean)}` : "No scored assessments" },
+        { label: "Best boy — North", value: names(bestBoyNorth), detail: "All tied leaders are included" },
+        { label: "Best boy — South", value: names(bestBoySouth), detail: "All tied leaders are included" },
+        { label: "Best boy overall", value: names(bestBoysOverall), detail: "All tied leaders are included" },
+        { label: "Best girl — North", value: names(bestGirlNorth), detail: "All tied leaders are included" },
+        { label: "Best girl — South", value: names(bestGirlSouth), detail: "All tied leaders are included" },
+        { label: "Best girl overall", value: names(bestGirlsOverall), detail: "All tied leaders are included" },
+        { label: "Best student overall", value: names(bestOverall), detail: "All tied leaders are included" },
+        ...bestBySubject.map((item) => ({ label: `Best ${item.subject.name}`, value: names(item.rows), detail: item.score == null ? "No recorded subject scores" : `Score ${fmt(item.score)}; all ties included` })),
+        { label: "Class average", value: fmt(classMean), detail: `${downloadRows.length} learners in the selected grade/stream export roster` },
+      ],
+      trend,
+      review: downloadAtRisk.map((row) => `${row.learner.fullName} (${fmt(row.avgMean)})`).join(" · "),
+    };
+  };
+  const buildPointsAnalytics = (): MeritPdfAnalytics => {
+    const analytics = buildCompleteAnalytics();
+    const averagePoints = meanOf(downloadPointsRanked.map((row) => row.totalPoints));
+    const lowestPoints = downloadScoredPointsRanked.at(-1)?.totalPoints;
+    const topPoints = downloadScoredPointsRanked[0]?.totalPoints;
+    const topPointRows = topPoints == null ? [] : downloadScoredPointsRanked.filter((row) => row.totalPoints === topPoints);
+    const withoutPoints = downloadPointsRanked.filter((row) => row.totalPoints == null);
+    const pointSubjectMeans = subjects.map((subject) => {
+      const values = downloadPointsRanked.flatMap((row) => {
+        const points = row.cells.find((cell) => cell.subjectId === subject.id)?.points;
+        return points == null ? [] : [points];
+      });
+      return { name: subject.shortName, mean: meanOf(values) ?? 0 };
+    });
+    return {
+      ...analytics,
+      subjectMeans: pointSubjectMeans,
+      subjectMeanMax: Math.max(1, ...pointSubjectMeans.map((item) => item.mean)),
+      streamMeans: downloadPointsStreamSummary,
+      streamMeanMax: Math.max(1, ...downloadPointsStreamSummary.map((item) => item.mean)),
+      summary: [
+        ...analytics.summary,
+        { label: "Average total points", value: averagePoints == null ? "—" : fmt(averagePoints, 0) },
+        { label: "Highest total points", value: topPoints == null ? "—" : String(topPoints) },
+        { label: "Top points learner", value: names(topPointRows) },
+      ],
+      insights: [
+        ...analytics.insights,
+        { label: "Average total points", value: averagePoints == null ? "—" : fmt(averagePoints, 0), detail: "Total of the points awarded for each recorded subject level" },
+        { label: "Top points learner", value: names(topPointRows), detail: "All learners tied for the highest total subject points are included" },
+        { label: "Highest level points", value: topPointRows[0]?.levelPoints == null ? "—" : String(topPointRows[0].levelPoints), detail: "Overall band points for the highest points learner" },
+        { label: "Learners without points", value: String(withoutPoints.length), detail: "No recorded subject levels available for points ranking" },
+        { label: "Points range", value: lowestPoints == null || topPoints == null ? "—" : `${lowestPoints}–${topPoints}`, detail: "Lowest to highest recorded total points" },
+      ],
+      review: [
+        ...downloadAtRisk.map((row) => `${row.learner.fullName} (${fmt(row.avgMean)})`),
+        ...withoutPoints.map((row) => `${row.learner.fullName} (no points)`),
+      ].join(" · "),
+    };
+  };
+  const downloadRows = selectMeritExportRows(rankedAll, includeUnmarked);
+  const downloadLevelDistribution = summarizeLearnersByLevel(downloadRows.map((row) => ({ level: row.level, gender: row.learner.gender })));
+  const downloadRankOf = (row: Decorated) => {
+    const score = valueOf(row);
+    return score == null ? "—" : String(downloadRows.findIndex((item) => valueOf(item) === score) + 1);
+  };
+  const downloadStreamSummary = streams.map((stream) => {
+    const group = downloadRows.filter((row) => row.learner.streamId === stream.id);
+    const mean = meanOf(group.map(valueOf));
+    const leader = [...group].filter((row) => valueOf(row) != null).sort((a, b) => (valueOf(b) ?? -1) - (valueOf(a) ?? -1))[0];
+    return { name: stream.name, meanLabel: fmt(mean), mean: mean ?? 0, learnerCount: group.length, topLearner: leader ? names([leader]) : "—" };
+  }).filter((item) => item.learnerCount > 0);
+  const downloadPointsRanked = selectMeritExportRows(pointsRanked, includeUnmarked);
+  const downloadScoredPointsRanked = downloadPointsRanked.filter((row) => row.totalPoints != null);
+  const downloadPointsStreamSummary = streams.map((stream) => {
+    const group = downloadPointsRanked.filter((row) => row.learner.streamId === stream.id);
+    const scored = group.filter((row) => row.totalPoints != null);
+    const mean = meanOf(group.map((row) => row.totalPoints));
+    const leader = [...scored].sort((a, b) => (b.totalPoints ?? -1) - (a.totalPoints ?? -1))[0];
+    return { name: stream.name, mean: mean ?? 0, meanLabel: fmt(mean, 0), learnerCount: group.length, topLearner: leader?.learner.fullName ?? "—" };
+  }).filter((item) => item.learnerCount > 0);
+  const downloadPossibleMarks = downloadRows.length * subjects.length * exams.length;
+  const downloadEnteredMarks = downloadRows.reduce((sum, row) => sum + row.cells.reduce((cellSum, cell) => cellSum + exams.filter((exam) => cell.byExam[exam.id] != null).length, 0), 0);
+  const downloadCoverage = downloadPossibleMarks ? Math.round((downloadEnteredMarks / downloadPossibleMarks) * 100) : 0;
+  const downloadAtRisk = downloadRows.filter((row) => row.avgMean != null && row.avgMean < 50);
+  const downloadUnscored = downloadRows.filter((row) => row.avgMean == null);
+  const downloadHighAchievers = downloadRows.filter((row) => row.avgMean != null && row.avgMean >= 80);
 
   async function downloadPdf() {
     if (!canDownload) return;
@@ -195,8 +314,8 @@ export function AnalysisView({ ws, flash }: Gate) {
         periodLabel: meritPeriod,
         subjects,
         orientation: meritOrientation,
-        rows: rankedAll.map((row) => ({
-          position: rankOf(row),
+        rows: downloadRows.map((row) => ({
+          position: downloadRankOf(row),
           roll: row.learner.roll,
           admission: row.learner.admissionNumber ?? "",
           name: row.learner.fullName,
@@ -209,54 +328,11 @@ export function AnalysisView({ ws, flash }: Gate) {
           mean: fmt(valueOf(row)),
           level: row.level ?? "—",
         })),
-        streamSummary: streamCompare.map((item) => ({ name: item.name, meanLabel: item.meanLabel, learnerCount: item.learnerCount, topLearner: item.topLearner })),
-        analytics: pdfWithAnalytics
-          ? {
-              levelDistribution,
-              summary: [
-                { label: "Class mean", value: fmt(classMean) },
-                { label: "Top learner", value: names(bestOverall) },
-                { label: "Best boy — North", value: names(bestBoyNorth) },
-                { label: "Best boy — South", value: names(bestBoySouth) },
-                { label: "Best boy overall", value: names(bestBoysOverall) },
-                { label: "Best girl — North", value: names(bestGirlNorth) },
-                { label: "Best girl — South", value: names(bestGirlSouth) },
-                { label: "Best girl overall", value: names(bestGirlsOverall) },
-                { label: "Best student overall", value: names(bestOverall) },
-                { label: "Top stream", value: bestStream?.name ?? "—" },
-                { label: "Girls / boys", value: `${fmt(girls)} / ${fmt(boys)}` },
-              ],
-              subjectMeans: subjectChart,
-              subjectPositions,
-              streamMeans: streamCompare,
-              scoreBands,
-              insights: [
-                { label: "Marks coverage", value: `${coverage}%`, detail: `${enteredMarks} of ${possibleMarks} expected score cells entered` },
-                { label: "Learners at risk", value: String(atRisk.length), detail: "Mean below 50; review support needs" },
-                { label: "High achievers", value: String(highAchievers.length), detail: "Mean of 80 or above" },
-                { label: "No recorded marks", value: String(unscored.length), detail: "No scored subjects in this period" },
-                { label: "Strongest subject", value: strongestSubject?.name ?? "—", detail: strongestSubject ? `Mean ${fmt(strongestSubject.mean)}` : "No scores yet" },
-                { label: "Priority subject", value: supportSubject?.name ?? "—", detail: supportSubject ? `Mean ${fmt(supportSubject.mean)}; consider intervention` : "No scores yet" },
-                { label: "Score spread", value: fmt(scoreSpread), detail: "Difference between highest and lowest learner mean" },
-                { label: "Stream performance gap", value: fmt(streamGap), detail: "Difference between highest and lowest stream means" },
-                { label: "CAT improvement", value: catDelta == null ? "—" : `${catDelta > 0 ? "+" : ""}${fmt(catDelta)}`, detail: examMeans.length > 1 ? `${examMeans[0].name} compared with ${examMeans[1].name}` : "Add another CAT to compare" },
-                { label: "Female / male mean", value: `${fmt(girls)} / ${fmt(boys)}`, detail: girls != null && boys != null ? `Difference ${fmt(girls - boys)}` : "Not enough gender-separated scores" },
-                { label: "Best boy North", value: names(bestBoyNorth), detail: "Tied leaders are all included" },
-                { label: "Best boy South", value: names(bestBoySouth), detail: "Tied leaders are all included" },
-                { label: "Best boy overall", value: names(bestBoysOverall), detail: "Tied leaders are all included" },
-                { label: "Best girl North", value: names(bestGirlNorth), detail: "Tied leaders are all included" },
-                { label: "Best girl South", value: names(bestGirlSouth), detail: "Tied leaders are all included" },
-                { label: "Best girl overall", value: names(bestGirlsOverall), detail: "Tied leaders are all included" },
-                { label: "Best student overall", value: names(bestOverall), detail: "Tied leaders are all included" },
-                ...bestBySubject.map((item) => ({ label: `Best ${item.subject.name}`, value: names(item.rows), detail: item.score == null ? "No recorded subject scores" : `Score ${fmt(item.score)}; all ties included` })),
-                { label: "Class average", value: fmt(classMean), detail: `${rankedAll.length} learners in the selected grade/stream` },
-              ],
-              trend,
-              review: atRisk.slice(0, 12).map((row) => `${row.learner.fullName} (${fmt(row.avgMean)})`).join(" · "),
-            }
-          : null,
+        streamSummary: downloadStreamSummary,
+        analytics: pdfWithAnalytics ? buildCompleteAnalytics() : null,
       });
-      flash(`Merit list PDF downloaded with all ${rankedAll.length} learners, including learners without marks.`);
+      notifyDownloadReady();
+      flash(`Merit list PDF downloaded with ${downloadRows.length} learners, ${includeUnmarked ? "including" : "excluding"} those without marks.`);
     } catch (error) {
       flash(errText(error), true);
     } finally {
@@ -269,7 +345,7 @@ export function AnalysisView({ ws, flash }: Gate) {
     if (!grade) return;
     setPdfBusy(true);
     try {
-      const pointRows = pointsRanked.map((row) => ({
+      const pointRows = downloadPointsRanked.map((row) => ({
         position: pointsRankOf(row),
         roll: row.learner.roll,
         admission: row.learner.admissionNumber ?? "",
@@ -295,38 +371,14 @@ export function AnalysisView({ ws, flash }: Gate) {
         subjects,
         orientation: meritOrientation,
         rows: pointRows,
-        streamSummary: pointsStreamCompare,
+        streamSummary: downloadPointsStreamSummary,
         meanHeader: "TOTAL POINTS",
         levelHeader: "LEVEL / PTS",
-        analytics: pdfWithAnalytics ? {
-          levelDistribution,
-          summary: [
-            { label: "Average total points", value: classPointsMean == null ? "—" : fmt(classPointsMean, 0) },
-            { label: "Top learner", value: names(pointsRanked[0]?.totalPoints == null ? [] : [pointsRanked[0]]) },
-            { label: "Highest points", value: pointsRanked[0]?.totalPoints == null ? "—" : String(pointsRanked[0].totalPoints) },
-            { label: "Learners in roster", value: String(pointsRanked.length) },
-            { label: "Top stream", value: [...pointsStreamCompare].sort((a, b) => b.mean - a.mean)[0]?.name ?? "—" },
-            { label: "Score graph", value: "Included" },
-          ],
-          subjectMeans: subjectChart,
-          subjectPositions,
-          streamMeans: pointsStreamCompare,
-          scoreBands,
-          insights: [
-            { label: "Average total points", value: classPointsMean == null ? "—" : fmt(classPointsMean, 0), detail: "Total of the points awarded for each recorded subject level" },
-            { label: "Top learner", value: names(pointsRanked[0]?.totalPoints == null ? [] : [pointsRanked[0]]), detail: "Highest total subject points; ties remain visible in the merit table" },
-            { label: "Highest level points", value: pointsRanked[0]?.levelPoints == null ? "—" : String(pointsRanked[0].levelPoints), detail: "Overall band points for the learner" },
-            { label: "Learners without points", value: String(pointsRanked.filter((row) => row.totalPoints == null).length), detail: "No recorded subject levels available for points ranking" },
-            { label: "Points range", value: scoredPointsRanked.length ? `${scoredPointsRanked.at(-1)?.totalPoints ?? "—"}–${scoredPointsRanked[0]?.totalPoints ?? "—"}` : "—", detail: "Lowest to highest recorded total points" },
-            { label: "Marks coverage", value: `${coverage}%`, detail: `${enteredMarks} of ${possibleMarks} expected score cells entered` },
-            { label: "Strongest subject", value: strongestSubject?.name ?? "—", detail: strongestSubject ? `Score mean ${fmt(strongestSubject.mean)}` : "No scores yet" },
-            { label: "Top stream", value: [...pointsStreamCompare].sort((a, b) => b.mean - a.mean)[0]?.name ?? "—", detail: "Stream with the highest average total points" },
-          ],
-          trend,
-          review: pointsRanked.filter((row) => row.totalPoints == null).slice(0, 12).map((row) => `${row.learner.fullName} (no points)`).join(" · "),
-        } : null,
+        analytics: pdfWithAnalytics ? buildPointsAnalytics() : null,
+
       });
-      flash(`Points-based merit list PDF downloaded with all ${pointsRanked.length} learners, including learners without points.`);
+      notifyDownloadReady();
+      flash(`Points-based merit list PDF downloaded with ${downloadPointsRanked.length} learners, ${includeUnmarked ? "including" : "excluding"} those without marks.`);
     } catch (error) {
       flash(errText(error), true);
     } finally {
@@ -346,24 +398,24 @@ export function AnalysisView({ ws, flash }: Gate) {
       [meritPeriod],
       [],
       ["Position", "Roll", "Admission Number", "Name", "Gender", "Stream", ...subjects.map((subject) => subject.shortName), "Mean", "Level"],
-      ...rankedAll.map((row) => {
+      ...downloadRows.map((row) => {
         const stream = ws.streams.find((item) => item.id === row.learner.streamId)?.name ?? "";
         const scores = subjects.map((subject) => {
           const cell = row.cells.find((item) => item.subjectId === subject.id);
           const score = currentMode === "avg" ? cell?.avg : cell?.byExam[currentMode];
           return score == null ? "" : Number(score.toFixed(2));
         });
-        return [rankOf(row), row.learner.roll, row.learner.admissionNumber ?? "", row.learner.fullName, row.learner.gender, stream, ...scores, valueOf(row) == null ? "" : Number(valueOf(row)!.toFixed(2)), row.level ?? ""];
+        return [downloadRankOf(row), row.learner.roll, row.learner.admissionNumber ?? "", row.learner.fullName, row.learner.gender, stream, ...scores, valueOf(row) == null ? "" : Number(valueOf(row)!.toFixed(2)), row.level ?? ""];
       }),
       [],
       ["STREAM PERFORMANCE SUMMARY"],
       ["Stream", "Learners", "Mean", "Top learner"],
-      ...streamCompare.map((item) => [item.name, item.learnerCount, item.meanLabel, item.topLearner]),
+      ...downloadStreamSummary.map((item) => [item.name, item.learnerCount, item.meanLabel, item.topLearner]),
     ];
     const bytes = writeXlsxFromMatrix(quoteRows, { sheetName: "Merit list", headerRow: 9, orientation: meritOrientation, logo: ws.profile.logoData || "/logo.png" });
     const url = URL.createObjectURL(new Blob([bytes as BlobPart], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }));
-    const link = document.createElement("a"); link.href = url; link.download = `${grade?.name ?? "class"}-${currentMode}-${meritOrientation}-merit-list.xlsx`.replace(/[^a-zA-Z0-9._-]+/g, "_"); link.click(); window.setTimeout(() => URL.revokeObjectURL(url), 0);
-    flash(`Merit list Excel workbook downloaded with all ${rankedAll.length} learners, including learners without marks.`);
+    const link = document.createElement("a"); link.href = url; link.download = `${grade?.name ?? "class"}-${currentMode}-${meritOrientation}-merit-list.xlsx`.replace(/[^a-zA-Z0-9._-]+/g, "_"); link.click(); window.setTimeout(() => URL.revokeObjectURL(url), 0); notifyDownloadReady();
+    flash(`Merit list Excel workbook downloaded with ${downloadRows.length} learners, ${includeUnmarked ? "including" : "excluding"} those without marks.`);
   }
   async function downloadSubjectLevelsPdf() {
     if (!canDownload) return;
@@ -378,35 +430,10 @@ export function AnalysisView({ ws, flash }: Gate) {
         title: `SUBJECT LEVEL MERIT LIST — ${grade.name}${streamId ? ` · ${ws.streams.find((item) => item.id === streamId)?.name ?? ""}` : " · All streams"}`,
         periodLabel: `${meritPeriod} · Merit positions, subject scores, and levels follow ${currentMode === "avg" ? "the average across active assessments" : modeName}`,
         orientation: meritOrientation,
-        analytics: pdfWithAnalytics ? {
-          levelDistribution,
-          summary: [
-            { label: "Class mean", value: fmt(classMean) },
-            { label: "Top learner", value: names(bestOverall) },
-            { label: "Top stream", value: bestStream?.name ?? "—" },
-            { label: "Girls / boys", value: `${fmt(girls)} / ${fmt(boys)}` },
-            { label: "Pass rate", value: passRate == null ? "—" : `${passRate}%` },
-            { label: "Marks coverage", value: `${coverage}%` },
-          ],
-          subjectMeans: subjectChart,
-          subjectPositions,
-          streamMeans: streamCompare,
-          scoreBands,
-          insights: [
-            { label: "Learners at risk", value: String(atRisk.length), detail: "Mean below 50; review support needs" },
-            { label: "High achievers", value: String(highAchievers.length), detail: "Mean of 80 or above" },
-            { label: "Strongest subject", value: strongestSubject?.name ?? "—", detail: strongestSubject ? `Mean ${fmt(strongestSubject.mean)}` : "No scores yet" },
-            { label: "Priority subject", value: supportSubject?.name ?? "—", detail: supportSubject ? `Mean ${fmt(supportSubject.mean)}` : "No scores yet" },
-            { label: "Median learner score", value: fmt(medianScore), detail: "Middle score after ordering learner averages" },
-            { label: "Below class mean", value: String(learnersBelowClassMean), detail: "Learners below the selected class mean" },
-            ...bestBySubject.map((item) => ({ label: `Best ${item.subject.name}`, value: names(item.rows), detail: item.score == null ? "No recorded subject scores" : `Score ${fmt(item.score)}` })),
-          ],
-          trend,
-          review: atRisk.slice(0, 12).map((row) => `${row.learner.fullName} (${fmt(row.avgMean)})`).join(" · "),
-        } : null,
+        analytics: pdfWithAnalytics ? buildCompleteAnalytics() : null,
         subjects: subjects.map(({ id, shortName, name }) => ({ id, shortName, name })),
-        rows: rankedAll.map((row) => ({
-          position: rankOf(row),
+        rows: downloadRows.map((row) => ({
+          position: downloadRankOf(row),
           roll: row.learner.roll,
           admission: row.learner.admissionNumber ?? "",
           name: row.learner.fullName,
@@ -416,7 +443,8 @@ export function AnalysisView({ ws, flash }: Gate) {
           level: row.level ?? "—",
         })),
       });
-      flash(`Subject-level merit list downloaded with all ${rankedAll.length} learners, including learners without marks.`);
+      notifyDownloadReady();
+      flash(`Subject-level merit list downloaded with ${downloadRows.length} learners, ${includeUnmarked ? "including" : "excluding"} those without marks.`);
     } catch (error) {
       flash(errText(error), true);
     } finally {
@@ -452,17 +480,22 @@ export function AnalysisView({ ws, flash }: Gate) {
                 <option value="portrait">Portrait</option>
               </select>
             </label>
+            <label className="flex items-center gap-2 rounded-md border border-line bg-card px-3 py-2 text-sm font-semibold text-ink">
+              <input type="checkbox" checked={includeUnmarked} onChange={(event) => setIncludeUnmarked(event.target.checked)} aria-describedby="analysis-unmarked-help" />
+              Include learners with no marks
+            </label>
             <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={pdfWithAnalytics} onChange={(event) => setPdfWithAnalytics(event.target.checked)} />Include graphs and advanced analytics in PDF</label>
-            <button className={btnGhost} type="button" onClick={download}>Download merit list (CSV)</button>
-            <button className={btnGhost} type="button" onClick={() => void downloadExcel()}>Download merit list (Excel)</button>
-            <button className={btnGhost} type="button" disabled={pdfBusy} onClick={downloadPdf}>{pdfBusy ? "Preparing PDF…" : "Download merit list (PDF)"}</button>
-            <button className={btnGhost} type="button" disabled={pdfBusy || !rankedAll.length} onClick={downloadPointsPdf}>{pdfBusy ? "Preparing PDF…" : "Download points merit list (PDF)"}</button>
-            <button className={btnGhost} type="button" disabled={pdfBusy || !rankedAll.length} onClick={downloadSubjectLevelsPdf}>{pdfBusy ? "Preparing PDF…" : "Download subject levels (PDF)"}</button>
-            <button className={btnGhost} type="button" onClick={() => { flash("Print dialog opened for the class analysis."); window.print(); }}>Print analysis</button>
+            <button className="rounded-md border border-emerald-800 bg-emerald-700 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700" type="button" onClick={download}>Download merit list (CSV)</button>
+            <button className="rounded-md border border-blue-800 bg-blue-700 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700" type="button" onClick={() => void downloadExcel()}>Download merit list (Excel)</button>
+            <button className="rounded-md border border-rose-800 bg-rose-700 px-3 py-2 text-sm font-semibold text-white hover:bg-rose-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-700 disabled:cursor-not-allowed disabled:opacity-60" type="button" disabled={pdfBusy} onClick={downloadPdf}>{pdfBusy ? "Preparing PDF…" : "Download merit list (PDF)"}</button>
+            <button className="rounded-md border border-violet-800 bg-violet-700 px-3 py-2 text-sm font-semibold text-white hover:bg-violet-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-700 disabled:cursor-not-allowed disabled:opacity-60" type="button" disabled={pdfBusy || !rankedAll.length} onClick={downloadPointsPdf}>{pdfBusy ? "Preparing PDF…" : "Download points merit list (PDF)"}</button>
+            <button className="rounded-md border border-cyan-800 bg-cyan-700 px-3 py-2 text-sm font-semibold text-white hover:bg-cyan-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-700 disabled:cursor-not-allowed disabled:opacity-60" type="button" disabled={pdfBusy || !rankedAll.length} onClick={downloadSubjectLevelsPdf}>{pdfBusy ? "Preparing PDF…" : "Download subject levels (PDF)"}</button>
+            <button className="rounded-md border border-amber-800 bg-amber-700 px-3 py-2 text-sm font-semibold text-white hover:bg-amber-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-700" type="button" onClick={() => { flash("Print dialog opened for the class analysis."); window.print(); }}>Print analysis</button>
           </> : <span className="text-sm text-muted">Downloads and printing are disabled by the Super Admin for your role.</span>}
         </div>
       </header>
       <div className="no-print"><PeriodBar ws={ws} yearId={period.yearId} termId={period.termId} onYear={period.setYearId} onTerm={period.setTermId} /></div>
+      <p id="analysis-unmarked-help" className="no-print -mt-3 text-xs text-muted">No marks means no score recorded for this year, term and active assessments. This option changes downloads only; the screen roster and counts remain unchanged.</p>
       <div className="grid gap-2 sm:grid-cols-3">
         {termBook.map((item) => (
           <button key={item.term.id} type="button" className={`rounded-md border px-3 py-2 text-left ${item.term.id === period.termId ? "border-navy bg-navy text-paper" : "border-line bg-card"}`} onClick={() => period.setTermId(item.term.id)}>

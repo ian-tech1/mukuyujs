@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { paginateSubjectLevelRows, subjectLevelBandCode, subjectLevelRowsPerPage, subjectLevelSubjectColumnWidth, subjectLevelSubjectSections } from "./merit-pdf-layout.ts";
+import { paginateMeritAnalyticsItems, paginateSubjectLevelRows, subjectLevelBandCode, subjectLevelRowsPerPage, subjectLevelSubjectColumnWidth, subjectLevelSubjectSections } from "./merit-pdf-layout.ts";
 
 test("subject-level portrait pagination uses the available page height without changing row height", () => {
   const portraitCapacity = subjectLevelRowsPerPage(297);
@@ -42,6 +42,14 @@ test("preserves landscape subject sections", () => {
   const sections = subjectLevelSubjectSections(subjects, "landscape");
   assert.deepEqual(sections.map((section) => section.length), [12, 12, 1]);
   assert.deepEqual(sections.flat(), subjects);
+});
+
+test("paginates variable-height analytics without omitting or reordering insights", () => {
+  const rows = Array.from({ length: 31 }, (_, index) => ({ id: index + 1, height: 8 + (index % 3) * 4 }));
+  const pages = paginateMeritAnalyticsItems(rows, 52, (row) => row.height);
+  assert.deepEqual(pages.flat().map((row) => row.id), rows.map((row) => row.id));
+  assert.ok(pages.every((page) => page.reduce((sum, row) => sum + row.height, 0) <= 52));
+  assert.ok(pages.every((page) => page.length > 0));
 });
 
 test("subject-level PDF extracts the band code rather than the numeric score for level styling", () => {
