@@ -1126,6 +1126,21 @@ html[data-portal-motion="reduced"] .portal-loading-track span { animation:none !
   .portal-loading-opening .portal-loading-center-shade { display: none !important; }
   .portal-loading-opening .portal-opening-center-orbit { display: grid; }
 }
+/* Keep the launch backdrop vivid without changing other loading or portal screens. */
+.portal-loading-opening.portal-opening-link,
+.portal-loading-opening.portal-opening-app {
+  background-color: #030914;
+  background-image:
+    radial-gradient(ellipse 66% 48% at 12% 15%, rgba(32, 201, 232, .24), transparent 76%),
+    radial-gradient(ellipse 58% 42% at 86% 23%, rgba(214, 76, 187, .22), transparent 74%),
+    radial-gradient(ellipse 72% 48% at 53% 90%, rgba(243, 183, 71, .2), transparent 76%),
+    linear-gradient(140deg, #050d1c 0%, #0b1530 42%, #081a26 72%, #090f21 100%);
+}
+.portal-loading-opening .portal-loading-aurora { opacity: .76 !important; filter: blur(18px) saturate(1.38); }
+.portal-loading-opening .portal-loading-ribbon-field { opacity: .92; }
+.portal-loading-opening .portal-loading-rays { opacity: .82; }
+.portal-loading-opening .portal-loading-stars { opacity: 1; }
+.portal-loading-opening .portal-loading-dust { opacity: .64; }
 .portal-loading-opening {
   color: #26364a;
 }
