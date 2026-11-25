@@ -3,7 +3,6 @@ import { useEffect } from "react";
 import { AuthProvider } from "@/lib/auth/provider";
 import { PreviewHostBridge } from "@/components/preview-host-bridge";
 import { DownloadActivityOverlay } from "@/components/school/download-activity-overlay";
-import { InstallAppPrompt } from "@/components/school/install-app-prompt";
 import { getWelcomePage } from "@/lib/school/api";
 import { PORTAL_BACKDROP_THEME_IDS, type AppearancePalette } from "@/lib/school/model";
 import { applyDisplayPreferences, applyPortalBackdropColors, readDisplayPreferences } from "@/lib/school/display";
@@ -42,7 +41,6 @@ export const Route = createRootRoute({
         <AuthProvider>
           <Outlet />
         </AuthProvider>
-        <InstallAppPrompt />
         <DownloadActivityOverlay />
         <Scripts />
       </body>

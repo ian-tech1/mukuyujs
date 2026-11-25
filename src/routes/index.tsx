@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { SchoolLogo } from "@/components/school/logo";
+import { isStandalonePwa } from "@/lib/pwa-install";
 import { PublicReport } from "@/components/school/public-report";
 import { btnClass, errText, inputClass } from "@/components/school/gate";
 import { completeParentFirstLoginPasswordChange, getParentPasswordChangeStatus, getWorkspace, getWelcomePage, login, loginParent, logout, portalStatus, requestParentLoginCode, requestParentPasswordResetCode, resetParentPassword, verifyParentLoginCode } from "@/lib/school/api";
@@ -35,12 +36,22 @@ function OpeningIntro({ title, motto, logoSrc, durationSeconds, onComplete }: { 
   const [visible, setVisible] = useState(true);
   const [progress, setProgress] = useState(0);
   const [secondsRemaining, setSecondsRemaining] = useState(durationSeconds);
+  const [standaloneApp, setStandaloneApp] = useState(false);
   const startedAt = useRef(Date.now());
   const countdownLabel = `Sign-in opens in ${secondsRemaining} ${secondsRemaining === 1 ? "second" : "seconds"}`;
+
+  useEffect(() => {
+    const updateAppMode = () => setStandaloneApp(isStandalonePwa());
+    updateAppMode();
+    const media = window.matchMedia("(display-mode: standalone)");
+    media.addEventListener("change", updateAppMode);
+    return () => media.removeEventListener("change", updateAppMode);
+  }, []);
+
   useEffect(() => {
     if (!visible) return;
     const durationMs = Math.max(1, durationSeconds * 1000);
-    const remaining = Math.max(0, durationSeconds * 1000 - (Date.now() - startedAt.current));
+    const remaining = Math.max(0, durationMs - (Date.now() - startedAt.current));
     const updateProgress = () => {
       const elapsedMs = Math.min(durationMs, Math.max(0, Date.now() - startedAt.current));
       setProgress(Math.round((elapsedMs / durationMs) * 100));
@@ -61,7 +72,7 @@ function OpeningIntro({ title, motto, logoSrc, durationSeconds, onComplete }: { 
   }
 
   if (!visible) return null;
-  return <div className="portal-loading portal-loading-opening fixed inset-0 z-[100] grid min-h-screen w-full place-items-center px-6" role="dialog" aria-modal="true" aria-labelledby="opening-intro-title" aria-describedby="opening-intro-description" onKeyDown={(event) => { if (event.key === "Escape") continueToSignIn(); }}>
+  return <div className={`portal-loading portal-loading-opening fixed inset-0 z-[2147483000] grid min-h-[100svh] w-full place-items-center px-6 ${standaloneApp ? "portal-opening-app" : "portal-opening-link"}`} role={standaloneApp ? "status" : "dialog"} aria-modal={standaloneApp ? undefined : true} aria-labelledby={standaloneApp ? undefined : "opening-intro-title"} aria-describedby={standaloneApp ? undefined : "opening-intro-description"} aria-label={standaloneApp ? "Opening Mukuyu Junior School" : undefined} onKeyDown={(event) => { if (!standaloneApp && event.key === "Escape") continueToSignIn(); }}>
     <div className="portal-loading-aurora" aria-hidden="true" />
     <div className="portal-loading-ribbon-field" aria-hidden="true">
       <span className="portal-loading-ribbon portal-loading-ribbon-one" />
@@ -112,24 +123,24 @@ function OpeningIntro({ title, motto, logoSrc, durationSeconds, onComplete }: { 
       <span className="portal-loading-object portal-loading-object-hex portal-loading-object-twenty" />
     </div>
     <div className="portal-loading-center-shade" aria-hidden="true" />
+    <span className="portal-opening-center-orbit" aria-hidden="true"><span className="portal-loading-orbit"><SchoolLogo src={logoSrc} className="size-24" /></span></span>
     <div className="portal-loading-card text-center">
       <img className="portal-launch-brand-card" src="/icons/mukuyu-app-icon.svg" alt="MUKUYU JUNIOR SCHOOL · MKJ · POWERED BY IAN TECH" width={512} height={512} />
       <div className="portal-loading-details">
-      <p className="portal-loading-kicker">MUKUYU JUNIOR SCHOOL · LEARNING PORTAL</p>
-      <span className="portal-loading-orbit" aria-hidden="true"><SchoolLogo src={logoSrc} className="size-24" /></span>
-      <h1 id="opening-intro-title" className="portal-loading-title mt-5">{title}</h1>
-      <p className="portal-loading-tagline mt-2">{motto}</p>
-      <p id="opening-intro-description" className="portal-loading-message mt-4 text-sm">A brighter school day starts here. Welcome to the Mukuyu Junior School portal.</p>
-      <div className="portal-loading-progress-meta mt-6" aria-hidden="true"><span>{countdownLabel}</span><strong>{progress}%</strong></div>
-      <div className="portal-loading-track mt-2" role="progressbar" aria-label="Welcome splash progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress} aria-valuetext={countdownLabel}><span style={{ width: `${progress}%` }} /></div>
-      <button className="portal-loading-continue mt-6" type="button" autoFocus onClick={continueToSignIn}>Continue to sign in</button>
-      <p className="portal-loading-footnote mt-4 justify-center">MUKUYU JUNIOR SCHOOL · LEARN WITH PURPOSE</p>
-      <p className="portal-loading-credit mt-2">PORTAL DEVELOPED BY IAN TECH</p>
+        <p className="portal-loading-kicker">MUKUYU JUNIOR SCHOOL · LEARNING PORTAL</p>
+        <span className="portal-loading-orbit" aria-hidden="true"><SchoolLogo src={logoSrc} className="size-24" /></span>
+        <h1 id="opening-intro-title" className="portal-loading-title mt-5">{title}</h1>
+        <p className="portal-loading-tagline mt-2">{motto}</p>
+        <p id="opening-intro-description" className="portal-loading-message mt-4 text-sm">A brighter school day starts here. Welcome to the Mukuyu Junior School portal.</p>
+        <div className="portal-loading-progress-meta mt-6" aria-hidden="true"><span>{countdownLabel}</span><strong>{progress}%</strong></div>
+        <div className="portal-loading-track mt-2" role="progressbar" aria-label="Welcome splash progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress} aria-valuetext={countdownLabel}><span style={{ width: `${progress}%` }} /></div>
+        <button className="portal-loading-continue mt-6" type="button" autoFocus={!standaloneApp} onClick={continueToSignIn}>Continue to sign in</button>
+        <p className="portal-loading-footnote mt-4 justify-center">MUKUYU JUNIOR SCHOOL · LEARN WITH PURPOSE</p>
+        <p className="portal-loading-credit mt-2">PORTAL DEVELOPED BY IAN TECH</p>
       </div>
     </div>
   </div>;
 }
-
 function LoginPage() {
   const navigate = useNavigate();
   const [status, setStatus] = useState<{ needsSetup: boolean; schoolName: string; motto: string; poBox: string; location: string } | null>(null);

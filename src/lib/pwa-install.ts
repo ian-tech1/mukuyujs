@@ -22,7 +22,8 @@ function notifySubscribers() {
   subscribers.forEach((subscriber) => subscriber(state));
 }
 
-function isStandaloneDisplay() {
+export function isStandalonePwa() {
+  if (typeof window === "undefined" || typeof navigator === "undefined") return false;
   return window.matchMedia?.("(display-mode: standalone)").matches === true ||
     ("standalone" in navigator && Boolean((navigator as Navigator & { standalone?: boolean }).standalone));
 }
@@ -31,7 +32,7 @@ function isStandaloneDisplay() {
 export function initializePwaInstallCapture() {
   if (typeof window === "undefined" || captureInitialized) return;
   captureInitialized = true;
-  installed = isStandaloneDisplay();
+  installed = isStandalonePwa();
 
   window.addEventListener("beforeinstallprompt", (event: Event) => {
     event.preventDefault();

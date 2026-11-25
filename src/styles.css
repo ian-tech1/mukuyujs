@@ -1095,7 +1095,18 @@ html[data-portal-motion="reduced"] .portal-loading-track span { animation:none !
 }
 
 
-/* The app launch intro reuses the same full-screen animated color scene as the linked-site opening. */
+/* Browser links keep the branded intro card; installed app launches expose the orbital scene on its own. */
+.portal-opening-app { isolation: isolate; pointer-events: auto; }
+.portal-opening-app .portal-loading-card,
+.portal-opening-app .portal-loading-center-shade { display: none !important; }
+.portal-opening-center-orbit { position: relative; z-index: 2; display: none; place-items: center; }
+.portal-opening-app .portal-opening-center-orbit { display: grid; }
+@media (display-mode: standalone) {
+  .portal-loading-opening { z-index: 2147483000 !important; min-height: 100svh; padding: 0; }
+  .portal-loading-opening .portal-loading-card,
+  .portal-loading-opening .portal-loading-center-shade { display: none !important; }
+  .portal-loading-opening .portal-opening-center-orbit { display: grid; }
+}
 .portal-loading-opening {
   color: #26364a;
 }

@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Menu, Palette, SlidersHorizontal, X } from "lucide-react";
 import { SchoolLogo } from "@/components/school/logo";
+import { InstallAppPrompt } from "@/components/school/install-app-prompt";
 import { AnalysisView } from "@/components/school/analysis-view";
 import { DashboardView } from "@/components/school/dashboard-view";
 import { LearnersView } from "@/components/school/learners-view";
@@ -267,6 +268,7 @@ function PortalPage() {
 
   return (
     <div className="portal-animated-background min-h-screen w-full min-w-0 max-w-none overflow-x-clip bg-paper lg:grid lg:grid-cols-[16rem_minmax(0,1fr)]" data-portal-section={current}>
+      <InstallAppPrompt />
       <aside id="portal-navigation" aria-label="Main navigation" className={`portal-navigation-drawer flex min-h-screen flex-col overflow-y-auto ${open ? "portal-loading fixed inset-0 z-20" : "hidden"} bg-navy text-paper lg:sticky lg:top-0 lg:block lg:h-screen`}>
         <PortalLoadingBackdrop className="portal-navigation-backdrop" />
         <div className="flex items-center justify-between border-b border-white/10 px-5 py-5 lg:border-b-0">
