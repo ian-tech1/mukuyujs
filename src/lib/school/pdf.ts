@@ -2,7 +2,7 @@ import type { Decorated, Exam, Grade, Profile, ReportExtras, Stream, Subject } f
 import { fmt } from "@/lib/school/model";
 import { remarkBody, reportFootnote } from "@/lib/school/extras";
 import { chunkMarklistRows } from "@/lib/school/marklist.ts";
-import { paginateMeritAnalyticsItems, paginateSubjectLevelRows, subjectLevelBandCode, subjectLevelSubjectColumnWidth, subjectLevelSubjectSections, SUBJECT_LEVEL_ROW_HEIGHT_MM } from "@/lib/school/merit-pdf-layout.ts";
+import { meritPdfLetterheadLayout, paginateMeritAnalyticsItems, paginateMeritTextLines, paginateSubjectLevelRows, subjectLevelBandCode, subjectLevelSubjectColumnWidth, subjectLevelSubjectSections, SUBJECT_LEVEL_ROW_HEIGHT_MM, type MeritPdfLetterheadLineCounts } from "@/lib/school/merit-pdf-layout.ts";
 
 type DrawInput = {
   profile: Profile;
@@ -66,6 +66,77 @@ function paintLogo(doc: import("jspdf").jsPDF, logo: string, x: number, y: numbe
       /* a broken upload should not stop the download */
     }
   }
+}
+
+type MeritPdfLetterheadBlock = {
+  key: keyof MeritPdfLetterheadLineCounts;
+  lines: string[];
+  font: "times" | "helvetica";
+  style: "normal" | "bold";
+  fontSize: number;
+  color: [number, number, number];
+};
+
+type PreparedMeritPdfLetterhead = {
+  blocks: MeritPdfLetterheadBlock[];
+  layout: ReturnType<typeof meritPdfLetterheadLayout>;
+};
+
+function prepareMeritPdfLetterhead(
+  doc: import("jspdf").jsPDF,
+  profile: Profile,
+  title: string,
+  periodLabel: string,
+  pageW: number,
+): PreparedMeritPdfLetterhead {
+  const centerWidth = Math.max(40, pageW - 76);
+  const specs: Array<{
+    key: keyof MeritPdfLetterheadLineCounts;
+    text: string;
+    font: "times" | "helvetica";
+    style: "normal" | "bold";
+    fontSize: number;
+    color: [number, number, number];
+  }> = [
+    { key: "school", text: profile.name, font: "times", style: "bold", fontSize: 11.2, color: [14, 42, 74] },
+    { key: "address", text: `P.O. BOX ${profile.poBox} · ${profile.location}`, font: "helvetica", style: "normal", fontSize: 6.4, color: [14, 42, 74] },
+    { key: "vision", text: `VISION: ${profile.vision}`, font: "helvetica", style: "normal", fontSize: 5.6, color: [14, 42, 74] },
+    { key: "mission", text: `MISSION: ${profile.mission}`, font: "helvetica", style: "normal", fontSize: 5.6, color: [14, 42, 74] },
+    { key: "motto", text: `MOTTO: ${profile.motto}`, font: "times", style: "bold", fontSize: 7.2, color: [14, 42, 74] },
+    { key: "title", text: title, font: "helvetica", style: "bold", fontSize: 8.1, color: [14, 42, 74] },
+    { key: "period", text: periodLabel, font: "helvetica", style: "normal", fontSize: 6.2, color: [14, 42, 74] },
+  ];
+  const lineCounts = {} as MeritPdfLetterheadLineCounts;
+  const blocks: MeritPdfLetterheadBlock[] = specs.map((spec) => {
+    doc.setFont(spec.font, spec.style);
+    doc.setFontSize(spec.fontSize);
+    const lines = doc.splitTextToSize(spec.text, centerWidth) as string[];
+    lineCounts[spec.key] = lines.length;
+    return { ...spec, lines };
+  });
+  return { blocks, layout: meritPdfLetterheadLayout(lineCounts) };
+}
+
+function drawMeritPdfLetterhead(
+  doc: import("jspdf").jsPDF,
+  letterhead: PreparedMeritPdfLetterhead,
+  logo: string,
+  pageW: number,
+): number {
+  doc.setFillColor(255, 252, 247);
+  doc.rect(0, 0, pageW, letterhead.layout.headerBottom + 3, "F");
+  doc.setDrawColor(154, 116, 48);
+  doc.rect(4, 2, pageW - 8, letterhead.layout.headerBottom);
+  paintLogo(doc, logo, 6, 4, 22, 21);
+  paintLogo(doc, logo, pageW - 28, 4, 22, 21);
+  for (const block of letterhead.blocks) {
+    doc.setTextColor(...block.color);
+    doc.setFont(block.font, block.style);
+    doc.setFontSize(block.fontSize);
+    doc.text(block.lines, pageW / 2, letterhead.layout[block.key], { align: "center" });
+  }
+  doc.setTextColor(20, 20, 20);
+  return letterhead.layout.tableTop;
 }
 
 function drawReport(doc: import("jspdf").jsPDF, input: DrawInput) {
@@ -589,36 +660,11 @@ export async function downloadMeritListPdf(options: {
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
 
-  const letterhead = () => {
-    doc.setFillColor(255, 252, 247);
-    doc.rect(0, 0, pageW, 36, "F");
-    doc.setDrawColor(154, 116, 48);
-    doc.rect(4, 2, pageW - 8, 32);
-    paintLogo(doc, options.logo, 6, 4, 22, 21);
-    paintLogo(doc, options.logo, pageW - 28, 4, 22, 21);
-    doc.setTextColor(14, 42, 74);
-    doc.setFont("times", "bold");
-    doc.setFontSize(13);
-    doc.text(options.profile.name, pageW / 2, 9, { align: "center" });
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(7);
-    doc.text(`P.O. BOX ${options.profile.poBox} · ${options.profile.location}`, pageW / 2, 13, { align: "center" });
-    doc.text(`VISION: ${options.profile.vision}`, pageW / 2, 17, { align: "center", maxWidth: pageW - 70 });
-    doc.text(`MISSION: ${options.profile.mission}`, pageW / 2, 21, { align: "center", maxWidth: pageW - 70 });
-    doc.setFont("times", "bold");
-    doc.setFontSize(8);
-    doc.text(`MOTTO: ${options.profile.motto}`, pageW / 2, 25, { align: "center" });
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(8.5);
-    doc.text(options.title, pageW / 2, 29.5, { align: "center", maxWidth: pageW - 70 });
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(7.5);
-    doc.text(options.periodLabel, pageW / 2, 33, { align: "center" });
-    doc.setTextColor(20, 20, 20);
-  };
+  const preparedLetterhead = prepareMeritPdfLetterhead(doc, options.profile, options.title, options.periodLabel, pageW);
+  const letterhead = () => drawMeritPdfLetterhead(doc, preparedLetterhead, options.logo, pageW);
 
   // ---- ranked table ----
-  letterhead();
+  let y = letterhead();
   const subjects = options.subjects;
   const left = 5;
   const fixed = orientation === "portrait"
@@ -644,15 +690,13 @@ export async function downloadMeritListPdf(options: {
     doc.setTextColor(20, 20, 20);
     doc.setFont("helvetica", "normal");
   };
-  let y = 43;
   drawHead(y);
   y += 6;
   const rowH = 5.4;
   options.rows.forEach((row, index) => {
     if (y > pageH - 14) {
       doc.addPage();
-      letterhead();
-      y = 43;
+      y = letterhead();
       drawHead(y);
       y += 6;
     }
@@ -671,7 +715,7 @@ export async function downloadMeritListPdf(options: {
 
   // Stream means are always included in the merit-list PDF, even when optional analytics are disabled.
   y += 2;
-  if (y > pageH - 28) { doc.addPage(); letterhead(); y = 43; }
+  if (y > pageH - 28) { doc.addPage(); y = letterhead(); }
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
   doc.setTextColor(14, 42, 74);
@@ -692,7 +736,7 @@ export async function downloadMeritListPdf(options: {
   doc.setTextColor(20, 20, 20);
   doc.setFont("helvetica", "normal");
   options.streamSummary.forEach((item, index) => {
-    if (y > pageH - 10) { doc.addPage(); letterhead(); y = 43; }
+    if (y > pageH - 10) { doc.addPage(); y = letterhead(); }
     if (index % 2 === 1) { doc.setFillColor(246, 244, 238); doc.rect(left, y - 3.5, pageW - 10, 5.5, "F"); }
     doc.setFontSize(7);
     doc.text(item.name, left + 2, y, { maxWidth: streamSummaryColumns.learners - left - 4 });
@@ -707,10 +751,9 @@ export async function downloadMeritListPdf(options: {
   const a = options.analytics;
   if (a) {
     doc.addPage();
-    letterhead();
-    y = 43;
+    y = letterhead();
     const heading = (text: string) => {
-      if (y > pageH - 24) { doc.addPage(); letterhead(); y = 43; }
+      if (y > pageH - 24) { doc.addPage(); y = letterhead(); }
       doc.setFont("helvetica", "bold");
       doc.setFontSize(10);
       doc.setTextColor(14, 42, 74);
@@ -721,8 +764,7 @@ export async function downloadMeritListPdf(options: {
     };
     const addAnalyticsContinuation = (text: string) => {
       doc.addPage();
-      letterhead();
-      y = 43;
+      y = letterhead();
       doc.setFont("helvetica", "bold");
       doc.setFontSize(10);
       doc.setTextColor(14, 42, 74);
@@ -773,7 +815,7 @@ export async function downloadMeritListPdf(options: {
       const barMax = pageW - 10 - labelW - 22;
       doc.setFontSize(7);
       data.forEach((item) => {
-        if (y > pageH - 12) { doc.addPage(); letterhead(); y = 43; }
+        if (y > pageH - 12) { doc.addPage(); y = letterhead(); }
         doc.text(item.label, left, y, { maxWidth: labelW - 2 });
         doc.setDrawColor(225, 220, 208);
         doc.rect(left + labelW, y - 3.2, barMax, 3.8);
@@ -879,34 +921,22 @@ export async function downloadSubjectLevelMeritListPdf(options: {
   const left = 5;
   const tableW = pageW - left * 2;
   const rowHeight = SUBJECT_LEVEL_ROW_HEIGHT_MM;
-  const pageChunks = paginateSubjectLevelRows(options.rows, pageH, rowHeight);
   const subjectSections = subjectLevelSubjectSections(options.subjects, orientation);
+  const preparedHeaders = subjectSections.map((_, sectionIndex) => prepareMeritPdfLetterhead(
+    doc,
+    options.profile,
+    options.title,
+    `${options.periodLabel} · Subject group ${sectionIndex + 1}/${subjectSections.length}`,
+    pageW,
+  ));
+  const maximumTableTop = Math.max(43, ...preparedHeaders.map((header) => header.layout.tableTop));
+  const pageChunks = paginateSubjectLevelRows(options.rows, pageH, rowHeight, maximumTableTop);
 
   function letterhead(sectionNumber: number, sectionCount: number) {
-    doc.setFillColor(255, 252, 247);
-    doc.rect(0, 0, pageW, 37, "F");
-    doc.setDrawColor(154, 116, 48);
-    doc.rect(4, 2, pageW - 8, 33);
-    paintLogo(doc, options.logo, 6, 4, 22, 21);
-    paintLogo(doc, options.logo, pageW - 28, 4, 22, 21);
-    doc.setTextColor(14, 42, 74);
-    doc.setFont("times", "bold");
-    doc.setFontSize(13);
-    doc.text(options.profile.name, pageW / 2, 9, { align: "center", maxWidth: pageW - 65 });
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(7);
-    doc.text(`P.O. BOX ${options.profile.poBox} · ${options.profile.location}`, pageW / 2, 13, { align: "center" });
-    doc.text(`VISION: ${options.profile.vision}`, pageW / 2, 17, { align: "center", maxWidth: pageW - 70 });
-    doc.text(`MISSION: ${options.profile.mission}`, pageW / 2, 21, { align: "center", maxWidth: pageW - 70 });
-    doc.setFont("times", "bold");
-    doc.setFontSize(8);
-    doc.text(`MOTTO: ${options.profile.motto}`, pageW / 2, 25, { align: "center" });
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(8.5);
-    doc.text(options.title, pageW / 2, 29.5, { align: "center", maxWidth: pageW - 70 });
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(7);
-    doc.text(`${options.periodLabel} · Subject group ${sectionNumber}/${sectionCount}`, pageW / 2, 33, { align: "center" });
+    const header = sectionCount === subjectSections.length
+      ? preparedHeaders[sectionNumber - 1]
+      : prepareMeritPdfLetterhead(doc, options.profile, options.title, `${options.periodLabel} · Subject group ${sectionNumber}/${sectionCount}`, pageW);
+    return drawMeritPdfLetterhead(doc, header, options.logo, pageW);
   }
 
   let firstPage = true;
@@ -923,8 +953,7 @@ export async function downloadSubjectLevelMeritListPdf(options: {
     pageChunks.forEach((pageRows, pageIndex) => {
       if (!firstPage) doc.addPage();
       firstPage = false;
-      letterhead(sectionIndex + 1, subjectSections.length);
-      const tableTop = 43;
+      const tableTop = letterhead(sectionIndex + 1, subjectSections.length);
       doc.setFillColor(14, 42, 74);
       doc.rect(left, tableTop - 4.2, tableW, 6.2, "F");
       doc.setFont("helvetica", "bold");
@@ -990,13 +1019,14 @@ export async function downloadSubjectLevelMeritListPdf(options: {
   doc.save(options.fileName);
 }
 
-function drawMeritAnalyticsPages(doc: import("jspdf").jsPDF, analytics: MeritPdfAnalytics, letterhead: (sectionNumber: number, sectionCount: number) => void, pageW: number, pageH: number, left: number) {
+function drawMeritAnalyticsPages(doc: import("jspdf").jsPDF, analytics: MeritPdfAnalytics, letterhead: (sectionNumber: number, sectionCount: number) => number, pageW: number, pageH: number, left: number) {
   const bottom = pageH - 10;
-  let y = 43;
+  let y = 0;
+  let analyticsHeaderTop = 43;
   const addPage = () => {
     doc.addPage();
-    letterhead(1, 1);
-    y = 43;
+    analyticsHeaderTop = letterhead(1, 1);
+    y = analyticsHeaderTop;
   };
   const heading = (text: string) => {
     if (y + 8 > bottom) addPage();
@@ -1101,12 +1131,13 @@ function drawMeritAnalyticsPages(doc: import("jspdf").jsPDF, analytics: MeritPdf
   const valueX = left + labelWidth + 2;
   const detailX = valueX + valueWidth + 2;
   const detailWidth = Math.max(10, subjectColumnX - detailX - 5);
+  const continuationInsightHeight = Math.max(1, bottom - analyticsHeaderTop - 5 - 3);
   const preparedInsights = analytics.insights.map((item) => {
     const labelLines = wrap(item.label, labelWidth, 6.3, true);
     const valueLines = wrap(item.value, valueWidth, 6.3, true);
     const detailLines = wrap(item.detail, detailWidth, 6.3);
     const longest = Math.max(labelLines.length, valueLines.length, detailLines.length, 1);
-    const maxLinesPerSegment = Math.max(1, Math.floor((Math.max(1, bottom - 48) - 1.6) / 3.2));
+    const maxLinesPerSegment = Math.max(1, Math.floor((continuationInsightHeight - 1.6) / 3.2));
     return Array.from({ length: Math.ceil(longest / maxLinesPerSegment) }, (_, segmentIndex) => {
       const offset = segmentIndex * maxLinesPerSegment;
       const next = offset + maxLinesPerSegment;
@@ -1118,7 +1149,15 @@ function drawMeritAnalyticsPages(doc: import("jspdf").jsPDF, analytics: MeritPdf
       return { item, labelLines: visibleLabel, valueLines: valueChunk, detailLines: detailChunk, height: Math.max(5.6, lineCount * 3.2 + 1.6) };
     });
   });
-  const insightPages = paginateMeritAnalyticsItems(preparedInsights.flat(), Math.max(1, bottom - 48), (item) => item.height);
+  const insightItems = preparedInsights.flat();
+  if (insightItems.length && y + 5 + insightItems[0].height + 3 > bottom) addPage();
+  const firstInsightHeight = Math.max(1, bottom - y - 5 - 3);
+  const insightPages = paginateMeritAnalyticsItems(
+    insightItems,
+    firstInsightHeight,
+    (item) => item.height,
+    continuationInsightHeight,
+  );
   const pages = insightPages.length ? insightPages : [[]];
   pages.forEach((pageItems, pageIndex) => {
     if (pageIndex > 0) addPage();
@@ -1156,30 +1195,24 @@ function drawMeritAnalyticsPages(doc: import("jspdf").jsPDF, analytics: MeritPdf
   });
 
   const drawWideSection = (title: string, content: string, fallback: string) => {
-    addPage();
-    heading(title);
     const lines = wrap(content || fallback, pageW - left - 10, 8);
     const lineHeight = 4.1;
-    let offset = 0;
-    while (offset < lines.length) {
-      const available = Math.max(1, Math.floor((bottom - y) / lineHeight));
-      if (y + lineHeight > bottom) {
+    if (y + 5 + lineHeight > bottom) addPage();
+    heading(title);
+    const firstPageCapacity = Math.max(1, Math.floor((bottom - y - 2) / lineHeight));
+    const continuationPageCapacity = Math.max(1, Math.floor((bottom - analyticsHeaderTop - 5 - 2) / lineHeight));
+    const pages = paginateMeritTextLines(lines, firstPageCapacity, continuationPageCapacity);
+    pages.forEach((pageLines, pageIndex) => {
+      if (pageIndex > 0) {
         addPage();
         heading(`${title} (continued)`);
-        continue;
       }
-      const pageLines = lines.slice(offset, offset + available);
       doc.setFont("helvetica", "normal");
       doc.setFontSize(8);
       doc.setTextColor(30, 30, 30);
       doc.text(pageLines, left, y);
-      y += pageLines.length * lineHeight + 4;
-      offset += pageLines.length;
-      if (offset < lines.length) {
-        addPage();
-        heading(`${title} (continued)`);
-      }
-    }
+      y += pageLines.length * lineHeight + 2;
+    });
   };
   drawWideSection("Term trend", analytics.trend, "No term results available.");
   drawWideSection("Learners needing review", analytics.review, "No learners currently fall below the intervention threshold.");
