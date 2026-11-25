@@ -1,24 +1,25 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { Menu, Palette, SlidersHorizontal, X } from "lucide-react";
 import { SchoolLogo } from "@/components/school/logo";
 import { PortalLoadingBackdrop } from "@/components/school/portal-loading-backdrop";
 import { InstallAppPrompt } from "@/components/school/install-app-prompt";
-import { AnalysisView } from "@/components/school/analysis-view";
-import { DashboardView } from "@/components/school/dashboard-view";
-import { LearnersView } from "@/components/school/learners-view";
-import { MailView } from "@/components/school/mail-view";
-import { MarklistsView } from "@/components/school/marklists-view";
-import { MarksView } from "@/components/school/marks-view";
-import { ReportsView } from "@/components/school/reports-view";
-import { ResultsView } from "@/components/school/results-view";
-import { SettingsView } from "@/components/school/settings-view";
-import { StaffView } from "@/components/school/staff-view";
-import { TimetableView } from "@/components/school/timetable-view";
-import { SchoolServicesView } from "@/components/school/school-services-view";
-import { QrParentFeedbackInbox } from "@/components/school/qr-parent-feedback-inbox";
+const AnalysisView = lazy(() => import("@/components/school/analysis-view").then((module) => ({ default: module.AnalysisView })));
+const DashboardView = lazy(() => import("@/components/school/dashboard-view").then((module) => ({ default: module.DashboardView })));
+const LearnersView = lazy(() => import("@/components/school/learners-view").then((module) => ({ default: module.LearnersView })));
+const MailView = lazy(() => import("@/components/school/mail-view").then((module) => ({ default: module.MailView })));
+const MarklistsView = lazy(() => import("@/components/school/marklists-view").then((module) => ({ default: module.MarklistsView })));
+const MarksView = lazy(() => import("@/components/school/marks-view").then((module) => ({ default: module.MarksView })));
+const ReportsView = lazy(() => import("@/components/school/reports-view").then((module) => ({ default: module.ReportsView })));
+const ResultsView = lazy(() => import("@/components/school/results-view").then((module) => ({ default: module.ResultsView })));
+const SettingsView = lazy(() => import("@/components/school/settings-view").then((module) => ({ default: module.SettingsView })));
+const StaffView = lazy(() => import("@/components/school/staff-view").then((module) => ({ default: module.StaffView })));
+const TimetableView = lazy(() => import("@/components/school/timetable-view").then((module) => ({ default: module.TimetableView })));
+const SchoolServicesView = lazy(() => import("@/components/school/school-services-view").then((module) => ({ default: module.SchoolServicesView })));
+const QrParentFeedbackInbox = lazy(() => import("@/components/school/qr-parent-feedback-inbox").then((module) => ({ default: module.QrParentFeedbackInbox })));
 import { StaffMusicDock } from "@/components/school/music-dock";
 import { getWorkspace, getWelcomePage, logout } from "@/lib/school/api";
+import { takePortalWorkspacePrefetch } from "@/lib/school/workspace-prefetch";
 import { visibleViews, type Workspace } from "@/lib/school/model";
 import { parseMusicSetting, type MusicOptions } from "@/lib/school/music";
 import { normalizeWelcomeDisplay } from "@/lib/school/welcome-display";
@@ -77,7 +78,8 @@ function NatureBackdropVideo({ scene, visible, motionEnabled }: { scene: number;
 function PortalPage() {
   const navigate = useNavigate();
   const { view } = Route.useSearch();
-  const [ws, setWs] = useState<Workspace | null>(null);
+  const [ws, setWs] = useState<Workspace | null>(() => takePortalWorkspacePrefetch());
+  const shouldFetchWorkspace = useRef(ws === null);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [open, setOpen] = useState(false);
@@ -96,7 +98,10 @@ function PortalPage() {
   }, []);
 
   useEffect(() => {
-    refresh().catch(() => navigate({ to: "/", search: { c: undefined } }));
+    if (shouldFetchWorkspace.current) {
+      shouldFetchWorkspace.current = false;
+      refresh().catch(() => navigate({ to: "/", search: { c: undefined } }));
+    }
     getWelcomePage().then((settings) => {
       const music = parseMusicSetting(settings.musicUrl || "");
       setDashboardPanelColorsEnabled(normalizeWelcomeDisplay(settings.display).dashboardPanelColorsEnabled);
@@ -326,19 +331,21 @@ function PortalPage() {
           <NatureBackdropVideo scene={backdropScene % NATURE_BACKDROP_SCENES.length} visible={backdropTheme === "nature-cycle" && display.backgroundMode === "animated"} motionEnabled={display.motion && !systemReducedMotion} />
           {error ? <p className="mb-4 rounded-md border border-bad/30 bg-card px-3 py-2 text-sm text-bad">{error}</p> : null}
           {notice ? <p className="mb-4 rounded-md border border-good/30 bg-card px-3 py-2 text-sm text-good">{notice}</p> : null}
-          {current === "home" ? <DashboardView {...gate} /> : null}
-          {current === "learners" ? <LearnersView {...gate} /> : null}
-          {current === "marks" ? <MarksView {...gate} /> : null}
-          {current === "analysis" ? <AnalysisView {...gate} /> : null}
-          {current === "reports" ? <ReportsView {...gate} /> : null}
-          {current === "marklists" ? <MarklistsView {...gate} /> : null}
-          {current === "staff" ? <StaffView {...gate} /> : null}
-          {current === "mail" ? <MailView {...gate} /> : null}
-          {current === "timetable" ? <TimetableView {...gate} /> : null}
-          {current === "services" ? <SchoolServicesView {...gate} /> : null}
-          {current === "parent-feedback" ? <QrParentFeedbackInbox flash={flash} /> : null}
-          {current === "settings" ? <SettingsView {...gate} /> : null}
-          {current === "results" ? <ResultsView {...gate} /> : null}
+          <Suspense fallback={<div className="grid min-h-[45vh] place-items-center text-sm font-semibold text-muted" role="status" aria-live="polite">Loading {LABELS[current] ?? "view"}…</div>}>
+            {current === "home" ? <DashboardView {...gate} /> : null}
+            {current === "learners" ? <LearnersView {...gate} /> : null}
+            {current === "marks" ? <MarksView {...gate} /> : null}
+            {current === "analysis" ? <AnalysisView {...gate} /> : null}
+            {current === "reports" ? <ReportsView {...gate} /> : null}
+            {current === "marklists" ? <MarklistsView {...gate} /> : null}
+            {current === "staff" ? <StaffView {...gate} /> : null}
+            {current === "mail" ? <MailView {...gate} /> : null}
+            {current === "timetable" ? <TimetableView {...gate} /> : null}
+            {current === "services" ? <SchoolServicesView {...gate} /> : null}
+            {current === "parent-feedback" ? <QrParentFeedbackInbox flash={flash} /> : null}
+            {current === "settings" ? <SettingsView {...gate} /> : null}
+            {current === "results" ? <ResultsView {...gate} /> : null}
+          </Suspense>
         </div>
       </div>
       {ws.me.active ? <StaffMusicDock url={staffMusic.enabled ? staffMusic.url : ""} options={staffMusic.options || {}} /> : null}

@@ -728,8 +728,9 @@ export const saveRoleAccessPolicy = createServerFn({ method: "POST" })
 export const getWorkspace = createServerFn({ method: "GET" }).handler(async (): Promise<Workspace> => {
   const me = await requireActor();
   const sql = await getSql();
-  const roleAccess = await readRoleAccess(sql);
-  const profileRows = await sql<Profile>`
+  const [roleAccess, profileRows, grades, streams] = await Promise.all([
+    readRoleAccess(sql),
+    sql<Profile>`
     select name, po_box as "poBox", mission, vision, motto, head_teacher as "headTeacher", dos,
       location, contact, email, academic_year as "academicYear", term_name as "termName",
       report_title as "reportTitle", closing_date as "closingDate", resumption_date as "resumptionDate",
@@ -743,56 +744,74 @@ export const getWorkspace = createServerFn({ method: "GET" }).handler(async (): 
       show_attendance as "showAttendance", show_custom_remarks as "showCustomRemarks",
       color_t1 as "term1Color", color_t2 as "term2Color", color_t3 as "term3Color",
       whatsapp_group_enabled as "whatsappGroupEnabled", whatsapp_group_url as "whatsappGroupUrl", whatsapp_group_label as "whatsappGroupLabel"
-    from school_profile where id = 1`;
+    from school_profile where id = 1`,
+    sql<Grade>`select id, name, level, report_title as "reportTitle" from grades order by level`,
+    sql<Stream>`
+      select s.id, s.grade_id as "gradeId", s.name, s.class_teacher_label as "classTeacherLabel", s.sort,
+        coalesce((select string_agg(nullif(u.initials, ''), ' / ' order by u.full_name) from assignments a join users u on u.id = a.user_id where a.kind = 'class_teacher' and a.stream_id = s.id and u.active = true), '') as "classTeacherInitials"
+      from streams s order by s.sort, s.name`,
+  ]);
   const profile = profileRows[0];
   if (!profile) throw new Error("School profile is missing.");
-  const grades = await sql<Grade>`select id, name, level, report_title as "reportTitle" from grades order by level`;
-  const streams = await sql<Stream>`
-    select s.id, s.grade_id as "gradeId", s.name, s.class_teacher_label as "classTeacherLabel", s.sort,
-      coalesce((select string_agg(nullif(u.initials, ''), ' / ' order by u.full_name) from assignments a join users u on u.id = a.user_id where a.kind = 'class_teacher' and a.stream_id = s.id and u.active = true), '') as "classTeacherInitials"
-    from streams s order by s.sort, s.name`;
-  const subjects = await sql<Subject>`select id, name, short_name as "shortName", sort from subjects order by sort`;
-  const exams = await sql<Exam>`select id, name, code, sort from exams order by sort`;
-  const bands = await sql<Band>`
+  const [subjects, exams, bands, years] = await Promise.all([
+    sql<Subject>`select id, name, short_name as "shortName", sort from subjects order by sort`,
+    sql<Exam>`select id, name, code, sort from exams order by sort`,
+    sql<Band>`
     select min_score as "minScore", code, points, subject_remark as "subjectRemark",
       head_remark as "headRemark", class_remark as "classRemark"
-    from grading_bands order by min_score desc`;
+    from grading_bands order by min_score desc`,
+    sql<{ id: string; name: string; sort: number }>`select id, name, sort from academic_years order by sort`,
+  ]);
 
-  const years = await sql<{ id: string; name: string; sort: number }>`select id, name, sort from academic_years order by sort`;
-  const terms = await sql<{ id: string; name: string; sort: number }>`select id, name, sort from terms order by sort`;
-  const termAssessments = await sql<TermAssessment>`select year_id as "yearId", term_id as "termId", exam_id as "examId", active from term_assessments order by year_id, term_id, exam_id`;
-  const markControls = await sql<MarkControl>`select year_id as "yearId", term_id as "termId", exam_id as "examId", entry_allowed as "entryAllowed", edit_allowed as "editAllowed", reason, deadline_at::text as "deadlineAt", admins_can_enter as "adminsCanEnter", subject_teachers_can_enter as "subjectTeachersCanEnter", class_teachers_can_enter as "classTeachersCanEnter", class_teachers_all_subjects as "classTeachersAllSubjects", admins_can_view_marks as "adminsCanViewMarks", subject_teachers_can_view_marks as "subjectTeachersCanViewMarks", class_teachers_can_view_marks as "classTeachersCanViewMarks", admins_can_edit_locked as "adminsCanEditLocked", subject_teachers_can_edit_locked as "subjectTeachersCanEditLocked", class_teachers_can_edit_locked as "classTeachersCanEditLocked", updated_by as "updatedBy", updated_at::text as "updatedAt" from mark_controls`;
-  const calendars = await sql<{
-    yearId: string; termId: string; closingDate: string; openingDate: string; reportTitle: string; requirements: string;
-  }>`
+  const [terms, termAssessments, markControls, calendars] = await Promise.all([
+    sql<{ id: string; name: string; sort: number }>`select id, name, sort from terms order by sort`,
+    sql<TermAssessment>`select year_id as "yearId", term_id as "termId", exam_id as "examId", active from term_assessments order by year_id, term_id, exam_id`,
+    sql<MarkControl>`select year_id as "yearId", term_id as "termId", exam_id as "examId", entry_allowed as "entryAllowed", edit_allowed as "editAllowed", reason, deadline_at::text as "deadlineAt", admins_can_enter as "adminsCanEnter", subject_teachers_can_enter as "subjectTeachersCanEnter", class_teachers_can_enter as "classTeachersCanEnter", class_teachers_all_subjects as "classTeachersAllSubjects", admins_can_view_marks as "adminsCanViewMarks", subject_teachers_can_view_marks as "subjectTeachersCanViewMarks", class_teachers_can_view_marks as "classTeachersCanViewMarks", admins_can_edit_locked as "adminsCanEditLocked", subject_teachers_can_edit_locked as "subjectTeachersCanEditLocked", class_teachers_can_edit_locked as "classTeachersCanEditLocked", updated_by as "updatedBy", updated_at::text as "updatedAt" from mark_controls`,
+    sql<{
+      yearId: string; termId: string; closingDate: string; openingDate: string; reportTitle: string; requirements: string;
+    }>`
     select year_id as "yearId", term_id as "termId", closing_date as "closingDate", opening_date as "openingDate",
-      report_title as "reportTitle", requirements from term_dates`;
+      report_title as "reportTitle", requirements from term_dates`,
+  ]);
 
-  let learners = await sql<Learner>`
+  const [learnerRows, childRows, markRows, placementRows] = await Promise.all([
+    sql<Learner>`
     select id, roll, full_name as "fullName", gender, grade_id as "gradeId", stream_id as "streamId", status, public_code as "publicCode", admission_number as "admissionNumber", cohort_year as "cohortYear"
-    from learners where status = 'active' order by grade_id, roll`;
-  const childRows =
-    me.role === "parent"
-      ? await sql<{ learner_id: string }>`select learner_id from parent_links where parent_user_id = ${me.id}`
-      : [];
+    from learners where status = 'active' order by grade_id, roll`,
+    me.role === "parent" ? sql<{ learner_id: string }>`select learner_id from parent_links where parent_user_id = ${me.id}` : Promise.resolve([]),
+    sql<Mark>`
+      select m.learner_id as "learnerId", m.subject_id as "subjectId", m.exam_id as "examId", m.score,
+        m.year_id as "yearId", m.term_id as "termId", m.grade_id as "gradeId", m.stream_id as "streamId", m.status,
+        m.updated_at::text as "updatedAt", m.updated_by as "updatedBy", u.full_name as "updatedByName"
+      from marks m left join users u on u.id = m.updated_by`,
+    sql<Placement>`select learner_id as "learnerId", year_id as "yearId", grade_id as "gradeId", stream_id as "streamId" from learner_year_placements`,
+  ]);
+  const [assignmentRows, subjectTeacherSlots, noteRows, remarkRows] = await Promise.all([
+    sql<Assignment>`
+      select id, user_id as "userId", kind, grade_id as "gradeId", stream_id as "streamId", subject_id as "subjectId"
+      from assignments`,
+    sql<SubjectTeacherSlot>`
+      select a.subject_id as "subjectId", a.grade_id as "gradeId", a.stream_id as "streamId", u.initials
+      from assignments a join users u on u.id = a.user_id
+      where a.kind in ('subject_teacher', 'hod') and u.active = true and coalesce(trim(u.initials), '') <> ''`,
+    sql<TermNote>`
+      select learner_id as "learnerId", year_id as "yearId", term_id as "termId",
+        days_present as "daysPresent", days_expected as "daysExpected", conduct, comment
+      from learner_term_notes`,
+    sql<SubjectRemark>`
+      select learner_id as "learnerId", subject_id as "subjectId", year_id as "yearId", term_id as "termId", remark
+      from subject_remarks`,
+  ]);
+  let learners = learnerRows;
   const childIds = childRows.map((row) => row.learner_id);
   if (me.role === "student") learners = learners.filter((learner) => learner.id === me.learnerId);
   if (me.role === "parent") learners = learners.filter((learner) => childIds.includes(learner.id));
 
   const allowed = new Set(learners.map((learner) => learner.id));
-  const markRows = await sql<Mark>`
-    select m.learner_id as "learnerId", m.subject_id as "subjectId", m.exam_id as "examId", m.score,
-      m.year_id as "yearId", m.term_id as "termId", m.grade_id as "gradeId", m.stream_id as "streamId", m.status,
-      m.updated_at::text as "updatedAt", m.updated_by as "updatedBy", u.full_name as "updatedByName"
-    from marks m left join users u on u.id = m.updated_by`;
   let marks = me.role === "student" || me.role === "parent" ? markRows.filter((mark) => allowed.has(mark.learnerId)) : markRows;
   if ((me.role === "student" || me.role === "parent") && !canActorAccess(roleAccess, me.role, "familyResults", "view")) marks = [];
 
-  const placementRows = await sql<Placement>`select learner_id as "learnerId", year_id as "yearId", grade_id as "gradeId", stream_id as "streamId" from learner_year_placements`;
   const placements = me.role === "student" || me.role === "parent" ? placementRows.filter((row) => allowed.has(row.learnerId)) : placementRows;
-  const assignmentRows = await sql<Assignment>`
-    select id, user_id as "userId", kind, grade_id as "gradeId", stream_id as "streamId", subject_id as "subjectId"
-    from assignments`;
   const assignments = isAdmin(me.role) ? assignmentRows : assignmentRows.filter((row) => row.userId === me.id);
   if (me.role === "teacher" || (me.role === "admin" && !me.isDeputy)) {
     const placementByLearnerYear = new Map(placements.map((placement) => [`${placement.learnerId}|${placement.yearId}`, placement]));
@@ -811,42 +830,45 @@ export const getWorkspace = createServerFn({ method: "GET" }).handler(async (): 
       return canViewMark(me, assignments, scopedMark, markControlFor({ markControls }, mark.yearId, mark.termId, mark.examId));
     });
   }
-  const subjectTeacherSlots = await sql<SubjectTeacherSlot>`
-    select a.subject_id as "subjectId", a.grade_id as "gradeId", a.stream_id as "streamId", u.initials
-    from assignments a join users u on u.id = a.user_id
-    where a.kind in ('subject_teacher', 'hod') and u.active = true and coalesce(trim(u.initials), '') <> ''`;
-  const noteRows = await sql<TermNote>`
-    select learner_id as "learnerId", year_id as "yearId", term_id as "termId",
-      days_present as "daysPresent", days_expected as "daysExpected", conduct, comment
-    from learner_term_notes`;
-  const remarkRows = await sql<SubjectRemark>`
-    select learner_id as "learnerId", subject_id as "subjectId", year_id as "yearId", term_id as "termId", remark
-    from subject_remarks`;
   const familyViewAllowed = me.role !== "student" && me.role !== "parent" || canActorAccess(roleAccess, me.role, "familyResults", "view");
   const termNotes = !familyViewAllowed ? [] : me.role === "student" || me.role === "parent" ? noteRows.filter((row) => allowed.has(row.learnerId)) : noteRows;
   const subjectRemarks = !familyViewAllowed ? [] : me.role === "student" || me.role === "parent" ? remarkRows.filter((row) => allowed.has(row.learnerId)) : remarkRows;
 
-  const timetablePeriods = await sql<TimetablePeriod>`
+  const [timetablePeriods, timetableEntries, timetableRooms, timetableAvailability] = await Promise.all([
+    sql<TimetablePeriod>`
     select id, year_id as "yearId", term_id as "termId", label,
       start_time as "startTime", end_time as "endTime", sort, is_break as "isBreak"
-    from timetable_periods order by year_id, term_id, sort`;
-  const timetableEntries = await sql<TimetableEntry>`
+    from timetable_periods order by year_id, term_id, sort`,
+    sql<TimetableEntry>`
     select e.id, e.year_id as "yearId", e.term_id as "termId", e.day_of_week as "dayOfWeek",
       e.period_id as "periodId", e.grade_id as "gradeId", e.stream_id as "streamId",
       e.subject_id as "subjectId", e.teacher_user_id as "teacherUserId",
       u.full_name as "teacherName", coalesce(u.initials, '') as "teacherInitials", u.email as "teacherEmail", e.room, e.notes, e.block_length as "blockLength", e.locked
     from timetable_entries e join users u on u.id = e.teacher_user_id
-    order by e.year_id, e.term_id, e.day_of_week, e.period_id, e.grade_id, e.stream_id nulls first`;
-  const timetableRooms = await sql<TimetableRoom>`select id, name, capacity, room_type as "roomType", features, active from timetable_rooms order by active desc, name`;
-  const timetableAvailability = await sql<TimetableAvailability>`select id, year_id as "yearId", term_id as "termId", entity_type as "entityType", entity_id as "entityId", day_of_week as "dayOfWeek", period_id as "periodId", available, coalesce(level, 'off') as level, note from timetable_availability`;
-  const timetableRequirements = await sql<TimetableRequirement>`select id, year_id as "yearId", term_id as "termId", grade_id as "gradeId", stream_id as "streamId", subject_id as "subjectId", teacher_user_id as "teacherUserId", lessons_per_week as "lessonsPerWeek", block_length as "blockLength", preferred_room as "preferredRoom", coalesce(distribution, '') as distribution, preferred_double_day as "preferredDoubleDay", coalesce(timing_preference, 'none') as "timingPreference" from timetable_requirements`;
-  const subjectConstraints = await sql<SubjectConstraint>`select id, year_id as "yearId", term_id as "termId", subject_id as "subjectId", max_per_day as "maxPerDay", min_days_per_week as "minDaysPerWeek", no_afternoon as "noAfternoon", preferred_morning as "preferredMorning", avoid_consecutive_days as "avoidConsecutiveDays", no_last_period as "noLastPeriod", complexity, place_in_order as "placeInOrder", coalesce(distribution, '') as distribution, coalesce(color, '') as color, notes, double_count as "doubleCount", coalesce(max_before_break, 3) as "maxBeforeBreak" from subject_constraints`;
-  const teacherContracts = await sql<TeacherContract>`select id, year_id as "yearId", term_id as "termId", teacher_user_id as "teacherUserId", coalesce(min_per_day, 0) as "minPerDay", max_per_day as "maxPerDay", max_per_week as "maxPerWeek", max_consecutive as "maxConsecutive", max_days as "maxDays", max_windows as "maxWindows", min_rest_periods as "minRestPeriods" from teacher_contracts`;
-  const classConstraints = await sql<ClassConstraint>`select id, year_id as "yearId", term_id as "termId", grade_id as "gradeId", stream_id as "streamId", max_per_day as "maxPerDay", no_gaps as "noGaps" from class_constraints`;
-  const lessonRelations = await sql<LessonRelation>`select id, year_id as "yearId", term_id as "termId", grade_id as "gradeId", stream_id as "streamId", left_subject_id as "leftSubjectId", right_subject_id as "rightSubjectId", relation from lesson_relations`;
-  const timetableVersions = await sql<TimetableVersion>`select id, year_id as "yearId", term_id as "termId", label, created_at as "createdAt", created_by as "createdBy" from timetable_versions order by created_at desc`;
-  const timetableStates = await sql<TimetableState>`select year_id as "yearId", term_id as "termId", published, effective_from::text as "effectiveFrom", published_at::text as "publishedAt" from timetable_state`;
-  const timetablePermissionRows = await sql<{ admins_can_edit: boolean; staff_assignments_enabled: boolean }>`select admins_can_edit, staff_assignments_enabled from timetable_admin_permissions where id = 1`;
+    order by e.year_id, e.term_id, e.day_of_week, e.period_id, e.grade_id, e.stream_id nulls first`,
+    sql<TimetableRoom>`select id, name, capacity, room_type as "roomType", features, active from timetable_rooms order by active desc, name`,
+    sql<TimetableAvailability>`select id, year_id as "yearId", term_id as "termId", entity_type as "entityType", entity_id as "entityId", day_of_week as "dayOfWeek", period_id as "periodId", available, coalesce(level, 'off') as level, note from timetable_availability`,
+  ]);
+  const [timetableRequirements, subjectConstraints, teacherContracts, classConstraints] = await Promise.all([
+    sql<TimetableRequirement>`select id, year_id as "yearId", term_id as "termId", grade_id as "gradeId", stream_id as "streamId", subject_id as "subjectId", teacher_user_id as "teacherUserId", lessons_per_week as "lessonsPerWeek", block_length as "blockLength", preferred_room as "preferredRoom", coalesce(distribution, '') as distribution, preferred_double_day as "preferredDoubleDay", coalesce(timing_preference, 'none') as "timingPreference" from timetable_requirements`,
+    sql<SubjectConstraint>`select id, year_id as "yearId", term_id as "termId", subject_id as "subjectId", max_per_day as "maxPerDay", min_days_per_week as "minDaysPerWeek", no_afternoon as "noAfternoon", preferred_morning as "preferredMorning", avoid_consecutive_days as "avoidConsecutiveDays", no_last_period as "noLastPeriod", complexity, place_in_order as "placeInOrder", coalesce(distribution, '') as distribution, coalesce(color, '') as color, notes, double_count as "doubleCount", coalesce(max_before_break, 3) as "maxBeforeBreak" from subject_constraints`,
+    sql<TeacherContract>`select id, year_id as "yearId", term_id as "termId", teacher_user_id as "teacherUserId", coalesce(min_per_day, 0) as "minPerDay", max_per_day as "maxPerDay", max_per_week as "maxPerWeek", max_consecutive as "maxConsecutive", max_days as "maxDays", max_windows as "maxWindows", min_rest_periods as "minRestPeriods" from teacher_contracts`,
+    sql<ClassConstraint>`select id, year_id as "yearId", term_id as "termId", grade_id as "gradeId", stream_id as "streamId", max_per_day as "maxPerDay", no_gaps as "noGaps" from class_constraints`,
+  ]);
+  const [lessonRelations, timetableVersions, timetableStates, timetablePermissionRows, staff] = await Promise.all([
+    sql<LessonRelation>`select id, year_id as "yearId", term_id as "termId", grade_id as "gradeId", stream_id as "streamId", left_subject_id as "leftSubjectId", right_subject_id as "rightSubjectId", relation from lesson_relations`,
+    sql<TimetableVersion>`select id, year_id as "yearId", term_id as "termId", label, created_at as "createdAt", created_by as "createdBy" from timetable_versions order by created_at desc`,
+    sql<TimetableState>`select year_id as "yearId", term_id as "termId", published, effective_from::text as "effectiveFrom", published_at::text as "publishedAt" from timetable_state`,
+    sql<{ admins_can_edit: boolean; staff_assignments_enabled: boolean }>`select admins_can_edit, staff_assignments_enabled from timetable_admin_permissions where id = 1`,
+    isAdmin(me.role)
+      ? sql<StaffMember>`
+          select id, email, full_name as "fullName", role, active, learner_id as "learnerId", initials,
+            priv_settings as "privSettings", priv_staff as "privStaff", priv_import as "privImport", priv_calendar as "privCalendar",
+            is_deputy as "isDeputy", can_view_other_subjects as "canViewOtherSubjects",
+            can_edit_other_subjects as "canEditOtherSubjects", delegated_responsibilities as "delegatedResponsibilities"
+          from users order by role, full_name`
+      : Promise.resolve([]),
+  ]);
   const timetableAdminsCanEdit = Boolean(timetablePermissionRows[0]?.admins_can_edit);
   const timetableStaffAssignmentsEnabled = Boolean(timetablePermissionRows[0]?.staff_assignments_enabled);
   const timetableManager = canManageTimetable(me) || (me.role === "admin" && timetableAdminsCanEdit);
@@ -858,32 +880,26 @@ export const getWorkspace = createServerFn({ method: "GET" }).handler(async (): 
     visibleTimetableEntries = visibleTimetableEntries.filter((entry) => entry.teacherUserId === me.id || teachingClassScopes.some((assignment) => assignment.gradeId === entry.gradeId && (!assignment.streamId || entry.streamId == null || assignment.streamId === entry.streamId)));
   }
 
-  const staff = isAdmin(me.role)
-    ? await sql<StaffMember>`
-        select id, email, full_name as "fullName", role, active, learner_id as "learnerId", initials,
-          priv_settings as "privSettings", priv_staff as "privStaff", priv_import as "privImport", priv_calendar as "privCalendar",
-          is_deputy as "isDeputy", can_view_other_subjects as "canViewOtherSubjects",
-          can_edit_other_subjects as "canEditOtherSubjects", delegated_responsibilities as "delegatedResponsibilities"
-        from users order by role, full_name`
-    : [];
   const safeStaff = staff.map((member) => ({ ...member, role: asRole(member.role) }));
 
   let familyReports: Decorated[] | null = null;
   if ((me.role === "student" || me.role === "parent") && canActorAccess(roleAccess, me.role, "familyResults", "view")) {
-    const everyone = await learnersAtYear(sql, profile.activeYearId);
-    const everyMark = (await sql<Mark>`
+    const [everyone, activePeriodMarks, configuredAssessments] = await Promise.all([
+      learnersAtYear(sql, profile.activeYearId),
+      sql<Mark>`
       select learner_id as "learnerId", subject_id as "subjectId", exam_id as "examId", score,
-        year_id as "yearId", term_id as "termId", grade_id as "gradeId", stream_id as "streamId" from marks`)
-      .filter((mark) => mark.yearId === profile.activeYearId && mark.termId === profile.activeTermId);
-    const configuredAssessments = await sql<{ exam_id: string; active: boolean }>`select exam_id, active from term_assessments where year_id = ${profile.activeYearId} and term_id = ${profile.activeTermId}`;
+        year_id as "yearId", term_id as "termId", grade_id as "gradeId", stream_id as "streamId"
+      from marks where year_id is not distinct from ${profile.activeYearId} and term_id is not distinct from ${profile.activeTermId}`,
+      sql<{ exam_id: string; active: boolean }>`select exam_id, active from term_assessments where year_id = ${profile.activeYearId} and term_id = ${profile.activeTermId}`,
+    ]);
     const activeIds = configuredAssessments.length ? new Set(configuredAssessments.filter((item) => item.active).map((item) => item.exam_id)) : null;
-    const activePeriodMarks = activeIds ? everyMark.filter((mark) => activeIds.has(mark.examId)) : everyMark;
+    const scopedPeriodMarks = activeIds ? activePeriodMarks.filter((mark) => activeIds.has(mark.examId)) : activePeriodMarks;
     const activeExams = activeIds ? exams.filter((exam) => activeIds.has(exam.id)) : exams;
-    const learnerMarkGrades = activePeriodMarks.filter((mark) => allowed.has(mark.learnerId)).map((mark) => mark.gradeId).filter((id): id is string => Boolean(id));
+    const learnerMarkGrades = scopedPeriodMarks.filter((mark) => allowed.has(mark.learnerId)).map((mark) => mark.gradeId).filter((id): id is string => Boolean(id));
     const gradeIds = [...new Set([...learners.map((learner) => learner.gradeId), ...learnerMarkGrades])];
     familyReports = gradeIds.flatMap((gradeId) => {
       const group = everyone.filter((learner) => learner.gradeId === gradeId);
-      const gradeMarks = activePeriodMarks.filter((mark) => mark.gradeId === gradeId);
+      const gradeMarks = scopedPeriodMarks.filter((mark) => mark.gradeId === gradeId);
       return decorate(buildBoards(group, gradeMarks, subjects, activeExams, bands), streams, activeExams).filter((row) =>
         learners.some((learner) => learner.id === row.learner.id),
       );

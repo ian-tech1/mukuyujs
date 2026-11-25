@@ -4,9 +4,10 @@ import { SchoolLogo } from "@/components/school/logo";
 import { PortalLoadingBackdrop } from "@/components/school/portal-loading-backdrop";
 import { PublicReport } from "@/components/school/public-report";
 import { btnClass, errText, inputClass } from "@/components/school/gate";
-import { completeParentFirstLoginPasswordChange, getParentPasswordChangeStatus, getWorkspace, getWelcomePage, login, loginParent, logout, portalStatus, requestParentLoginCode, requestParentPasswordResetCode, resetParentPassword, verifyParentLoginCode } from "@/lib/school/api";
+import { completeParentFirstLoginPasswordChange, getParentPasswordChangeStatus, getWelcomePage, getWorkspace, login, loginParent, logout, portalStatus, requestParentLoginCode, requestParentPasswordResetCode, resetParentPassword, verifyParentLoginCode } from "@/lib/school/api";
 import { applyDisplayPreferences, DEFAULT_DISPLAY_PREFERENCES, DISPLAY_PALETTES, readDisplayPreferences, saveDisplayPreferences, type LocalDisplayPreferences } from "@/lib/school/display";
 import { DEFAULT_WELCOME_DISPLAY, hexToRgba, normalizeWelcomeDisplay, type WelcomeDisplayOptions } from "@/lib/school/welcome-display";
+import { savePortalWorkspacePrefetch } from "@/lib/school/workspace-prefetch";
 
 export const Route = createFileRoute("/")({
   validateSearch: (search: Record<string, unknown>) => {
@@ -167,7 +168,10 @@ function LoginPage() {
   useEffect(() => {
     if (!openingIntroComplete) return;
     getWorkspace()
-      .then(() => navigate({ to: "/portal", search: { view: "home" } }))
+      .then((workspace) => {
+        savePortalWorkspacePrefetch(workspace);
+        void navigate({ to: "/portal", search: { view: "home" } });
+      })
       .catch(() => undefined);
   }, [openingIntroComplete, navigate]);
 
