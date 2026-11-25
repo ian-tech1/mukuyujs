@@ -271,8 +271,12 @@ function LoginCard({ learnerId, name, flash, onCreated, onClose }: { learnerId: 
       event.preventDefault();
       try {
         const result = await createLearnerLogin({ data: { learnerId, email, password, kind, parentName } });
-        onCreated({ name: result.name || name, email: result.email || email, password: result.password || password });
-        flash(kind === "student" ? "Student login created. Copy the credentials shown above." : "Parent login created. Share the initial password securely; the parent will be asked to choose a new password at first sign-in.");
+        if (result.existingAccountLinked) {
+          flash("Existing parent account linked to this learner. The parent's current password was not changed.");
+        } else {
+          onCreated({ name: result.name || name, email: result.email || email, password: result.password || password });
+          flash(kind === "student" ? "Student login created. Copy the credentials shown above." : "Parent login created. Share the initial password securely; the parent will be asked to choose a new password at first sign-in.");
+        }
         onClose();
       } catch (error) { flash(errText(error), true); }
     }}>
@@ -283,7 +287,7 @@ function LoginCard({ learnerId, name, flash, onCreated, onClose }: { learnerId: 
       </select>
       {kind === "parent" ? <input className={inputClass} placeholder="Parent name" value={parentName} onChange={(event) => setParentName(event.target.value)} /> : <span />}
       <input className={inputClass} type="email" placeholder="Email" value={email} onChange={(event) => setEmail(event.target.value)} required />
-      <input className={inputClass} type="password" placeholder="Password (12+ characters)" minLength={12} maxLength={128} value={password} onChange={(event) => setPassword(event.target.value)} required />
+      <input className={inputClass} type="password" placeholder={kind === "parent" ? "Initial password (ignored for existing parent)" : "Password (12+ characters)"} minLength={12} maxLength={128} value={password} onChange={(event) => setPassword(event.target.value)} required />
       <div className="flex gap-2">
         <button className={btnClass} type="submit">Create login</button>
         <button className={btnGhost} type="button" onClick={onClose}>Close</button>

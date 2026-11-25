@@ -1,12 +1,12 @@
 export const ACCESS_GROUPS = ["admin", "teacher", "parent", "student", "qr_guest"] as const;
 export type AccessGroup = (typeof ACCESS_GROUPS)[number];
-export const ACCESS_AREAS = ["reports", "analysis", "marklists", "familyResults"] as const;
+export const ACCESS_AREAS = ["reports", "analysis", "marklists", "familyResults", "parentDetails"] as const;
 export type AccessArea = (typeof ACCESS_AREAS)[number];
 export type AccessRule = { view: boolean; download: boolean };
 export type RoleAccessPolicy = Record<AccessGroup, Record<AccessArea, AccessRule>>;
 
 const rule = (view: boolean, download = view): AccessRule => ({ view, download });
-const row = (reports: AccessRule, analysis: AccessRule, marklists: AccessRule, familyResults: AccessRule) => ({ reports, analysis, marklists, familyResults });
+const row = (reports: AccessRule, analysis: AccessRule, marklists: AccessRule, familyResults: AccessRule, parentDetails = rule(false, false)) => ({ reports, analysis, marklists, familyResults, parentDetails });
 
 /** Defaults intentionally preserve the portal's current role visibility and capabilities. */
 export const DEFAULT_ROLE_ACCESS: RoleAccessPolicy = {
@@ -23,6 +23,10 @@ export function normalizeRoleAccess(value: unknown): RoleAccessPolicy {
   for (const group of ACCESS_GROUPS) {
     const inputGroup = source[group] && typeof source[group] === "object" ? source[group] as Record<string, unknown> : {};
     for (const area of ACCESS_AREAS) {
+      if (area === "parentDetails" && group !== "admin" && group !== "teacher") {
+        result[group][area] = rule(false, false);
+        continue;
+      }
       const inputRule = inputGroup[area] && typeof inputGroup[area] === "object" ? inputGroup[area] as Record<string, unknown> : {};
       if (typeof inputRule.view === "boolean") result[group][area].view = inputRule.view;
       if (typeof inputRule.download === "boolean") result[group][area].download = inputRule.download;

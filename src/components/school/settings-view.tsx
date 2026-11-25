@@ -3,11 +3,11 @@ import type { Gate } from "@/components/school/gate";
 import { btnClass, btnGhost, errText, inputClass } from "@/components/school/gate";
 import { btnDownload } from "@/components/school/download-button";
 import type { AppearancePalette, Band, MarkControl, PortalBackdropThemeId, Profile } from "@/lib/school/model";
-import { ACCESS_AREAS, ACCESS_GROUPS, type AccessArea, type AccessGroup, type RoleAccessPolicy } from "@/lib/school/role-access";
+import { ACCESS_AREAS, ACCESS_GROUPS, canActorAccess, type AccessArea, type AccessGroup, type RoleAccessPolicy } from "@/lib/school/role-access";
 import { DEFAULT_APPEARANCE, can, isAdmin } from "@/lib/school/model";
 import { DEFAULT_WELCOME_DISPLAY, hexToRgba, normalizeWelcomeDisplay, type WelcomeDisplayOptions } from "@/lib/school/welcome-display";
 import { applyPortalBackdropColors, DISPLAY_PALETTES, NATURE_BACKDROP_SCENE_LABELS, PORTAL_BACKDROP_THEMES } from "@/lib/school/display";
-import { addExam, addSubject, deleteSubject, addYear, changePassword, deleteStream, deleteExam, deleteYear, exportSchoolBackup, getWelcomePage, listBackupSnapshots, restoreSchoolBackup, saveAppearance, saveBands, saveExams, saveProfile, saveReportOptions, saveStream, saveSubjects, saveTermAssessments, saveTermDate, saveWelcomePage, setActivePeriod, getMarkAuditHistory, saveMarkControl, saveRoleAccessPolicy, getParentLoginAudit, getPortalColorTypes, savePortalColorType } from "@/lib/school/api";
+import { addExam, addSubject, deleteSubject, addYear, changePassword, deleteStream, deleteExam, deleteYear, exportParentContacts, exportSchoolBackup, getWelcomePage, listBackupSnapshots, restoreSchoolBackup, saveAppearance, saveBands, saveExams, saveProfile, saveReportOptions, saveStream, saveSubjects, saveTermAssessments, saveTermDate, saveWelcomePage, setActivePeriod, getMarkAuditHistory, saveMarkControl, saveRoleAccessPolicy, getParentLoginAudit, getPortalColorTypes, savePortalColorType } from "@/lib/school/api";
 import { DEFAULT_MUSIC_OPTIONS, formatPlaylistText, normalizeMusicOptions, parseMusicSetting, parsePlaylistText, type MusicOptions } from "@/lib/school/music";
 import { MusicStudioCard } from "@/components/school/music-studio";
 import { AdminAutomationCards } from "@/components/school/admin-automation-cards";
@@ -15,6 +15,7 @@ import { DEFAULT_ADMISSION_NUMBER_SETTINGS, formatAdmissionNumberExample, type A
 import { getAdmissionNumberSettings, saveAdmissionNumberSettings } from "@/lib/school/api";
 
 export function SettingsView({ ws, refresh, flash, onWelcomeChange }: Gate) {
+  const canDownloadParentDetails = canActorAccess(ws.roleAccess, ws.me.role, "parentDetails", "download");
   return (
     <div className="max-w-4xl space-y-6">
       <header>
@@ -25,8 +26,8 @@ export function SettingsView({ ws, refresh, flash, onWelcomeChange }: Gate) {
       <PasswordCard flash={flash} />
       {isAdmin(ws.me.role) ? <section className="rounded-xl border border-sky-200 bg-gradient-to-r from-sky-50 to-indigo-50 p-4">
         <h2 className="font-serif text-xl text-navy">School records backup</h2>
-        <p className="mt-1 text-sm text-muted">Export school settings, learner records, marks, years, terms, assignments and class-movement history. Daily snapshots are stored in the database; download separate copies for protection against database loss. Passwords and password hashes are excluded for security.</p>
-        <button className={btnDownload.emerald + " mt-3"} type="button" onClick={async () => {
+        <p className="mt-1 text-sm text-muted">This export includes private school and learner records, parent and guardian contact details, and support information. Passwords and password hashes are excluded. Downloads are available only when the Super Admin has enabled parent-detail downloads for your role.</p>
+        {canDownloadParentDetails ? <button className={btnDownload.emerald + " mt-3"} type="button" onClick={async () => {
           try {
             const backup = await exportSchoolBackup();
             const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
@@ -38,9 +39,10 @@ export function SettingsView({ ws, refresh, flash, onWelcomeChange }: Gate) {
             URL.revokeObjectURL(url);
             flash("School records backup downloaded successfully. Store it somewhere private.");
           } catch (error) { flash(errText(error), true); }
-        }}>Download school backup</button>
+        }}>Download school backup</button> : <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">School backup downloads are locked by the Super Admin because they contain parent and guardian details.</p>}
         {ws.me.role === "super_admin" ? <RestoreBackupPanel flash={flash} refresh={refresh} /> : null}
       </section> : null}
+      {canDownloadParentDetails ? <ParentContactsExportCard flash={flash} /> : null}
       {ws.me.role === "super_admin" ? <RoleAccessCard policy={ws.roleAccess} refresh={refresh} flash={flash} /> : null}
       {ws.me.role === "super_admin" ? <ParentLoginAuditCard flash={flash} /> : null}
       {ws.me.role === "super_admin" ? <AdmissionNumberFormatCard flash={flash} /> : null}
@@ -94,19 +96,50 @@ function ParentLoginAuditCard({ flash }: Pick<Gate, "flash">) {
 }
 
 
+function ParentContactsExportCard({ flash }: Pick<Gate, "flash">) {
+  const [busy, setBusy] = useState(false);
+  return <section className="space-y-3 rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 via-white to-cyan-50 p-5 shadow-card">
+    <div><p className="text-xs font-bold uppercase tracking-[.18em] text-emerald-800">Restricted data · role permission required</p><h2 className="font-serif text-2xl text-navy">Parent contact details</h2><p className="mt-1 text-sm text-muted">Download registered parent names, email addresses, linked learner names, account status, and the latest parent-entered contact number when available. Phone numbers have not been verified. The Super Admin controls which staff roles can download this file.</p></div>
+    <button className={btnDownload.emerald} type="button" disabled={busy} onClick={async () => {
+      setBusy(true);
+      try {
+        const contacts = await exportParentContacts();
+        const rows = [
+          ["Parent name", "Parent email", "Linked learner(s)", "Contact phone (parent-entered, not verified)", "Account active", "Last email-verified portal login"],
+          ...contacts.map((contact) => [contact.parentName, contact.parentEmail, contact.learnerNames, contact.phoneEntered || "", contact.active ? "Yes" : "No", contact.lastVerifiedLogin || ""]),
+        ];
+        const csvCell = (value: string) => {
+          const safe = /^[=+\-@\t\r]/.test(value) ? `'${value}` : value;
+          return `"${safe.replace(/"/g, '""')}"`;
+        };
+        const blob = new Blob(["\uFEFF", rows.map((row) => row.map(csvCell).join(",")).join("\r\n")], { type: "text/csv;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `mukuyu-parent-contacts-${new Date().toISOString().slice(0, 10)}.csv`;
+        link.click();
+        URL.revokeObjectURL(url);
+        flash(`Downloaded ${contacts.length} parent contact records. Store the file securely.`);
+      } catch (error) { flash(errText(error), true); }
+      finally { setBusy(false); }
+    }}>{busy ? "Preparing secure download…" : "Download parent contacts (CSV)"}</button>
+  </section>;
+}
+
 function RoleAccessCard({ policy, refresh, flash }: { policy: RoleAccessPolicy; refresh: Gate["refresh"]; flash: Gate["flash"] }) {
   const [draft, setDraft] = useState<RoleAccessPolicy>(policy);
   const [busy, setBusy] = useState(false);
   useEffect(() => setDraft(policy), [policy]);
   const labels: Record<AccessGroup, string> = { admin: "Admin", teacher: "Teacher", parent: "Parent", student: "Student", qr_guest: "Public QR report" };
-  const areaLabels: Record<AccessArea, string> = { reports: "Report cards", analysis: "Analysis", marklists: "Mark lists", familyResults: "Linked family results" };
+  const areaLabels: Record<AccessArea, string> = { reports: "Report cards", analysis: "Analysis", marklists: "Mark lists", familyResults: "Linked family results", parentDetails: "Parent contact details" };
   const matrixGroups = ACCESS_GROUPS.filter((group) => group !== "qr_guest");
   const qrViewingUnlocked = draft.qr_guest.reports.view;
   function update(group: AccessGroup, area: AccessArea, action: "view" | "download", checked: boolean) {
+    if (area === "parentDetails" && group !== "admin" && group !== "teacher") return;
     setDraft((current) => ({ ...current, [group]: { ...current[group], [area]: { ...current[group][area], [action]: checked, ...(action === "view" && !checked ? { download: false } : {}) } } }));
   }
   return <section className="rounded-2xl border border-amber-300 bg-gradient-to-br from-amber-50 via-white to-sky-50 p-5 shadow-card space-y-4">
-    <div><p className="text-xs font-bold uppercase tracking-[.18em] text-amber-800">Super Admin · access policy</p><h2 className="font-serif text-2xl text-navy">Role-group viewing and downloads</h2><p className="mt-1 text-sm text-muted">Allow or lock viewing and downloads separately for report cards, analysis, mark lists and linked family results. Super Admin always retains access. Parent/student results remain limited to linked learners.</p></div>
+    <div><p className="text-xs font-bold uppercase tracking-[.18em] text-amber-800">Super Admin · access policy</p><h2 className="font-serif text-2xl text-navy">Role-group viewing and downloads</h2><p className="mt-1 text-sm text-muted">Allow or lock viewing and downloads separately for report cards, analysis, mark lists, linked family results, and sensitive parent contact details. Parent-detail access is off by default and can only be granted to Admin or Teacher roles. Super Admin always retains access.</p></div>
     <div className="rounded-xl border-2 border-sky-200 bg-white/80 p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div><h3 className="font-semibold text-navy">Public report-card QR links</h3><p className="mt-1 text-sm text-muted">Tick exactly one option. This controls whether families can open a report using its QR code or link.</p></div>
@@ -124,8 +157,8 @@ function RoleAccessCard({ policy, refresh, flash }: { policy: RoleAccessPolicy; 
       </div>
       <p className="mt-3 text-xs text-muted">Your selection is applied only after you press “Save role access controls.” The lock is checked by the server; it does not delete report cards or learner codes.</p>
     </div>
-    <div className="overflow-x-auto"><table className="w-full min-w-[760px] border-collapse text-sm"><thead><tr className="border-b border-line text-left"><th className="p-2">Group</th>{ACCESS_AREAS.map((area) => <th key={area} className="p-2">{areaLabels[area]}<div className="mt-1 flex gap-3 text-xs font-normal"><span>View</span><span>Download</span></div></th>)}</tr></thead><tbody>{matrixGroups.map((group) => <tr key={group} className="border-b border-line/70"><th className="p-2 text-left">{labels[group]}</th>{ACCESS_AREAS.map((area) => <td key={area} className="p-2"><div className="flex gap-4"><label className="inline-flex items-center gap-1" title={`Allow ${labels[group]} to view ${areaLabels[area]}`}><input type="checkbox" checked={draft[group][area].view} onChange={(event) => update(group, area, "view", event.target.checked)} aria-label={`${labels[group]} ${areaLabels[area]} view`} />On</label><label className="inline-flex items-center gap-1" title={`Allow ${labels[group]} to download ${areaLabels[area]}`}><input type="checkbox" checked={draft[group][area].download} disabled={!draft[group][area].view} onChange={(event) => update(group, area, "download", event.target.checked)} aria-label={`${labels[group]} ${areaLabels[area]} download`} />On</label></div></td>)}</tr>)}</tbody></table></div>
-    <p className="rounded-lg border border-amber-200 bg-white/70 p-3 text-xs text-muted">Download locks hide the portal’s export, print and report-link controls. They cannot prevent screenshots or restrict data that another allowed task must already receive. The public QR control above is enforced by the server.</p>
+    <div className="overflow-x-auto"><table className="w-full min-w-[760px] border-collapse text-sm"><thead><tr className="border-b border-line text-left"><th className="p-2">Group</th>{ACCESS_AREAS.map((area) => <th key={area} className="p-2">{areaLabels[area]}<div className="mt-1 flex gap-3 text-xs font-normal"><span>View</span><span>Download</span></div></th>)}</tr></thead><tbody>{matrixGroups.map((group) => <tr key={group} className="border-b border-line/70"><th className="p-2 text-left">{labels[group]}</th>{ACCESS_AREAS.map((area) => <td key={area} className="p-2"><div className="flex gap-4"><label className="inline-flex items-center gap-1" title={`Allow ${labels[group]} to view ${areaLabels[area]}`}><input type="checkbox" checked={draft[group][area].view} disabled={area === "parentDetails" && group !== "admin" && group !== "teacher"} onChange={(event) => update(group, area, "view", event.target.checked)} aria-label={`${labels[group]} ${areaLabels[area]} view`} />On</label><label className="inline-flex items-center gap-1" title={`Allow ${labels[group]} to download ${areaLabels[area]}`}><input type="checkbox" checked={draft[group][area].download} disabled={!draft[group][area].view || (area === "parentDetails" && group !== "admin" && group !== "teacher")} onChange={(event) => update(group, area, "download", event.target.checked)} aria-label={`${labels[group]} ${areaLabels[area]} download`} />On</label></div></td>)}</tr>)}</tbody></table></div>
+    <p className="rounded-lg border border-amber-200 bg-white/70 p-3 text-xs text-muted">Parent contact downloads and full school-backup exports are checked by the server against this permission. Parent-contact CSV downloads are also recorded in the school audit log. Download locks cannot prevent screenshots. The public QR control above is enforced by the server.</p>
     <button className={btnClass} type="button" disabled={busy} onClick={async () => { setBusy(true); try { const saved = await saveRoleAccessPolicy({ data: { policy: draft } }); setDraft(saved); await refresh(); flash(`Role access controls saved. Public QR report viewing is ${saved.qr_guest.reports.view ? "UNLOCKED" : "LOCKED"}.`); } catch (error) { flash(errText(error), true); } finally { setBusy(false); } }}>{busy ? "Saving…" : "Save role access controls"}</button>
   </section>;
 }
@@ -442,11 +475,11 @@ function AppearanceColorsCard({ flash }: Pick<Gate, "flash">) {
 function WhatsAppGroupCard({ profile, flash, refresh }: { profile: Profile; flash: Gate["flash"]; refresh: Gate["refresh"] }) {
   const [form, setForm] = useState({ enabled: profile.whatsappGroupEnabled, url: profile.whatsappGroupUrl, label: profile.whatsappGroupLabel || `Join ${profile.name} WhatsApp group` });
   return <form className="rounded-md border border-emerald-200 bg-emerald-50/60 p-4 space-y-3" onSubmit={async (event) => { event.preventDefault(); try { await saveProfile({ data: { ...profile, whatsappGroupEnabled: form.enabled, whatsappGroupUrl: form.url, whatsappGroupLabel: form.label } }); flash("Scanned report WhatsApp group settings saved."); await refresh(); } catch (error) { flash(errText(error), true); } }}>
-    <h2 className="font-serif text-xl text-navy">Scanned report WhatsApp group</h2><p className="text-sm text-muted">When enabled, scanned public report cards show a clear “Tap to join” link. The group link is not shown when disabled.</p>
-    <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.enabled} onChange={(event) => setForm({ ...form, enabled: event.target.checked })} />Show WhatsApp group button on scanned reports</label>
+    <h2 className="font-serif text-xl text-navy">Parent WhatsApp group invitation</h2><p className="text-sm text-muted">When enabled, an optional invite appears during parent registration and on scanned public report cards. Parents open the link and choose whether to join; entering a phone number does not automatically add anyone. The link is not shown when disabled.</p>
+    <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.enabled} onChange={(event) => setForm({ ...form, enabled: event.target.checked })} />Show optional WhatsApp invite on parent registration and scanned reports</label>
     <input className={inputClass} type="url" placeholder="https://chat.whatsapp.com/..." value={form.url} onChange={(event) => setForm({ ...form, url: event.target.value })} />
     <input className={inputClass} maxLength={100} placeholder={`Join ${profile.name} WhatsApp group`} value={form.label} onChange={(event) => setForm({ ...form, label: event.target.value })} />
-    <button className={btnClass} type="submit">Save WhatsApp group setting</button>
+    <button className={btnClass} type="submit">Save parent WhatsApp invite setting</button>
   </form>;
 }
 function ReportOptionsCard({ ws, flash, refresh }: Pick<Gate, "ws" | "flash" | "refresh">) {

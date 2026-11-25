@@ -37,3 +37,16 @@ test("Super Admin access cannot be revoked by editable role policy", () => {
   assert.equal(canActorAccess(policy, "super_admin", "marklists", "download"), true);
   assert.equal(canActorAccess(policy, "admin", "reports", "view"), false);
 });
+
+test("parent contact exports are denied by default and can only be granted to staff groups", () => {
+  assert.equal(canRoleAccess(DEFAULT_ROLE_ACCESS, "admin", "parentDetails", "download"), false);
+  assert.equal(canRoleAccess(DEFAULT_ROLE_ACCESS, "teacher", "parentDetails", "download"), false);
+  assert.equal(canActorAccess(DEFAULT_ROLE_ACCESS, "super_admin", "parentDetails", "download"), true);
+
+  const staffGranted = normalizeRoleAccess({ admin: { parentDetails: { view: true, download: true } } });
+  assert.equal(canActorAccess(staffGranted, "admin", "parentDetails", "download"), true);
+  assert.equal(canActorAccess(staffGranted, "teacher", "parentDetails", "download"), false);
+
+  const parentAttempt = normalizeRoleAccess({ parent: { parentDetails: { view: true, download: true } } });
+  assert.equal(canActorAccess(parentAttempt, "parent", "parentDetails", "download"), false);
+});

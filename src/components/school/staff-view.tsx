@@ -63,7 +63,11 @@ export function StaffView({ ws, refresh, flash }: Gate) {
           event.preventDefault();
           try {
             const res = await resetPassword({ data: { email: resetEmail } });
-            setIssuedCredential({ email: res.email, password: res.temporaryPassword || "Sent to the account email", purpose: res.emailSent ? "Temporary password reset and emailed" : `Password reset; email not sent (${res.emailNote || "check email configuration"})` });
+            if (res.temporaryPassword) {
+              setIssuedCredential({ email: res.email, password: res.temporaryPassword, purpose: res.emailSent ? "Temporary password reset and emailed" : `Password reset; email not sent (${res.emailNote || "check email configuration"})` });
+            } else {
+              setIssuedCredential(null);
+            }
             flash(res.emailSent
               ? `Password reset for ${resetEmail}; temporary password emailed successfully.`
               : `Password reset for ${resetEmail}. Copy the temporary password shown below and share it securely.`);
@@ -72,7 +76,7 @@ export function StaffView({ ws, refresh, flash }: Gate) {
           } catch (error) { flash(errText(error), true); }
         }}>
           <h2 className="font-serif text-xl text-navy">Reset a password</h2>
-          <p className="mt-1 text-sm text-muted">Enter the account email. The temporary password is sent through Resend when configured; otherwise it is shown below once so you can share it securely.</p>
+          <p className="mt-1 text-sm text-muted">Enter the account email. Parent passwords can be reset only by the Super Admin or a deputy. Parent temporary passwords expire after 24 hours and are emailed; if delivery fails, the password is shown once for secure hand-off. Other account resets follow their role-specific rules.</p>
           <div className="mt-3 flex flex-col gap-2 sm:flex-row">
             <input className={inputClass} type="email" placeholder="Email address" value={resetEmail} onChange={(event) => setResetEmail(event.target.value)} required />
             <button className={btnClass} type="submit">Send new password</button>
@@ -313,7 +317,7 @@ function CredentialsPanel({ flash }: { flash: Gate["flash"] }) {
   return (
     <section className="rounded-xl border border-violet-200 bg-gradient-to-br from-violet-50 to-sky-50 p-4">
       <h2 className="font-serif text-xl text-navy">Account access & password resets</h2>
-      <p className="mt-1 text-sm text-muted">For security, the portal never displays saved passwords. Super admin and deputy can issue a new temporary password for an account; it is shown once here and emailed when Resend is configured.</p>
+      <p className="mt-1 text-sm text-muted">For security, the portal never displays saved passwords. Super Admin and deputies can reset parent accounts. When a parent reset email is successfully sent, the temporary password is not shown here; if delivery fails, it is shown once for secure hand-off.</p>
       <button className={btnGhost + " mt-3"} type="button" onClick={load}>Load accounts</button>
       {credential ? <div className="mt-3 rounded-lg border border-emerald-300 bg-white p-3"><p className="font-semibold">Temporary password issued for {credential.email}</p><code className="mt-2 block break-all font-mono">{credential.password}</code><button type="button" className={btnGhost + " mt-2"} onClick={async () => { await navigator.clipboard.writeText(credential.password); flash("Temporary password copied."); }}>Copy password</button><button type="button" className={btnGhost + " ml-2 mt-2"} onClick={() => setCredential(null)}>Hide</button></div> : null}
       {rows ? <ul className="mt-3 space-y-2">{rows.map((row) => <li key={row.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-white bg-white/90 p-3 text-sm"><span><strong>{row.fullName}</strong><br />{row.email} · {row.role} · {row.active ? "Active" : "Disabled"}</span><button type="button" disabled={busyId === row.id} className={btnGhost} onClick={async () => { setBusyId(row.id); try { const result = await resetPassword({ data: { email: row.email } }); if (result.temporaryPassword) setCredential({ email: result.email, password: result.temporaryPassword }); else setCredential(null); flash(result.emailSent ? `Temporary password emailed to ${row.email}.` : `Password reset. ${result.emailNote || "Email delivery unavailable."}`); } catch (error) { flash(errText(error), true); } finally { setBusyId(""); } }}>{busyId === row.id ? "Resetting…" : "Issue new password"}</button></li>)}</ul> : null}

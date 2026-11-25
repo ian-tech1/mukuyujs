@@ -21,6 +21,16 @@ function GatePage() {
   return <LoginPage />;
 }
 
+function safeWhatsAppGroupInvite(enabled: boolean | undefined, rawUrl: string | undefined) {
+  if (!enabled || !rawUrl) return "";
+  try {
+    const url = new URL(rawUrl);
+    return url.protocol === "https:" && url.hostname === "chat.whatsapp.com" ? url.toString() : "";
+  } catch {
+    return "";
+  }
+}
+
 function OpeningIntro({ title, motto, logoSrc, durationSeconds }: { title: string; motto: string; logoSrc?: string; durationSeconds: number }) {
   const [visible, setVisible] = useState(true);
   const [progress, setProgress] = useState(0);
@@ -150,11 +160,12 @@ function LoginPage() {
   const [parentBusy, setParentBusy] = useState(false);
   const [parentError, setParentError] = useState("");
   const [parentNotice, setParentNotice] = useState("");
-  const [welcome, setWelcome] = useState<{ title: string; subtitle: string; announcement: string; contact: string; logoData?: string; backgroundStart?: string; backgroundEnd?: string; titleSize?: number; fontFamily?: string; animationStyle?: string; animated?: boolean; highlights?: string; certification?: string; footerText?: string; paragraphColoursEnabled?: boolean; paragraphColourInterval?: number; splashDurationSeconds?: number; display?: WelcomeDisplayOptions } | null>(null);
+  const [welcome, setWelcome] = useState<{ title: string; subtitle: string; announcement: string; contact: string; logoData?: string; backgroundStart?: string; backgroundEnd?: string; titleSize?: number; fontFamily?: string; animationStyle?: string; animated?: boolean; highlights?: string; certification?: string; footerText?: string; paragraphColoursEnabled?: boolean; paragraphColourInterval?: number; splashDurationSeconds?: number; whatsappGroupEnabled?: boolean; whatsappGroupUrl?: string; whatsappGroupLabel?: string; display?: WelcomeDisplayOptions } | null>(null);
   const [display, setDisplay] = useState<LocalDisplayPreferences>(DEFAULT_DISPLAY_PREFERENCES);
   const [paragraphColourTick, setParagraphColourTick] = useState(0);
   const [featuresOpen, setFeaturesOpen] = useState(false);
   const welcomeDisplay = normalizeWelcomeDisplay(welcome?.display ?? DEFAULT_WELCOME_DISPLAY);
+  const whatsappGroupInvite = safeWhatsAppGroupInvite(welcome?.whatsappGroupEnabled, welcome?.whatsappGroupUrl);
   const selectedPalette = display.theme ? DISPLAY_PALETTES.find((palette) => palette.id === display.theme) : undefined;
   const welcomeHeroStyle = {
     "--welcome-start": selectedPalette?.colors.navy || welcome?.backgroundStart || "#0e2a4a",
@@ -512,6 +523,11 @@ function LoginPage() {
                 <label className="block text-sm font-medium">Contact number <span className="font-normal text-muted">(required; entered but not verified)</span><input className={`${inputClass} mt-1.5`} type="tel" autoComplete="tel" value={parentPhone} onChange={(event) => setParentPhone(event.target.value)} maxLength={40} required /></label>
                 <label className="block text-sm font-medium">Learner’s Name<input className={`${inputClass} mt-1.5`} autoComplete="off" value={parentLearnerName} onChange={(event) => setParentLearnerName(event.target.value)} maxLength={160} required /></label>
                 <p className="welcome-parent-safety-note rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-muted">Email verification confirms access to the email address, not guardianship by itself. The contact number is recorded as entered and is not phone-verified. For learner-record corrections or access concerns, contact the school office. To add another learner later, sign in again with the same parent email and that learner’s name.</p>
+                {whatsappGroupInvite ? <div className="rounded-xl border border-emerald-200 bg-gradient-to-r from-emerald-50 to-cyan-50 p-3 text-sm">
+                  <p className="font-semibold text-emerald-900">Optional WhatsApp parents’ group</p>
+                  <p className="mt-1 text-xs text-muted">Joining is your choice. Entering a WhatsApp phone number here will not add you to the group; open the invite and choose whether to join.</p>
+                  <a className="mt-2 inline-flex min-h-10 items-center justify-center rounded-lg bg-emerald-700 px-4 py-2 font-semibold text-white hover:bg-emerald-800" href={whatsappGroupInvite} target="_blank" rel="noopener noreferrer">{welcome?.whatsappGroupLabel?.trim() || "Open WhatsApp group invite"}</a>
+                </div> : null}
               </>}
               {parentError ? <p className="text-sm text-bad" role="alert">{parentError}</p> : null}
               {parentNotice ? <p className="text-sm text-good" role="status">{parentNotice}</p> : null}

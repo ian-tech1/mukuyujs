@@ -396,6 +396,12 @@ export const setupSchool = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+function parentTemporaryPasswordExpired(expiresAt: Date | string | null | undefined) {
+  if (expiresAt == null) return false;
+  const expiryTime = expiresAt instanceof Date ? expiresAt.getTime() : new Date(expiresAt).getTime();
+  return !Number.isFinite(expiryTime) || expiryTime <= Date.now();
+}
+
 export const login = createServerFn({ method: "POST" })
   .validator((input: { email: string; password: string }) => input)
   .handler(async ({ data }) => {
@@ -408,10 +414,16 @@ export const login = createServerFn({ method: "POST" })
       password_hash: string;
       active: boolean;
       session_version: number;
-    }>`select id, password_hash, active, session_version from users where email = ${email}`;
+      role: string;
+      must_change_password: boolean;
+      must_change_password_expires_at: Date | string | null;
+    }>`select id, password_hash, active, session_version, role, must_change_password, must_change_password_expires_at from users where email = ${email}`;
     const row = rows[0];
     if (!row || !verifyPassword(password, row.password_hash)) throw new Error("Email or password is not correct.");
     if (!row.active) throw new Error("This account is disabled. Ask the super admin.");
+    if (row.role === "parent" && row.must_change_password && parentTemporaryPasswordExpired(row.must_change_password_expires_at)) {
+      throw new Error("This temporary parent password has expired. Please ask the super admin or a deputy to issue a new one.");
+    }
     const session = await sessionApi();
     await session.update({ userId: row.id, v: Number(row.session_version) });
     return { ok: true };
@@ -424,10 +436,13 @@ export const loginParent = createServerFn({ method: "POST" })
     const password = String(data.password ?? "");
     if (!isValidParentEmail(email) || !password) throw new Error("Enter your parent email and password.");
     const sql = await getSql();
-    const rows = await sql<{ id: string; password_hash: string; active: boolean; role: string; session_version: number; must_change_password: boolean }>`select id, password_hash, active, role, session_version, must_change_password from users where email = ${email}`;
+    const rows = await sql<{ id: string; password_hash: string; active: boolean; role: string; session_version: number; must_change_password: boolean; must_change_password_expires_at: Date | string | null }>`select id, password_hash, active, role, session_version, must_change_password, must_change_password_expires_at from users where email = ${email}`;
     const user = rows[0];
     if (!user || user.role !== "parent" || !verifyPassword(password, user.password_hash)) throw new Error("Parent email or password is not correct.");
     if (!user.active) throw new Error("This parent account is disabled. Please contact the school office.");
+    if (user.must_change_password && parentTemporaryPasswordExpired(user.must_change_password_expires_at)) {
+      throw new Error("This temporary parent password has expired. Please ask the super admin or a deputy to issue a new one.");
+    }
     const session = await sessionApi();
     await session.update({ userId: user.id, v: Number(user.session_version) });
     return { ok: true, mustChangePassword: Boolean(user.must_change_password) };
@@ -451,12 +466,15 @@ export const completeParentFirstLoginPasswordChange = createServerFn({ method: "
       throw new Error("New password must be between 12 and 128 characters.");
     }
     const sql = await getSql();
-    const rows = await sql<{ password_hash: string }>`select password_hash from users where id = ${me.id} and role = 'parent' and must_change_password = true`;
+    const rows = await sql<{ password_hash: string; must_change_password_expires_at: Date | string | null }>`select password_hash, must_change_password_expires_at from users where id = ${me.id} and role = 'parent' and must_change_password = true`;
     if (!rows[0]) throw new Error("This parent account no longer needs a first-login password change.");
+    if (parentTemporaryPasswordExpired(rows[0].must_change_password_expires_at)) {
+      throw new Error("This temporary parent password has expired. Please ask the super admin or a deputy to issue a new one.");
+    }
     if (verifyPassword(password, rows[0].password_hash)) {
       throw new Error("Choose a password different from your initial password.");
     }
-    const updated = await sql<{ id: string }>`update users set password_hash = ${hashPassword(password)}, must_change_password = false where id = ${me.id} and role = 'parent' and must_change_password = true returning id`;
+    const updated = await sql<{ id: string }>`update users set password_hash = ${hashPassword(password)}, must_change_password = false, must_change_password_expires_at = null where id = ${me.id} and role = 'parent' and must_change_password = true returning id`;
     if (!updated[0]) throw new Error("The password could not be changed. Please sign in again.");
     return { ok: true };
   });
@@ -636,7 +654,7 @@ export const resetParentPassword = createServerFn({ method: "POST" })
         return null;
       }
       const sessionVersion = Number(user.session_version) + 1;
-      await tx`update users set password_hash = ${hashPassword(password)}, session_version = ${sessionVersion}, must_change_password = false where id = ${user.id}`;
+      await tx`update users set password_hash = ${hashPassword(password)}, session_version = ${sessionVersion}, must_change_password = false, must_change_password_expires_at = null where id = ${user.id}`;
       await tx`update parent_password_reset_codes set consumed_at = now() where id = ${challenge.id}`;
       return { userId: user.id, sessionVersion };
     });
@@ -653,6 +671,30 @@ export const getParentLoginAudit = createServerFn({ method: "GET" }).handler(asy
     sql<{ id: string; parentName: string; parentEmail: string; parentPhone: string | null; learnerName: string; loggedInAt: string }>`select id, parent_name as "parentName", parent_email as "parentEmail", parent_phone as "parentPhone", learner_name as "learnerName", logged_in_at::text as "loggedInAt" from parent_login_events order by logged_in_at desc limit 500`,
   ]);
   return { total: Number(summary[0]?.total ?? 0), uniqueParents: Number(summary[0]?.unique_parents ?? 0), events };
+});
+
+export const exportParentContacts = createServerFn({ method: "GET" }).handler(async () => {
+  const me = await requireActor();
+  const sql = await getSql();
+  const roleAccess = await readRoleAccess(sql);
+  if (!canActorAccess(roleAccess, me.role, "parentDetails", "download")) {
+    throw new Error("Parent contact downloads are locked by the Super Admin.");
+  }
+  const contacts = await sql<{ parentName: string; parentEmail: string; active: boolean; learnerNames: string; phoneEntered: string | null; lastVerifiedLogin: string | null }>`
+    select u.full_name as "parentName", u.email as "parentEmail", u.active,
+      coalesce((select string_agg(linked.full_name, ', ' order by linked.full_name) from (
+        select distinct l.full_name from learners l where l.id in (
+          select pl.learner_id from parent_links pl where pl.parent_user_id = u.id
+          union select legacy.learner_id from users legacy where legacy.id = u.id and legacy.learner_id is not null
+        )
+      ) linked), '') as "learnerNames",
+      latest_phone.parent_phone as "phoneEntered", latest_login.logged_in_at::text as "lastVerifiedLogin"
+    from users u
+    left join lateral (select parent_phone from parent_login_events where parent_user_id = u.id and parent_phone is not null order by logged_in_at desc limit 1) latest_phone on true
+    left join lateral (select logged_in_at from parent_login_events where parent_user_id = u.id order by logged_in_at desc limit 1) latest_login on true
+    where u.role = 'parent' order by u.full_name, u.email`;
+  await writeServiceAudit(sql, me, "parent_contacts_exported", "parent_contacts", "all", `Downloaded ${contacts.length} parent contact rows. Phone numbers are parent-entered and not phone-verified.`);
+  return contacts;
 });
 
 export const logout = createServerFn({ method: "POST" }).handler(async () => {
@@ -1324,7 +1366,7 @@ export const resetPassword = createServerFn({ method: "POST" })
     if (target.role === "super_admin" && !isTrueSuper(me)) throw new Error("Only the super admin can reset a super admin password.");
     if (target.role === "admin" && !isPowerful(me)) throw new Error("Only the super admin or deputy can reset an admin password.");
     if (target.role === "teacher" && !isAdmin(me.role)) throw new Error("Only an admin can reset a teacher password.");
-    if (target.role === "parent" && !isAdmin(me.role)) throw new Error("Only an admin can reset a parent password.");
+    if (target.role === "parent" && !isPowerful(me)) throw new Error("Only the super admin or a deputy can reset a parent password.");
     if (target.role === "student" && !isAdmin(me.role) && me.role !== "teacher") throw new Error("You cannot reset this password.");
     if (!isAdmin(me.role) && me.role === "teacher" && target.role === "student") {
       const learner = await sql<{ stream_id: string }>`select stream_id from learners where id = (select learner_id from users where id = ${target.id})`;
@@ -1332,7 +1374,7 @@ export const resetPassword = createServerFn({ method: "POST" })
       if (!assignment[0]) throw new Error("Only the student's class teacher can reset this password.");
     }
     const password = tempPassword();
-    await sql`update users set password_hash = ${hashPassword(password)}, session_version = session_version + 1, active = true, must_change_password = ${target.role === "parent"} where id = ${target.id}`;
+    await sql`update users set password_hash = ${hashPassword(password)}, session_version = session_version + 1, active = true, must_change_password = ${target.role === "parent"}, must_change_password_expires_at = case when ${target.role === "parent"} then now() + interval '24 hours' else null end where id = ${target.id}`;
     const school = await sql<{ name: string }>`select name from school_profile where id = 1`;
     const portalUrl = await schoolPortalUrl(sql);
     const body = [
@@ -1341,13 +1383,15 @@ export const resetPassword = createServerFn({ method: "POST" })
       `Email: ${email}`,
       `Temporary password: ${password}`,
       `Portal link: ${portalUrl}`,
-      `Sign in and change this password immediately. If you did not request this, contact the school administrator.`,
+      target.role === "parent"
+        ? "This temporary password expires in 24 hours. Sign in within that time and choose a new private password before opening the parent portal. If you did not request this, contact the school administrator."
+        : "Sign in and change this password immediately. If you did not request this, contact the school administrator.",
     ].join("\n\n");
     const subject = "Your temporary Mukuyu portal password";
     // Do not save plaintext credentials in the mail log or user record.
     await sql`insert into mail_outbox (id, to_email, subject, body) values (${newId("mail")}, ${email}, ${subject}, ${"A temporary password was issued. For security, the credential is not stored in the mail log."})`;
     const sent = await sendPasswordEmail(email, subject, body);
-    return { ok: true, email, emailSent: sent.sent, emailNote: sent.sent ? "Sent to the account email" : sent.reason, temporaryPassword: password };
+    return { ok: true, email, emailSent: sent.sent, emailNote: sent.sent ? "Sent to the account email" : sent.reason, temporaryPassword: target.role === "parent" && sent.sent ? undefined : password };
   });
 
 export const listMail = createServerFn({ method: "GET" }).handler(async (): Promise<MailItem[]> => {
@@ -1382,21 +1426,18 @@ export const createLearnerLogin = createServerFn({ method: "POST" })
       return { ok: true, email, password: data.password, name: learner[0].full_name };
     }
     const parentName = data.parentName?.trim() || `Parent of ${learner[0].full_name}`;
-    const found = await sql<{ id: string; role: string }>`select id, role from users where email = ${email}`;
-    let parentId = found[0]?.id;
+    const found = await sql<{ id: string; role: string; full_name: string }>`select id, role, full_name from users where email = ${email}`;
     if (found[0] && found[0].role !== "parent") throw new Error("That email already belongs to a staff or student account.");
-    if (!parentId) {
-      parentId = newId("usr");
+    const parentId = found[0]?.id ?? newId("usr");
+    if (!found[0]) {
       await sql`
         insert into users (id, email, password_hash, full_name, role, active, must_change_password)
         values (${parentId}, ${email}, ${hashPassword(data.password)}, ${parentName}, 'parent', true, true)`;
-    } else {
-      await sql`update users set password_hash = ${hashPassword(data.password)}, session_version = session_version + 1, active = true, must_change_password = true where id = ${parentId}`;
     }
     await sql`
       insert into parent_links (parent_user_id, learner_id) values (${parentId}, ${data.learnerId})
       on conflict do nothing`;
-    return { ok: true, email, password: data.password, name: parentName };
+    return { ok: true, email, password: found[0] ? "" : data.password, name: found[0]?.full_name ?? parentName, existingAccountLinked: Boolean(found[0]) };
   });
 
 export const savePrivileges = createServerFn({ method: "POST" })
@@ -1781,6 +1822,10 @@ export const exportSchoolBackup = createServerFn({ method: "GET" }).handler(asyn
   const me = await requireActor();
   if (!isAdmin(me.role)) throw new Error("Only school admins can export a school backup.");
   const sql = await getSql();
+  const roleAccess = await readRoleAccess(sql);
+  if (!canActorAccess(roleAccess, me.role, "parentDetails", "download")) {
+    throw new Error("School backups include parent and guardian details. Parent-detail downloads are locked by the Super Admin.");
+  }
   const payload = await buildSchoolBackupPayload(sql, me.email);
   await sql`insert into office_backups (id, kind, note, payload, created_by) values (${newId("bak")}, 'manual', 'Downloaded school records backup', ${JSON.stringify(payload)}, ${me.id})`;
   await sql`delete from office_backups where kind = 'manual' and id not in (select id from office_backups where kind = 'manual' order by created_at desc limit 10)`;
@@ -3035,16 +3080,23 @@ export const searchAutomaticMusic = createServerFn({ method: "GET" })
 
 export const getWelcomePage = createServerFn({ method: "GET" }).handler(async () => {
   const sql = await getSql();
-  const rows = await sql<{ title: string; subtitle: string; announcement: string; contact: string; showLogo: boolean; logoData: string; backgroundStart: string; backgroundEnd: string; titleSize: number; animated: boolean; musicEnabled: boolean; musicUrl: string; highlights: string; certification: string; footerText: string; appearanceJson: string; displayControlsJson: string; paragraphColoursEnabled: boolean; paragraphColourInterval: number; splashDurationSeconds: number }>`select title, subtitle, announcement, contact, show_logo as "showLogo", logo_data as "logoData", background_start as "backgroundStart", background_end as "backgroundEnd", title_size as "titleSize", animated, music_enabled as "musicEnabled", music_url as "musicUrl", highlights, certification, footer_text as "footerText", appearance_json as "appearanceJson", display_controls_json as "displayControlsJson", font_family as "fontFamily", animation_style as "animationStyle", paragraph_colours_enabled as "paragraphColoursEnabled", paragraph_colour_interval as "paragraphColourInterval", splash_duration_seconds as "splashDurationSeconds" from welcome_page where id = 1`;
+  const groupRows = await sql<{ enabled: boolean; url: string; label: string }>`select whatsapp_group_enabled as enabled, whatsapp_group_url as url, whatsapp_group_label as label from school_profile where id = 1`;
+  const group = groupRows[0];
+  const whatsappInvite = {
+    whatsappGroupEnabled: Boolean(group?.enabled),
+    whatsappGroupUrl: group?.url ?? "",
+    whatsappGroupLabel: group?.label ?? "",
+  };
+  const rows = await sql<{ title: string; subtitle: string; announcement: string; contact: string; showLogo: boolean; logoData: string; backgroundStart: string; backgroundEnd: string; titleSize: number; fontFamily: string; animationStyle: string; animated: boolean; musicEnabled: boolean; musicUrl: string; highlights: string; certification: string; footerText: string; appearanceJson: string; displayControlsJson: string; paragraphColoursEnabled: boolean; paragraphColourInterval: number; splashDurationSeconds: number }>`select title, subtitle, announcement, contact, show_logo as "showLogo", logo_data as "logoData", background_start as "backgroundStart", background_end as "backgroundEnd", title_size as "titleSize", animated, music_enabled as "musicEnabled", music_url as "musicUrl", highlights, certification, footer_text as "footerText", appearance_json as "appearanceJson", display_controls_json as "displayControlsJson", font_family as "fontFamily", animation_style as "animationStyle", paragraph_colours_enabled as "paragraphColoursEnabled", paragraph_colour_interval as "paragraphColourInterval", splash_duration_seconds as "splashDurationSeconds" from welcome_page where id = 1`;
   const row = rows[0];
-  if (!row) return { title: "Mukuyu Junior School", subtitle: "Learner Progress Portal", announcement: "", contact: "", showLogo: true, logoData: "", backgroundStart: "#0e2a4a", backgroundEnd: "#245b82", titleSize: 48, fontFamily: "serif", animationStyle: "aurora", animated: true, musicEnabled: false, musicUrl: "", highlights: "", certification: "© 2026 Certified", footerText: "", paragraphColoursEnabled: true, paragraphColourInterval: 4, splashDurationSeconds: 10, appearance: DEFAULT_APPEARANCE, display: DEFAULT_WELCOME_DISPLAY };
+  if (!row) return { title: "Mukuyu Junior School", subtitle: "Learner Progress Portal", announcement: "", contact: "", showLogo: true, logoData: "", backgroundStart: "#0e2a4a", backgroundEnd: "#245b82", titleSize: 48, fontFamily: "serif", animationStyle: "aurora", animated: true, musicEnabled: false, musicUrl: "", highlights: "", certification: "© 2026 Certified", footerText: "", paragraphColoursEnabled: true, paragraphColourInterval: 4, splashDurationSeconds: 10, appearance: DEFAULT_APPEARANCE, display: DEFAULT_WELCOME_DISPLAY, ...whatsappInvite };
   const actor = await readActor();
   const canReadMusic = canReadPortalMusic(actor?.role);
   let parsed: unknown = {};
   let parsedDisplay: unknown = {};
   try { parsed = JSON.parse(row.appearanceJson || "{}"); } catch { parsed = {}; }
   try { parsedDisplay = JSON.parse(row.displayControlsJson || "{}"); } catch { parsedDisplay = {}; }
-  return { ...row, musicEnabled: canReadMusic && row.musicEnabled, musicUrl: canReadMusic ? row.musicUrl : "", appearance: safeAppearance(parsed), display: normalizeWelcomeDisplay(parsedDisplay) };
+  return { ...row, ...whatsappInvite, musicEnabled: canReadMusic && row.musicEnabled, musicUrl: canReadMusic ? row.musicUrl : "", appearance: safeAppearance(parsed), display: normalizeWelcomeDisplay(parsedDisplay) };
 });
 
 function timeMinutes(value: string) {
