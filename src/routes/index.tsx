@@ -2,7 +2,6 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { SchoolLogo } from "@/components/school/logo";
 import { PortalLoadingBackdrop } from "@/components/school/portal-loading-backdrop";
-import { isStandalonePwa } from "@/lib/pwa-install";
 import { PublicReport } from "@/components/school/public-report";
 import { btnClass, errText, inputClass } from "@/components/school/gate";
 import { completeParentFirstLoginPasswordChange, getParentPasswordChangeStatus, getWorkspace, getWelcomePage, login, loginParent, logout, portalStatus, requestParentLoginCode, requestParentPasswordResetCode, resetParentPassword, verifyParentLoginCode } from "@/lib/school/api";
@@ -37,7 +36,6 @@ function OpeningIntro({ title, motto, logoSrc, durationSeconds, onComplete }: { 
   const [visible, setVisible] = useState(true);
   const [progress, setProgress] = useState(0);
   const [secondsRemaining, setSecondsRemaining] = useState(durationSeconds);
-  const [standaloneApp, setStandaloneApp] = useState(false);
   const startedAt = useRef(Date.now());
   const countdownLabel = `Sign-in opens in ${secondsRemaining} ${secondsRemaining === 1 ? "second" : "seconds"}`;
 
@@ -45,14 +43,6 @@ function OpeningIntro({ title, motto, logoSrc, durationSeconds, onComplete }: { 
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = previousOverflow; };
-  }, []);
-
-  useEffect(() => {
-    const updateAppMode = () => setStandaloneApp(isStandalonePwa());
-    updateAppMode();
-    const media = window.matchMedia("(display-mode: standalone)");
-    media.addEventListener("change", updateAppMode);
-    return () => media.removeEventListener("change", updateAppMode);
   }, []);
 
   useEffect(() => {
@@ -79,10 +69,9 @@ function OpeningIntro({ title, motto, logoSrc, durationSeconds, onComplete }: { 
   }
 
   if (!visible) return null;
-  return <div className={`portal-loading portal-loading-opening fixed inset-0 z-[2147483000] grid min-h-[100svh] w-full place-items-center overflow-hidden px-6 ${standaloneApp ? "portal-opening-app" : "portal-opening-link"}`} role={standaloneApp ? "status" : "dialog"} aria-modal={standaloneApp ? undefined : true} aria-labelledby={standaloneApp ? undefined : "opening-intro-title"} aria-describedby={standaloneApp ? undefined : "opening-intro-description"} aria-label={standaloneApp ? `Opening ${title}` : undefined} aria-live={standaloneApp ? "polite" : undefined} onKeyDown={(event) => { if (!standaloneApp && event.key === "Escape") continueToSignIn(); }}>
+  return <div className="portal-loading portal-loading-opening portal-opening-link fixed inset-0 z-[2147483000] grid min-h-[100svh] w-full place-items-center overflow-hidden px-6" role="dialog" aria-modal="true" aria-labelledby="opening-intro-title" aria-describedby="opening-intro-description" onKeyDown={(event) => { if (event.key === "Escape") continueToSignIn(); }}>
     <PortalLoadingBackdrop className="portal-opening-backdrop" />
     <div className="portal-loading-center-shade" aria-hidden="true" />
-    <span className="portal-opening-center-orbit" aria-hidden="true"><span className="portal-loading-orbit"><SchoolLogo src={logoSrc} className="size-24" /></span></span>
     <div className="portal-loading-card text-center">
       <p className="portal-loading-monogram" aria-label="Mukuyu Junior School initials"><span>MKJ</span></p>
       <p className="portal-loading-kicker">MUKUYU JUNIOR SCHOOL · LEARNING PORTAL</p>
@@ -91,7 +80,7 @@ function OpeningIntro({ title, motto, logoSrc, durationSeconds, onComplete }: { 
       <p className="portal-loading-tagline mt-2">{motto}</p>
       <p id="opening-intro-description" className="portal-loading-message mt-4 text-sm">Opening your school office and getting everything ready…</p>
       <div className="portal-loading-track mt-6" role="progressbar" aria-label="Welcome splash progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress} aria-valuetext={countdownLabel}><span style={{ width: `${progress}%` }} /></div>
-      <button className="portal-loading-continue mt-6" type="button" autoFocus={!standaloneApp} onClick={continueToSignIn}>Continue to sign in</button>
+      <button className="portal-loading-continue mt-6" type="button" autoFocus onClick={continueToSignIn}>Continue to sign in</button>
       <p className="portal-loading-footnote mt-4 justify-center">MUKUYU JUNIOR SCHOOL · LEARN WITH PURPOSE</p>
       <p className="portal-loading-credit mt-2">PORTAL DEVELOPED BY IAN TECH</p>
     </div>
@@ -567,5 +556,5 @@ function applyPublicSchoolIdentity(rawName: string) {
   const schoolName = rawName.trim().replace(/\s+/g, " ").slice(0, 100) || "Mukuyu Junior School";
   document.title = `${schoolName} · School Portal`;
   document.querySelector('meta[name="apple-mobile-web-app-title"]')?.setAttribute("content", schoolName);
-  document.querySelector<HTMLLinkElement>('link[rel="icon"]')?.setAttribute("href", "/icons/mukuyu-app-192.png");
+  document.querySelector<HTMLLinkElement>('link[rel="icon"]')?.setAttribute("href", "/icons/mukuyu-app-192.png?v=2");
 }

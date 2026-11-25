@@ -16,10 +16,10 @@ export const Route = createRootRoute({
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { name: "application-name", content: "MUKUYU JUNIOR SCHOOL" },
       { title: "MUKUYU JUNIOR SCHOOL" },
-      { name: "theme-color", content: "#0e2a4a" },
+      { name: "theme-color", content: "#030914" },
     ],
     links: [
-      { rel: "icon", type: "image/png", href: "/icons/mukuyu-app-192.png" },
+      { rel: "icon", type: "image/png", href: "/icons/mukuyu-app-192.png?v=2" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       {
         rel: "stylesheet",
@@ -27,7 +27,7 @@ export const Route = createRootRoute({
       },
       { rel: "stylesheet", href: appCss },
       { rel: "manifest", href: "/__grok/manifest.webmanifest" },
-      { rel: "apple-touch-icon", href: "/icons/mukuyu-app-180.png" },
+      { rel: "apple-touch-icon", href: "/icons/mukuyu-app-180.png?v=2" },
     ],
   }),
   component: () => (

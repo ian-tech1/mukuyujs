@@ -1095,28 +1095,10 @@ html[data-portal-motion="reduced"] .portal-loading-track span { animation:none !
 }
 
 
-/* Browser links keep the branded intro card; installed app launches expose the orbital scene on its own. */
-.portal-opening-link,
-.portal-opening-app { isolation: isolate; pointer-events: auto; }
-.portal-opening-app .portal-loading-card,
-.portal-opening-app .portal-loading-center-shade { display: none !important; }
-.portal-opening-center-orbit { position: relative; z-index: 2; display: none; place-items: center; }
-.portal-opening-app .portal-opening-center-orbit { display: grid; }
-.portal-opening-app .portal-opening-center-orbit .portal-loading-orbit {
-  width: clamp(6rem, 14vw, 7.25rem);
-  height: clamp(6rem, 14vw, 7.25rem);
-  margin: 0;
-}
-.portal-opening-app .portal-opening-center-orbit .portal-loading-orbit > * { width: 4.5rem; height: 4.5rem; }
-@media (display-mode: standalone) {
-  .portal-loading-opening { z-index: 2147483000 !important; min-height: 100svh; padding: 0; }
-  .portal-loading-opening .portal-loading-card,
-  .portal-loading-opening .portal-loading-center-shade { display: none !important; }
-  .portal-loading-opening .portal-opening-center-orbit { display: grid; }
-}
+/* Browser links and installed-app launches share the same complete opening scene. */
+.portal-opening-link { isolation: isolate; pointer-events: auto; }
 /* Keep the launch backdrop vivid without changing other loading or portal screens. */
-.portal-loading-opening.portal-opening-link,
-.portal-loading-opening.portal-opening-app {
+.portal-loading-opening.portal-opening-link {
   background-color: #030914;
   background-image:
     radial-gradient(ellipse 66% 48% at 12% 15%, rgba(32, 201, 232, .24), transparent 76%),

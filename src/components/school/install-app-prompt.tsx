@@ -147,7 +147,7 @@ export function InstallAppPrompt() {
       <section role="dialog" aria-modal="false" aria-labelledby="app-prompt-title" className="relative overflow-hidden rounded-2xl border border-sky-200 bg-white text-slate-900 shadow-2xl shadow-slate-950/30">
         <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-emerald-500 via-cyan-500 to-amber-400" aria-hidden="true" />
         <div className="flex items-start gap-3 p-4 pb-3 sm:p-5 sm:pb-4">
-          <img src="/icons/mukuyu-app-192.png" alt="" width={56} height={56} className="size-14 shrink-0 rounded-2xl border border-slate-200 shadow-sm" />
+          <img src="/icons/mukuyu-app-192.png?v=2" alt="" width={56} height={56} className="size-14 shrink-0 rounded-2xl border border-slate-200 shadow-sm" />
           <div className="min-w-0 flex-1 pt-0.5">
             <p className="text-[11px] font-black uppercase tracking-[.16em] text-emerald-800">MUKUYU JUNIOR SCHOOL</p>
             <h2 id="app-prompt-title" className="mt-1 text-lg font-extrabold leading-tight text-slate-950">School app access</h2>
