@@ -534,8 +534,8 @@ test("renders a school-branded manifest and initials icon when runtime identity 
 test("renders square MKJ app-icon artwork in the install manifest", () => {
   const manifest = JSON.parse(renderWebManifest("preview.local", "Mukuyu Junior School", "/icons/mukuyu-app-192.png"));
   assert.deepEqual(manifest.icons, [
-    { src: "/icons/mukuyu-app-192.png?v=3", sizes: "192x192", type: "image/png", purpose: "any" },
-    { src: "/icons/mukuyu-app-512.png?v=3", sizes: "512x512", type: "image/png", purpose: "any maskable" },
+    { src: "/icons/mukuyu-app-192.png?v=4", sizes: "192x192", type: "image/png", purpose: "any" },
+    { src: "/icons/mukuyu-app-512.png?v=4", sizes: "512x512", type: "image/png", purpose: "any maskable" },
   ]);
   assert.equal(manifest.background_color, "#030914");
   assert.equal(manifest.theme_color, "#030914");

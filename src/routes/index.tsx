@@ -556,5 +556,5 @@ function applyPublicSchoolIdentity(rawName: string) {
   const schoolName = rawName.trim().replace(/\s+/g, " ").slice(0, 100) || "Mukuyu Junior School";
   document.title = `${schoolName} · School Portal`;
   document.querySelector('meta[name="apple-mobile-web-app-title"]')?.setAttribute("content", schoolName);
-  document.querySelector<HTMLLinkElement>('link[rel="icon"]')?.setAttribute("href", "/icons/mukuyu-app-192.png?v=3");
+  document.querySelector<HTMLLinkElement>('link[rel="icon"]')?.setAttribute("href", "/icons/mukuyu-app-192.png?v=4");
 }
