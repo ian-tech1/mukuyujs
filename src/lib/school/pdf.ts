@@ -436,12 +436,58 @@ export async function qrFor(text: string) {
 export type MeritPdfAnalytics = {
   summary: Array<{ label: string; value: string }>;
   subjectMeans: Array<{ name: string; mean: number }>;
+  subjectPositions?: Array<{ position: string; name: string; mean: number | null }>;
   streamMeans: Array<{ name: string; mean: number }>;
   scoreBands: Array<{ label: string; count: number }>;
   insights: Array<{ label: string; value: string; detail: string }>;
   trend: string;
   review: string;
 };
+
+function drawSubjectPositionColumn(
+  doc: import("jspdf").jsPDF,
+  subjects: NonNullable<MeritPdfAnalytics["subjectPositions"]>,
+  x: number,
+  topY: number,
+  pageH: number,
+  title = "SUBJECT POSITIONS",
+): number {
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8);
+  doc.setTextColor(14, 42, 74);
+  doc.text(title, x, topY);
+  doc.setFontSize(6.5);
+  doc.setTextColor(100, 100, 100);
+  doc.text("POS", x + 2, topY + 5);
+  doc.text("SUBJECT", x + 14, topY + 5);
+  doc.text("MEAN", x + 79, topY + 5, { align: "right" });
+  doc.setTextColor(20, 20, 20);
+  doc.setFont("helvetica", "normal");
+
+  let y = topY + 9;
+  if (!subjects.length) {
+    doc.setFontSize(7);
+    doc.text("No subjects available.", x + 2, y);
+    return y + 4;
+  }
+  const availableHeight = Math.max(0, pageH - 10 - y);
+  const rowHeight = Math.min(4.8, availableHeight / subjects.length);
+  const fontSize = Math.max(4.5, Math.min(7, rowHeight * 1.35));
+  subjects.forEach((subject, index) => {
+    if (index % 2 === 1) {
+      doc.setFillColor(246, 244, 238);
+      doc.rect(x, y - 3.2, 83, rowHeight, "F");
+    }
+    doc.setFontSize(fontSize);
+    doc.text(subject.position, x + 2, y);
+    doc.text(subject.name.slice(0, 48), x + 14, y);
+    doc.text(subject.mean == null ? "—" : subject.mean.toFixed(2), x + 79, y, { align: "right" });
+    y += rowHeight;
+  });
+  doc.setDrawColor(215, 210, 198);
+  doc.line(x, topY + 6.5, x + 83, topY + 6.5);
+  return y;
+}
 
 /** Merit list as a PDF: school letterhead on every page, the ranked table, and (optionally) graphs and advanced analytics. */
 export async function downloadMeritListPdf(options: {
@@ -629,21 +675,35 @@ export async function downloadMeritListPdf(options: {
     bars("Score distribution (learners per mean-score band)", a.scoreBands.map((band) => ({ label: band.label, value: band.count, text: `${band.count} (${Math.round((band.count / total) * 100)}%)` })), total, [180, 100, 20]);
 
     heading("Advanced learner analytics");
+    const subjectColumnX = pageW - 88;
+    let subjectColumnBottom = drawSubjectPositionColumn(doc, a.subjectPositions ?? [], subjectColumnX, y - 5, pageH);
     doc.setFontSize(7.5);
     a.insights.forEach((item) => {
-      const detail = doc.splitTextToSize(item.detail, pageW - 10 - 85) as string[];
+      const detailWidth = subjectColumnX - left - 85 - 4;
+      const detail = doc.splitTextToSize(item.detail, detailWidth) as string[];
       const needed = Math.max(5, detail.length * 3.8 + 1.5);
-      if (y + needed > pageH - 10) { doc.addPage(); letterhead(); y = 43; }
+      if (y + needed > pageH - 10) {
+        doc.addPage();
+        letterhead();
+        y = 43;
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(10);
+        doc.setTextColor(14, 42, 74);
+        doc.text("Advanced learner analytics (continued)", left, y);
+        doc.setTextColor(20, 20, 20);
+        y += 5;
+        subjectColumnBottom = drawSubjectPositionColumn(doc, a.subjectPositions ?? [], subjectColumnX, y - 5, pageH, "SUBJECT POSITIONS (continued)");
+      }
       doc.setFont("helvetica", "bold");
       doc.text(item.label, left, y);
       doc.text(item.value.slice(0, 30), left + 52, y);
       doc.setFont("helvetica", "normal");
       doc.text(detail, left + 85, y);
       doc.setDrawColor(230, 226, 214);
-      doc.line(left, y + needed - 3.2, pageW - 5, y + needed - 3.2);
+      doc.line(left, y + needed - 3.2, subjectColumnX - 4, y + needed - 3.2);
       y += needed;
     });
-    y += 3;
+    y = Math.max(y + 3, subjectColumnBottom + 3);
     heading("Term trend");
     doc.setFontSize(8);
     doc.text(doc.splitTextToSize(a.trend || "No term results available.", pageW - 10) as string[], left, y);
@@ -802,6 +862,35 @@ function drawMeritAnalyticsPages(doc: import("jspdf").jsPDF, analytics: MeritPdf
   bars("Subject means", analytics.subjectMeans.map((item) => ({ label: item.name, value: item.mean, text: item.mean ? item.mean.toFixed(1) : "—" })), 100, [29, 78, 137]);
   bars("Stream means", analytics.streamMeans.map((item) => ({ label: item.name, value: item.mean, text: item.mean ? item.mean.toFixed(1) : "—" })), 100, [31, 122, 77]);
   const total = Math.max(1, analytics.scoreBands.reduce((sum, item) => sum + item.count, 0)); bars("Score distribution", analytics.scoreBands.map((item) => ({ label: item.label, value: item.count, text: `${item.count} (${Math.round(item.count / total * 100)}%)` })), total, [180, 100, 20]);
-  heading("Advanced learner analytics"); doc.setFontSize(7.5); for (const item of analytics.insights) { const detail = doc.splitTextToSize(item.detail, pageW - left - 90) as string[]; const needed = Math.max(5, detail.length * 3.8 + 1.5); if (y + needed > pageH - 10) { doc.addPage(); letterhead(1, 1); y = 43; } doc.setFont("helvetica", "bold"); doc.text(item.label, left, y); doc.text(item.value.slice(0, 30), left + 52, y); doc.setFont("helvetica", "normal"); doc.text(detail, left + 85, y); doc.setDrawColor(230, 226, 214); doc.line(left, y + needed - 3.2, pageW - 5, y + needed - 3.2); y += needed; }
+  heading("Advanced learner analytics");
+  const subjectColumnX = pageW - 88;
+  let subjectColumnBottom = drawSubjectPositionColumn(doc, analytics.subjectPositions ?? [], subjectColumnX, y - 5, pageH);
+  doc.setFontSize(7.5);
+  for (const item of analytics.insights) {
+    const detailWidth = subjectColumnX - left - 85 - 4;
+    const detail = doc.splitTextToSize(item.detail, detailWidth) as string[];
+    const needed = Math.max(5, detail.length * 3.8 + 1.5);
+    if (y + needed > pageH - 10) {
+      doc.addPage();
+      letterhead(1, 1);
+      y = 43;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      doc.setTextColor(14, 42, 74);
+      doc.text("Advanced learner analytics (continued)", left, y);
+      doc.setTextColor(20, 20, 20);
+      y += 5;
+      subjectColumnBottom = drawSubjectPositionColumn(doc, analytics.subjectPositions ?? [], subjectColumnX, y - 5, pageH, "SUBJECT POSITIONS (continued)");
+    }
+    doc.setFont("helvetica", "bold");
+    doc.text(item.label, left, y);
+    doc.text(item.value.slice(0, 30), left + 52, y);
+    doc.setFont("helvetica", "normal");
+    doc.text(detail, left + 85, y);
+    doc.setDrawColor(230, 226, 214);
+    doc.line(left, y + needed - 3.2, subjectColumnX - 4, y + needed - 3.2);
+    y += needed;
+  }
+  y = Math.max(y + 3, subjectColumnBottom + 3);
   heading("Term trend"); doc.setFontSize(8); doc.text(doc.splitTextToSize(analytics.trend || "No term results available.", pageW - left - 5) as string[], left, y); y += 8; heading("Learners needing review"); doc.text(doc.splitTextToSize(analytics.review || "No learners currently fall below the intervention threshold.", pageW - left - 5) as string[], left, y);
 }

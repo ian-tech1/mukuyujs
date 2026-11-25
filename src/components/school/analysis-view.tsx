@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import type { Gate } from "@/components/school/gate";
 import { btnGhost, errText, inputClass } from "@/components/school/gate";
@@ -8,6 +8,7 @@ import { downloadMeritListPdf, downloadSubjectLevelMeritListPdf } from "@/lib/sc
 import { PeriodBar, useSchoolPeriod } from "@/components/school/period-bar";
 import { canActorAccess } from "@/lib/school/role-access";
 import { bandFor, buildBoards, decorate, fmt, meanOf, periodMarks, sortByPerformance, type Decorated, learnersForYear } from "@/lib/school/model";
+import { rankSubjectsByMean } from "@/lib/school/subject-position";
 
 export function AnalysisView({ ws, flash }: Gate) {
   const canDownload = canActorAccess(ws.roleAccess, ws.me.role, "analysis", "download");
@@ -20,6 +21,10 @@ export function AnalysisView({ ws, flash }: Gate) {
   const [gradeId, setGradeId] = useState(ws.grades[1]?.id ?? ws.grades[0]?.id ?? "");
   const [streamId, setStreamId] = useState("");
   const [mode, setMode] = useState(exams[0]?.id ?? "avg");
+  const currentMode = mode === "avg" || exams.some((exam) => exam.id === mode) ? mode : exams[0]?.id ?? "avg";
+  useEffect(() => {
+    if (mode !== currentMode) setMode(currentMode);
+  }, [mode, currentMode]);
   const [learnerSearch, setLearnerSearch] = useState("");
   const [levelFilter, setLevelFilter] = useState("all");
   const [rankSort, setRankSort] = useState<"performance" | "name" | "roll">("performance");
@@ -32,8 +37,8 @@ export function AnalysisView({ ws, flash }: Gate) {
   const decorated = useMemo(() => sortByPerformance(decorate(buildBoards(learners, marksForGrade, subjects, exams, ws.bands), ws.streams, exams)), [learners, marksForGrade, subjects, exams, ws.bands, ws.streams]);
 
   function valueOf(row: Decorated) {
-    if (mode === "avg" || !exams.some((exam) => exam.id === mode)) return row.avgMean;
-    return row.means[mode];
+    if (currentMode === "avg") return row.avgMean;
+    return row.means[currentMode];
   }
   const rankedAll = [...decorated].sort((a, b) => (valueOf(b) ?? -1) - (valueOf(a) ?? -1));
   const ranked = rankedAll.filter((row) => {
@@ -49,16 +54,18 @@ export function AnalysisView({ ws, flash }: Gate) {
   const subjectChart = subjects.map((subject) => {
     const scores = decorated.flatMap((row) => {
       const cell = row.cells.find((item) => item.subjectId === subject.id);
-      const score = mode === "avg" ? cell?.avg : cell?.byExam[mode];
+      const score = currentMode === "avg" ? cell?.avg : cell?.byExam[currentMode];
       return score == null ? [] : [score];
     });
-    return { name: subject.shortName, mean: scores.length ? Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 10) / 10 : 0 };
+    const rawMean = scores.length ? scores.reduce((a, b) => a + b, 0) / scores.length : null;
+    return { name: subject.shortName, fullName: subject.name, mean: rawMean == null ? 0 : Math.round(rawMean * 10) / 10, rawMean };
   });
+  const subjectPositions = rankSubjectsByMean(subjectChart.map((subject) => ({ name: subject.fullName, mean: subject.rawMean })));
   const streams = ws.streams.filter((stream) => stream.gradeId === gradeId);
   const streamCompare = streams.map((stream) => {
     const group = decorate(buildBoards(yearLearners.filter((learner) => learner.gradeId === gradeId && learner.streamId === stream.id), marksForGrade.filter((mark) => yearLearners.some((learner) => learner.id === mark.learnerId && learner.streamId === stream.id)), subjects, exams, ws.bands), ws.streams, exams);
-    const mean = meanOf(group.map((row) => (mode === "avg" ? row.avgMean : row.means[mode])));
-    const streamLeader = [...group].sort((a, b) => ((mode === "avg" ? b.avgMean : b.means[mode]) ?? -1) - ((mode === "avg" ? a.avgMean : a.means[mode]) ?? -1))[0];
+    const mean = meanOf(group.map((row) => (currentMode === "avg" ? row.avgMean : row.means[currentMode])));
+    const streamLeader = [...group].sort((a, b) => ((currentMode === "avg" ? b.avgMean : b.means[currentMode]) ?? -1) - ((currentMode === "avg" ? a.avgMean : a.means[currentMode]) ?? -1))[0];
     return { name: stream.name, mean: mean ?? 0, meanLabel: fmt(mean), learnerCount: group.length, topLearner: streamLeader?.learner.fullName ?? "—" };
   });
   const subjectPointChart = subjects.map((subject) => {
@@ -97,7 +104,7 @@ export function AnalysisView({ ws, flash }: Gate) {
       const stream = ws.streams.find((item) => item.id === row.learner.streamId)?.name ?? "";
       const scores = subjects.map((subject) => {
         const cell = row.cells.find((item) => item.subjectId === subject.id);
-        const score = mode === "avg" ? cell?.avg : cell?.byExam[mode];
+        const score = currentMode === "avg" ? cell?.avg : cell?.byExam[currentMode];
         return score == null ? "" : score.toFixed(2);
       });
       return [rankOf(row), row.learner.roll, row.learner.admissionNumber ?? "", row.learner.fullName, row.learner.gender, stream, ...scores, valueOf(row)?.toFixed(2) ?? "", row.level ?? ""].map(csvCell).join(",");
@@ -108,7 +115,7 @@ export function AnalysisView({ ws, flash }: Gate) {
     const blob = new Blob(["\uFEFF" + [header.map(csvCell).join(","), ...lines, ...metadata, ...streamLines].join("\r\n") + "\r\n"], { type: "text/csv;charset=utf-8" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.download = `${grade?.name ?? "class"}-${mode}-merit.csv`;
+    link.download = `${grade?.name ?? "class"}-${currentMode}-merit.csv`;
     link.click();
     URL.revokeObjectURL(link.href);
     flash("Analysis merit list downloaded successfully with one learner per row.");
@@ -172,7 +179,7 @@ export function AnalysisView({ ws, flash }: Gate) {
     if (!canDownload) return;
     setPdfBusy(true);
     try {
-      const modeName = mode === "avg" ? "average" : exams.find((exam) => exam.id === mode)?.name ?? mode;
+      const modeName = currentMode === "avg" ? "average" : exams.find((exam) => exam.id === currentMode)?.name ?? currentMode;
       await downloadMeritListPdf({
         fileName: `${grade?.name ?? "class"}-${modeName}-merit-list.pdf`.replace(/[^a-zA-Z0-9._-]+/g, "_"),
         profile: ws.profile,
@@ -188,8 +195,8 @@ export function AnalysisView({ ws, flash }: Gate) {
           stream: ws.streams.find((item) => item.id === row.learner.streamId)?.name ?? "",
           scores: subjects.map((subject) => {
             const cell = row.cells.find((item) => item.subjectId === subject.id);
-            const score = mode === "avg" ? cell?.avg : cell?.byExam[mode];
-            return score == null ? "—" : mode === "avg" ? score.toFixed(0) : String(score);
+            const score = currentMode === "avg" ? cell?.avg : cell?.byExam[currentMode];
+            return score == null ? "—" : currentMode === "avg" ? score.toFixed(0) : String(score);
           }),
           mean: fmt(valueOf(row)),
           level: row.level ?? "—",
@@ -211,6 +218,7 @@ export function AnalysisView({ ws, flash }: Gate) {
                 { label: "Girls / boys", value: `${fmt(girls)} / ${fmt(boys)}` },
               ],
               subjectMeans: subjectChart,
+              subjectPositions,
               streamMeans: streamCompare,
               scoreBands,
               insights: [
@@ -260,14 +268,14 @@ export function AnalysisView({ ws, flash }: Gate) {
         stream: ws.streams.find((item) => item.id === row.learner.streamId)?.name ?? "",
         scores: subjects.map((subject) => {
           const cell = row.cells.find((item) => item.subjectId === subject.id);
-          const score = mode === "avg" ? cell?.avg : cell?.byExam[mode];
+          const score = currentMode === "avg" ? cell?.avg : cell?.byExam[currentMode];
           return `${score == null ? "—" : Number(score.toFixed(0))} · ${cell?.level ?? "—"} (${cell?.points ?? "—"} pts)`;
         }),
         mean: row.totalPoints == null ? "—" : String(row.totalPoints),
         level: `${row.level ?? "—"} · ${row.levelPoints ?? "—"} pts`,
       }));
       await downloadMeritListPdf({
-        fileName: `${grade.name}-${mode}-points-merit-list.pdf`.replace(/[^a-zA-Z0-9._-]+/g, "_"),
+        fileName: `${grade.name}-${currentMode}-points-merit-list.pdf`.replace(/[^a-zA-Z0-9._-]+/g, "_"),
         profile: ws.profile,
         logo: await logoDataUrl(ws.profile.logoData),
         title: `POINTS-BASED MERIT LIST — ${grade.name}${streamId ? ` · ${ws.streams.find((item) => item.id === streamId)?.name ?? ""}` : " · All streams"}`,
@@ -287,6 +295,7 @@ export function AnalysisView({ ws, flash }: Gate) {
             { label: "Score graph", value: "Included" },
           ],
           subjectMeans: subjectChart,
+          subjectPositions,
           streamMeans: pointsStreamCompare,
           scoreBands,
           insights: [
@@ -327,7 +336,7 @@ export function AnalysisView({ ws, flash }: Gate) {
         const stream = ws.streams.find((item) => item.id === row.learner.streamId)?.name ?? "";
         const scores = subjects.map((subject) => {
           const cell = row.cells.find((item) => item.subjectId === subject.id);
-          const score = mode === "avg" ? cell?.avg : cell?.byExam[mode];
+          const score = currentMode === "avg" ? cell?.avg : cell?.byExam[currentMode];
           return score == null ? "" : Number(score.toFixed(2));
         });
         return [rankOf(row), row.learner.roll, row.learner.admissionNumber ?? "", row.learner.fullName, row.learner.gender, stream, ...scores, valueOf(row) == null ? "" : Number(valueOf(row)!.toFixed(2)), row.level ?? ""];
@@ -339,7 +348,7 @@ export function AnalysisView({ ws, flash }: Gate) {
     ];
     const bytes = writeXlsxFromMatrix(quoteRows, { sheetName: "Merit list", headerRow: 9, orientation: "landscape", logo: ws.profile.logoData || "/logo.png" });
     const url = URL.createObjectURL(new Blob([bytes as BlobPart], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }));
-    const link = document.createElement("a"); link.href = url; link.download = `${grade?.name ?? "class"}-${mode}-merit-list.xlsx`.replace(/[^a-zA-Z0-9._-]+/g, "_"); link.click(); window.setTimeout(() => URL.revokeObjectURL(url), 0);
+    const link = document.createElement("a"); link.href = url; link.download = `${grade?.name ?? "class"}-${currentMode}-merit-list.xlsx`.replace(/[^a-zA-Z0-9._-]+/g, "_"); link.click(); window.setTimeout(() => URL.revokeObjectURL(url), 0);
     flash("Merit list Excel workbook downloaded with school letterhead, logo, headers, learners, and stream summary.");
   }
   async function downloadSubjectLevelsPdf() {
@@ -347,7 +356,7 @@ export function AnalysisView({ ws, flash }: Gate) {
     if (!grade) return;
     setPdfBusy(true);
     try {
-      const modeName = mode === "avg" ? "average" : exams.find((exam) => exam.id === mode)?.name ?? mode;
+      const modeName = currentMode === "avg" ? "average" : exams.find((exam) => exam.id === currentMode)?.name ?? currentMode;
       await downloadSubjectLevelMeritListPdf({
         fileName: `${grade.name}-${modeName}-subject-level-merit-list.pdf`.replace(/[^a-zA-Z0-9._-]+/g, "_"),
         profile: ws.profile,
@@ -364,6 +373,7 @@ export function AnalysisView({ ws, flash }: Gate) {
             { label: "Marks coverage", value: `${coverage}%` },
           ],
           subjectMeans: subjectChart,
+          subjectPositions,
           streamMeans: streamCompare,
           scoreBands,
           insights: [
@@ -385,7 +395,7 @@ export function AnalysisView({ ws, flash }: Gate) {
           admission: row.learner.admissionNumber ?? "",
           name: row.learner.fullName,
           stream: ws.streams.find((item) => item.id === row.learner.streamId)?.name ?? "",
-          subjectScores: subjects.map((subject) => { const cell = row.cells.find((item) => item.subjectId === subject.id); const score = mode === "avg" ? cell?.avg : cell?.byExam[mode]; const level = score == null ? null : bandFor(score, ws.bands)?.code ?? null; return `${score == null ? "—" : Number.isInteger(score) ? score : Number(score.toFixed(2))} · ${level ?? "—"}`; }),
+          subjectScores: subjects.map((subject) => { const cell = row.cells.find((item) => item.subjectId === subject.id); const score = currentMode === "avg" ? cell?.avg : cell?.byExam[currentMode]; const level = score == null ? null : bandFor(score, ws.bands)?.code ?? null; return `${score == null ? "—" : Number.isInteger(score) ? score : Number(score.toFixed(2))} · ${level ?? "—"}`; }),
           mean: fmt(valueOf(row)),
           level: row.level ?? "—",
         })),
@@ -439,7 +449,7 @@ export function AnalysisView({ ws, flash }: Gate) {
         </select>
         <div className="flex rounded-md border border-line bg-card p-1">
           {[...exams.map((exam) => ({ id: exam.id, label: exam.name })), { id: "avg", label: "Average" }].map((item) => (
-            <button key={item.id} type="button" className={`h-9 rounded-md px-3 text-sm ${mode === item.id ? "bg-navy text-paper" : "text-ink"}`} onClick={() => setMode(item.id)}>{item.label}</button>
+            <button key={item.id} type="button" className={`h-9 rounded-md px-3 text-sm ${currentMode === item.id ? "bg-navy text-paper" : "text-ink"}`} onClick={() => setMode(item.id)}>{item.label}</button>
           ))}
         </div>
       </div>
@@ -534,8 +544,8 @@ export function AnalysisView({ ws, flash }: Gate) {
                   <td className="px-2 py-1.5">{ws.streams.find((stream) => stream.id === row.learner.streamId)?.name}</td>
                   {subjects.map((subject) => {
                     const cell = row.cells.find((item) => item.subjectId === subject.id);
-                    const cellScore = mode === "avg" ? cell?.avg : cell?.byExam[mode];
-                    return <td key={subject.id} className="px-2 py-1.5">{cellScore == null ? "—" : mode === "avg" ? cellScore.toFixed(0) : cellScore}</td>;
+                    const cellScore = currentMode === "avg" ? cell?.avg : cell?.byExam[currentMode];
+                    return <td key={subject.id} className="px-2 py-1.5">{cellScore == null ? "—" : currentMode === "avg" ? cellScore.toFixed(0) : cellScore}</td>;
                   })}
                   <td className="px-2 py-1.5 font-semibold">{fmt(score)}</td>
                   <td className="px-2 py-1.5">{score == null || classMean == null ? "—" : (score - classMean).toFixed(1)}</td>
