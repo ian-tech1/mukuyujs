@@ -48,7 +48,9 @@ function OpeningIntro({ title, motto, logoSrc, durationSeconds, onComplete }: { 
 
   useEffect(() => {
     if (!visible) return;
-    const durationMs = Math.max(1, durationSeconds * 1000);
+    const isNarrowViewport = window.matchMedia("(max-width: 1023px)").matches;
+    const effectiveDurationSeconds = isNarrowViewport ? Math.min(durationSeconds, 5) : durationSeconds;
+    const durationMs = Math.max(1, effectiveDurationSeconds * 1000);
     const remaining = Math.max(0, durationMs - (Date.now() - startedAt.current));
     const updateProgress = () => {
       const elapsedMs = Math.min(durationMs, Math.max(0, Date.now() - startedAt.current));
