@@ -25,9 +25,12 @@ const TEMPLATE_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 test("injects before </head>", () => {
   const out = injectGrokPwaHead("<html><head><title>x</title></head><body></body></html>");
   assert.match(out, /rel="manifest"/);
+  assert.match(out, /id="mukuyu-pwa-install-capture"[^>]*>window\.addEventListener\("beforeinstallprompt"/);
   assert.match(out, /apple-touch-icon/);
   assert.match(out, /grok-app-builder\/extensions\.js/);
   assert.ok(out.indexOf("manifest") < out.indexOf("</head>"));
+  assert.ok(out.indexOf("mukuyu-pwa-install-capture") < out.indexOf("</head>"));
+  assert.ok(out.indexOf("mukuyu-pwa-install-capture") < out.indexOf('rel="manifest"'));
 });
 
 test("injects the extensions script without a project id", () => {

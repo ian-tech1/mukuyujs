@@ -9,6 +9,8 @@ import { join } from "node:path";
 export const DEFAULT_APP_NAME = "Grok App";
 export const OG_SERVICE_URL_DEFAULT = "https://og.grok.me";
 export const OG_SITE_REL_PATH = "src/lib/og/site.json";
+const PWA_INSTALL_CAPTURE_TAG =
+  '<script id="mukuyu-pwa-install-capture">window.addEventListener("beforeinstallprompt",event=>{event.preventDefault();window.__mukuyuBeforeInstallPrompt=event;});</script>';
 
 const SHARE_META_KEYS = new Set([
   "og:title",
@@ -469,6 +471,9 @@ export function injectGrokPwaHead(html, ctx = {}) {
     })
     .map(([, tag]) => tag);
 
+  if (!next.includes('id="mukuyu-pwa-install-capture"')) {
+    next = insertAfterHeadOpen(next, PWA_INSTALL_CAPTURE_TAG);
+  }
   next = insertAfterHeadOpen(
     next,
     grokOgHeadTags({ host, appName, site, documentTitle, cwd }).join(""),
