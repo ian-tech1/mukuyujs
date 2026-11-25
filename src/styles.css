@@ -1103,7 +1103,23 @@ html[data-portal-motion="reduced"] .portal-loading-track span { animation:none !
 .portal-opening-app .portal-loading-card,
 .portal-opening-app .portal-loading-center-shade { display: none !important; }
 .portal-opening-center-orbit { position: relative; z-index: 2; display: none; place-items: center; }
+.portal-opening-link .portal-opening-center-orbit { display: grid; }
 .portal-opening-app .portal-opening-center-orbit { display: grid; }
+.portal-opening-link .portal-opening-center-orbit .portal-loading-orbit {
+  width: clamp(4.4rem, 11vw, 5.25rem);
+  height: clamp(4.4rem, 11vw, 5.25rem);
+  margin: 0;
+  background: radial-gradient(circle, rgba(7, 17, 35, .08) 42%, transparent 66%) padding-box,
+    conic-gradient(from 0deg, #2ba8c5, #6d67c5, #d273b3, #eabf56, #61b99b, #2ba8c5) border-box;
+  box-shadow: 0 0 20px rgba(74, 183, 220, .34), 0 0 30px rgba(171, 104, 180, .24);
+}
+.portal-opening-link .portal-opening-center-orbit .portal-loading-orbit > * { width: 2.85rem; height: 2.85rem; }
+.portal-opening-app .portal-opening-center-orbit .portal-loading-orbit {
+  width: clamp(6rem, 14vw, 7.25rem);
+  height: clamp(6rem, 14vw, 7.25rem);
+  margin: 0;
+}
+.portal-opening-app .portal-opening-center-orbit .portal-loading-orbit > * { width: 4.5rem; height: 4.5rem; }
 @media (display-mode: standalone) {
   .portal-loading-opening { z-index: 2147483000 !important; min-height: 100svh; padding: 0; }
   .portal-loading-opening .portal-loading-card,
