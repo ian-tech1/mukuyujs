@@ -43,6 +43,7 @@ export function initializePwaInstallCapture() {
     promptEvent = null;
     notifySubscribers();
   });
+  notifySubscribers();
 }
 
 export function getPwaInstallState(): PwaInstallState {

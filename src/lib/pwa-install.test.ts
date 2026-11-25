@@ -8,7 +8,7 @@ test("captures the native install event and records an accepted install", async 
   Object.defineProperty(globalThis, "window", {
     configurable: true,
     value: {
-      matchMedia: () => ({ matches: false }),
+      matchMedia: () => ({ matches: true }),
       addEventListener: (name: string, listener: (event: Event) => void) => listeners.set(name, listener),
     },
   });
@@ -24,11 +24,12 @@ test("captures the native install event and records an accepted install", async 
   });
 
   const { getPwaInstallState, initializePwaInstallCapture, requestPwaInstall, subscribePwaInstallState } = await import("./pwa-install.ts");
-  initializePwaInstallCapture();
-  assert.deepEqual(getPwaInstallState(), { available: false, installed: false });
-
   let latest = getPwaInstallState();
   const unsubscribe = subscribePwaInstallState((state) => { latest = state; });
+  initializePwaInstallCapture();
+  assert.deepEqual(getPwaInstallState(), { available: false, installed: true });
+  assert.deepEqual(latest, { available: false, installed: true });
+
   let prevented = false;
   let prompted = false;
   listeners.get("beforeinstallprompt")?.({
@@ -38,7 +39,7 @@ test("captures the native install event and records an accepted install", async 
   } as unknown as Event);
 
   assert.equal(prevented, true);
-  assert.deepEqual(latest, { available: true, installed: false });
+  assert.deepEqual(latest, { available: true, installed: true });
   assert.equal(await requestPwaInstall(), "accepted");
   assert.equal(prompted, true);
   assert.deepEqual(latest, { available: false, installed: true });

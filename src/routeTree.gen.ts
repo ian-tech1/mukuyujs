@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PortalRouteImport } from './routes/portal'
 import { Route as SetupRouteImport } from './routes/setup'
+import { Route as ApiAppVersionRouteImport } from './routes/api/app-version'
 import { Route as ApiCronBackupRouteImport } from './routes/api/cron-backup'
 
 const IndexRoute = IndexRouteImport.update({
@@ -29,6 +30,11 @@ const SetupRoute = SetupRouteImport.update({
   path: '/setup',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAppVersionRoute = ApiAppVersionRouteImport.update({
+  id: '/api/app-version',
+  path: '/api/app-version',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiCronBackupRoute = ApiCronBackupRouteImport.update({
   id: '/api/cron-backup',
   path: '/api/cron-backup',
@@ -39,12 +45,14 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/portal': typeof PortalRoute
   '/setup': typeof SetupRoute
+  '/api/app-version': typeof ApiAppVersionRoute
   '/api/cron-backup': typeof ApiCronBackupRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/portal': typeof PortalRoute
   '/setup': typeof SetupRoute
+  '/api/app-version': typeof ApiAppVersionRoute
   '/api/cron-backup': typeof ApiCronBackupRoute
 }
 export interface FileRoutesById {
@@ -52,20 +60,29 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/portal': typeof PortalRoute
   '/setup': typeof SetupRoute
+  '/api/app-version': typeof ApiAppVersionRoute
   '/api/cron-backup': typeof ApiCronBackupRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/portal' | '/setup' | '/api/cron-backup'
+  fullPaths:
+    '/' | '/portal' | '/setup' | '/api/app-version' | '/api/cron-backup'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/portal' | '/setup' | '/api/cron-backup'
-  id: '__root__' | '/' | '/portal' | '/setup' | '/api/cron-backup'
+  to: '/' | '/portal' | '/setup' | '/api/app-version' | '/api/cron-backup'
+  id:
+    | '__root__'
+    | '/'
+    | '/portal'
+    | '/setup'
+    | '/api/app-version'
+    | '/api/cron-backup'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   PortalRoute: typeof PortalRoute
   SetupRoute: typeof SetupRoute
+  ApiAppVersionRoute: typeof ApiAppVersionRoute
   ApiCronBackupRoute: typeof ApiCronBackupRoute
 }
 
@@ -92,6 +109,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SetupRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/app-version': {
+      id: '/api/app-version'
+      path: '/api/app-version'
+      fullPath: '/api/app-version'
+      preLoaderRoute: typeof ApiAppVersionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/cron-backup': {
       id: '/api/cron-backup'
       path: '/api/cron-backup'
@@ -106,6 +130,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   PortalRoute: PortalRoute,
   SetupRoute: SetupRoute,
+  ApiAppVersionRoute: ApiAppVersionRoute,
   ApiCronBackupRoute: ApiCronBackupRoute,
 }
 export const routeTree = rootRouteImport

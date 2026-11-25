@@ -1,7 +1,7 @@
 MUKUYU SCHOOL PORTAL — DEPLOYMENT AND RESEND SETUP
 =================================================
 
-The portal already contains server-side Resend integration for temporary-password emails. Do not paste the PHP onboarding example into this project: it is a React/TypeScript server app, not a PHP app.
+The portal already contains server-side Resend integration for temporary-password emails and scheduled backup emails. Do not paste the PHP onboarding example into this project: it is a React/TypeScript server app, not a PHP app.
 
 IMPORTANT SECURITY
 - Do NOT put the real Resend API key in source files, this ZIP, frontend code, screenshots, or GitHub.
@@ -23,6 +23,18 @@ REQUIRED VARIABLES
 - EMAIL_FROM = a sender on a domain you own and have verified in Resend, for example: Mukuyu School <no-reply@your-verified-domain.example>
   Replace the example address with a real sender on your verified domain. Do not use the .example address literally.
 
+EMAIL AUTHENTICATION AND DELIVERABILITY
+Correct application settings cannot force an email into every recipient's inbox or make every mailbox display it immediately. Resend accepting a request means it accepted the message for processing. The recipient's provider still controls filtering, delivery timing, spam placement, and display.
+
+Before relying on school email:
+- In Resend -> Domains, add a domain or sending subdomain you control. Publish the exact DNS records Resend displays for that domain, including its SPF and DKIM records. Do not invent values or create a second SPF record; follow Resend's current DNS instructions and resolve any conflicts at your DNS host.
+- Wait until Resend reports the sending domain as verified. Make sure EMAIL_FROM uses an address on that verified domain and that the visible From domain aligns with the authenticated domain.
+- Add a DMARC TXT record for the sending domain, aligned with the From domain. Begin with a monitoring policy such as `p=none` while checking authentication and aggregate reports. Only consider a stricter policy after you understand the reports and have confirmed all legitimate senders are authenticated.
+- Send a controlled test only when you are ready to do so. Inspect the message's Resend event timeline for delivery, delay, rejection, bounce, or complaint results. In the recipient mailbox, check Inbox, Spam/Junk, and the original message headers. Confirm SPF, DKIM, and DMARC pass and are aligned. If the provider reports delivery but the message is in Spam, review the authentication results, sender reputation, recipient filtering, and provider-specific postmaster guidance.
+- Do not treat an SMTP/API success, a Resend acceptance, or a server-side “sent” record as proof that the recipient saw the message. Ask the intended recipient to verify receipt when the message is important.
+
+Useful references: Google Gmail sender guidelines (https://support.google.com/mail/answer/81126?hl=en), Resend DMARC guidance (https://resend.com/docs/dashboard/domains/dmarc), and Yahoo sender best practices (https://senders.yahooinc.com/best-practices/). Their requirements and filtering decisions can change; follow the current instructions for each recipient provider.
+
 SCHEDULED PORTAL BACKUPS
 - `vercel.json` calls `/api/cron-backup` daily at 02:00 UTC. The endpoint saves a daily internal portal snapshot on every authorized, successful run, whether email is enabled or not.
 - The Super Admin's daily / weekly / monthly setting controls when a JSON attachment is emailed; weekly is Monday UTC and monthly is the first UTC day of the month. Weekly/monthly schedules still get a daily internal snapshot.
@@ -37,4 +49,4 @@ SCHEDULED PORTAL BACKUPS
 7. Configure automatic database backups / point-in-time recovery with your database provider and download the portal's own backups regularly.
 
 CURRENT LIMITATION
-The migration-free local development build passes, but this does not verify a production deployment. Hosting, database provisioning, environment variables, DNS verification, and production smoke tests still need to be completed. Do not treat it as production-ready until those checks pass.
+The migration-free local development build does not verify a production deployment. Hosting, database provisioning, environment variables, DNS verification, and production smoke tests still need to be completed. This change adds user-facing guidance only; no production DNS records were changed and no test email was sent. Do not treat it as production-ready until those checks pass.
