@@ -1,3 +1,6 @@
+import { gzipSync } from "node:zlib";
+import { MAX_GZIPPED_BACKUP_BYTES } from "./backup-format.ts";
+
 export type BackupEmailPayload = {
   generatedAt: string;
   tables: Record<string, unknown[]>;
@@ -17,10 +20,15 @@ export async function sendSchoolBackupEmail(
   if (!from) return { sent: false, reason: "EMAIL_FROM is not configured." };
 
   const date = payload.generatedAt.slice(0, 10);
-  const attachment = Buffer.from(JSON.stringify(payload, null, 2), "utf8").toString("base64");
+  const compressed = gzipSync(Buffer.from(JSON.stringify(payload), "utf8"), { level: 9 });
+  if (compressed.byteLength > MAX_GZIPPED_BACKUP_BYTES) {
+    const sizeMb = (compressed.byteLength / 1_000_000).toFixed(2);
+    return { sent: false, reason: `Compressed backup is ${sizeMb} MB; the email attachment limit is 2.8 MB so it stays safely below 4 MB. No email was sent.` };
+  }
+  const attachment = compressed.toString("base64");
   const testLabel = kind === "test" ? " test" : "";
   const text = [
-    `Attached is the${testLabel} Mukuyu school records backup generated on ${date}.`,
+    `Attached is the${testLabel} Mukuyu school records backup generated on ${date}. The attachment is gzip-compressed JSON (.json.gz) to reduce its size; in School Settings, choose it directly under Restore from a JSON backup—no manual extraction is needed.`,
     "This file contains confidential learner, guardian, attendance, support, and school records. Store it encrypted and restrict access. Passwords and password hashes are excluded.",
     `Snapshot ID: ${snapshotId}`,
     "A successful provider response means the email was accepted for processing; check the recipient inbox and provider delivery events to confirm final delivery.",
@@ -35,7 +43,7 @@ export async function sendSchoolBackupEmail(
         to: [to],
         subject: `Mukuyu school backup${testLabel} · ${date}`,
         text,
-        attachments: [{ filename: `mukuyu-school-backup-${date}.json`, content: attachment }],
+        attachments: [{ filename: `mukuyu-school-backup-${date}.json.gz`, content: attachment }],
       }),
     });
     if (!response.ok) return { sent: false, reason: `Email provider returned HTTP ${response.status}.` };

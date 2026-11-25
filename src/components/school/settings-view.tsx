@@ -13,6 +13,7 @@ import { MusicStudioCard } from "@/components/school/music-studio";
 import { AdminAutomationCards } from "@/components/school/admin-automation-cards";
 import { DEFAULT_ADMISSION_NUMBER_SETTINGS, formatAdmissionNumberExample, type AdmissionNumberSettings } from "@/lib/school/admission-number";
 import { getAdmissionNumberSettings, saveAdmissionNumberSettings } from "@/lib/school/api";
+import { MAX_GZIPPED_BACKUP_BYTES, MAX_WEB_BACKUP_JSON_BYTES } from "@/lib/school/backup-format";
 
 export function SettingsView({ ws, refresh, flash, onWelcomeChange }: Gate) {
   const canDownloadParentDetails = canActorAccess(ws.roleAccess, ws.me.role, "parentDetails", "download");
@@ -163,16 +164,26 @@ function RoleAccessCard({ policy, refresh, flash }: { policy: RoleAccessPolicy; 
   </section>;
 }
 
+function arrayBufferToBase64(buffer: ArrayBuffer) {
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+  for (let offset = 0; offset < bytes.length; offset += 32_768) {
+    binary += String.fromCharCode(...bytes.subarray(offset, Math.min(offset + 32_768, bytes.length)));
+  }
+  return btoa(binary);
+}
+
 function RestoreBackupPanel({ flash, refresh }: Pick<Gate, "flash" | "refresh">) {
   const [payload, setPayload] = useState("");
+  const [compressedBackup, setCompressedBackup] = useState(false);
   const [confirmText, setConfirmText] = useState("");
   const [busy, setBusy] = useState(false);
   return <div className="mt-4 border-t border-line pt-4 space-y-3">
-    <h3 className="font-semibold text-navy">Restore from a JSON backup</h3>
-    <p className="text-sm text-muted">Super admin only. The system first stores a safety snapshot in the database, then merges the backup's records. It does not delete newer records or restore account passwords. Keep a separate Neon backup before doing this.</p>
-    <input className="block text-sm" type="file" accept="application/json,.json" onChange={async (event) => { const file = event.target.files?.[0]; if (!file) return; if (file.size > 4_000_000) { flash("Backup must be 4 MB or smaller for web restore; use a database-level restore for larger files.", true); return; } try { setPayload(await file.text()); flash("Backup loaded. Type RESTORE only when you are ready."); } catch (error) { flash(errText(error), true); } }} />
+    <h3 className="font-semibold text-navy">Restore from JSON or compressed JSON backup</h3>
+    <p className="text-sm text-muted">Super admin only. You can select a plain .json file or the smaller .json.gz attachment from a backup email. The system first stores a safety snapshot in the database, then merges the backup's records. It does not delete newer records or restore account passwords. Keep a separate Neon backup before doing this.</p>
+    <input className="block text-sm" type="file" accept="application/json,.json,application/gzip,.gz,.json.gz" onChange={async (event) => { const input = event.currentTarget; const file = input.files?.[0]; input.value = ""; if (!file) return; setPayload(""); setCompressedBackup(false); const isGzip = file.name.toLowerCase().endsWith(".gz") || file.type === "application/gzip"; if (isGzip && file.size > MAX_GZIPPED_BACKUP_BYTES) { flash("Compressed backup must be 2.8 MB or smaller for web restore.", true); return; } if (!isGzip && file.size > MAX_WEB_BACKUP_JSON_BYTES) { flash("JSON backup must be 4 MB or smaller for web restore; use its .json.gz version or a database-level restore for larger files.", true); return; } try { if (isGzip) { setPayload(arrayBufferToBase64(await file.arrayBuffer())); setCompressedBackup(true); flash("Compressed backup loaded. Type RESTORE only when you are ready."); } else { setPayload(await file.text()); flash("Backup loaded. Type RESTORE only when you are ready."); } } catch (error) { flash(errText(error), true); } }} />
     <label className="block text-sm">Type RESTORE to confirm<input className={inputClass + " mt-1 max-w-xs"} value={confirmText} onChange={(event) => setConfirmText(event.target.value)} placeholder="RESTORE" /></label>
-    <button className="inline-flex h-11 items-center justify-center rounded-md border border-bad/40 px-4 text-sm font-semibold text-bad disabled:opacity-50" type="button" disabled={!payload || confirmText !== "RESTORE" || busy} onClick={async () => { if (!confirm("Restore the uploaded backup into this database? A safety snapshot will be saved first.")) return; setBusy(true); try { const result = await restoreSchoolBackup({ data: { payload, confirm: confirmText } }); flash(`Restore merged ${result.restored.learners} learners and ${result.restored.marks} marks. ${result.note}`); setPayload(""); setConfirmText(""); await refresh(); } catch (error) { flash(errText(error), true); } finally { setBusy(false); } }}>{busy ? "Restoring…" : "Restore backup (merge records)"}</button>
+    <button className="inline-flex h-11 items-center justify-center rounded-md border border-bad/40 px-4 text-sm font-semibold text-bad disabled:opacity-50" type="button" disabled={!payload || confirmText !== "RESTORE" || busy} onClick={async () => { if (!confirm("Restore the uploaded backup into this database? A safety snapshot will be saved first.")) return; setBusy(true); try { const result = await restoreSchoolBackup({ data: { payload, confirm: confirmText, ...(compressedBackup ? { compression: "gzip-base64" as const } : {}) } }); flash(`Restore merged ${result.restored.learners} learners and ${result.restored.marks} marks. ${result.note}`); setPayload(""); setCompressedBackup(false); setConfirmText(""); await refresh(); } catch (error) { flash(errText(error), true); } finally { setBusy(false); } }}>{busy ? "Restoring…" : "Restore backup (merge records)"}</button>
     <button className={btnDownload.violet} type="button" onClick={async () => { try { const snapshots = await listBackupSnapshots(); if (!snapshots.length) { flash("No restore safety snapshots have been saved yet."); return; } const blob = new Blob([snapshots[0].payload], { type: "application/json" }); const url = URL.createObjectURL(blob); const link = document.createElement("a"); link.href = url; link.download = `mukuyu-safety-snapshot-${new Date(snapshots[0].createdAt).toISOString().slice(0,10)}.json`; link.click(); URL.revokeObjectURL(url); flash("Latest safety snapshot downloaded."); } catch (error) { flash(errText(error), true); } }}>Download latest safety snapshot</button>
   </div>;
 }

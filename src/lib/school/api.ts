@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { createHmac, randomBytes, randomInt, scryptSync, timingSafeEqual } from "node:crypto";
+import { gunzipSync } from "node:zlib";
 import { getSql, type Sql } from "@/lib/db";
 import { PORTAL_BACKDROP_THEME_IDS, type AppearancePalette, type Assignment, type AvailabilityLevel, type Band, type ClassConstraint, type Decorated, type Exam, type Grade, type Learner, type LessonRelation, type MailItem, type Mark, type MarkControl, type Me, type Placement, type Profile, type ReportExtras, type Role, type StaffMember, type Stream, type Subject, type SubjectConstraint, type SubjectRemark, type SubjectTeacherSlot, type TeacherContract, type TermAssessment, type TermNote, type TimetableAvailability, type TimetableEntry, type TimetablePeriod, type TimetableRequirement, type TimetableRoom, type TimetableState, type TimetableVersion, type Workspace } from "@/lib/school/model";
 import { DEFAULT_APPEARANCE, isAdmin, buildBoards, decorate, can, canEditLearner, canEditMark, canEnterMark, canViewMark, markControlFor, canManageTimetable } from "@/lib/school/model";
@@ -20,6 +21,7 @@ import { buildReportExamChoices, filterReportMarksToGrade, remapMarksForReport, 
 import { isValidParentEmail, matchLearnerName, normalizeLearnerName, normalizeParentEmail } from "@/lib/school/parent-access";
 import { resolveSubjectHeader } from "@/lib/school/subject-header";
 import { sendSchoolBackupEmail } from "@/lib/school/backup-email";
+import { MAX_EXPANDED_BACKUP_JSON_BYTES, MAX_GZIPPED_BACKUP_BASE64_CHARS, MAX_GZIPPED_BACKUP_BYTES, MAX_WEB_BACKUP_JSON_BYTES } from "@/lib/school/backup-format";
 
 type SessionData = { userId: string; v: number };
 let spotifyTokenCache: { accessToken: string; expiresAt: number } | null = null;
@@ -1833,14 +1835,34 @@ export const exportSchoolBackup = createServerFn({ method: "GET" }).handler(asyn
 });
 
 export const restoreSchoolBackup = createServerFn({ method: "POST" })
-  .validator((input: { payload: string; confirm: string }) => input)
+  .validator((input: { payload: string; confirm: string; compression?: "gzip-base64" }) => input)
   .handler(async ({ data }) => {
     const me = await requireActor();
     if (!isTrueSuper(me)) throw new Error("Only the super admin can restore a backup.");
     if (data.confirm !== "RESTORE") throw new Error("Type RESTORE to confirm this operation.");
-    if (!data.payload || data.payload.length > 4_000_000) throw new Error("Backup file is empty or larger than the 4 MB web-restore limit. Use a database-level restore for larger backups.");
+    if (typeof data.payload !== "string" || !data.payload) throw new Error("Backup file is empty.");
+    let jsonPayload = data.payload;
+    if (data.compression === "gzip-base64") {
+      if (data.payload.length > MAX_GZIPPED_BACKUP_BASE64_CHARS || !/^[A-Za-z0-9+/]*={0,2}$/.test(data.payload)) {
+        throw new Error("Compressed backup is too large or is not valid base64.");
+      }
+      const compressed = Buffer.from(data.payload, "base64");
+      if (compressed.byteLength > MAX_GZIPPED_BACKUP_BYTES || compressed.toString("base64") !== data.payload) {
+        throw new Error("Compressed backup exceeds the 2.8 MB web-restore limit or is not valid base64.");
+      }
+      try {
+        jsonPayload = gunzipSync(compressed, { maxOutputLength: MAX_EXPANDED_BACKUP_JSON_BYTES }).toString("utf8");
+      } catch {
+        throw new Error("Compressed backup is invalid or expands beyond the 32 MB web-restore limit.");
+      }
+    } else {
+      if (data.compression !== undefined) throw new Error("This backup compression format is not supported.");
+      if (Buffer.byteLength(data.payload, "utf8") > MAX_WEB_BACKUP_JSON_BYTES) {
+        throw new Error("JSON backup is larger than the 4 MB web-restore limit. Use its compressed .json.gz version or a database-level restore.");
+      }
+    }
     let parsed: any;
-    try { parsed = JSON.parse(data.payload); } catch { throw new Error("The selected file is not valid JSON."); }
+    try { parsed = JSON.parse(jsonPayload); } catch { throw new Error("The selected file is not valid JSON."); }
     if (parsed?.format !== "mukuyu-school-backup-v1" || !parsed.tables || !Array.isArray(parsed.tables.learners) || !Array.isArray(parsed.tables.marks)) throw new Error("This is not a supported Mukuyu School Portal backup.");
     const t = parsed.tables as Record<string, any[]>;
     const backupLearners = t.learners as Array<Record<string, unknown>>;
