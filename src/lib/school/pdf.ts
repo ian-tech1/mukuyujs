@@ -2,6 +2,7 @@ import type { Decorated, Exam, Grade, Profile, ReportExtras, Stream, Subject } f
 import { fmt } from "@/lib/school/model";
 import { remarkBody, reportFootnote } from "@/lib/school/extras";
 import { chunkMarklistRows } from "@/lib/school/marklist.ts";
+import { paginateSubjectLevelRows, subjectLevelBandCode, SUBJECT_LEVEL_ROW_HEIGHT_MM } from "@/lib/school/merit-pdf-layout.ts";
 
 type DrawInput = {
   profile: Profile;
@@ -767,14 +768,13 @@ export async function downloadSubjectLevelMeritListPdf(options: {
   const pageH = doc.internal.pageSize.getHeight();
   const left = 5;
   const tableW = pageW - left * 2;
-  const subjectsPerSection = orientation === "portrait" ? 7 : 12;
+  const rowHeight = SUBJECT_LEVEL_ROW_HEIGHT_MM;
+  const pageChunks = paginateSubjectLevelRows(options.rows, pageH, rowHeight);
+  // Eight portrait subject columns retain comfortable score/level widths at the existing font size.
+  const subjectsPerSection = orientation === "portrait" ? 8 : 12;
   const subjectSections = options.subjects.length
     ? Array.from({ length: Math.ceil(options.subjects.length / subjectsPerSection) }, (_, index) => options.subjects.slice(index * subjectsPerSection, (index + 1) * subjectsPerSection))
     : [[]];
-  // Balance chunks so the final page does not contain a single learner.
-  // For example, 79 rows become 27 + 27 + 25 instead of 26 + 26 + 26 + 1.
-  const dataPageCount = Math.max(1, Math.ceil(options.rows.length / 27));
-  const rowsPerPage = Math.max(1, Math.ceil(options.rows.length / dataPageCount));
 
   function letterhead(sectionNumber: number, sectionCount: number) {
     doc.setFillColor(255, 252, 247);
@@ -810,13 +810,11 @@ export async function downloadSubjectLevelMeritListPdf(options: {
     const widths = [...identityWidths.slice(0, 5), ...section.map(() => subjectWidth), ...identityWidths.slice(5)];
     const heads = ["POS", "NO.", "ADM NO.", "LEARNER", "STREAM", ...section.map((subject) => (subject.shortName || subject.name).slice(0, 12)), "MEAN", "OVERALL"];
     const xPositions = widths.reduce<number[]>((positions, width, index) => [...positions, index === 0 ? left : positions[index - 1] + widths[index - 1]], []);
-    const pageChunks = options.rows.length ? Array.from({ length: Math.ceil(options.rows.length / rowsPerPage) }, (_, index) => options.rows.slice(index * rowsPerPage, (index + 1) * rowsPerPage)) : [[]];
     pageChunks.forEach((pageRows, pageIndex) => {
       if (!firstPage) doc.addPage();
       firstPage = false;
       letterhead(sectionIndex + 1, subjectSections.length);
       const tableTop = 43;
-      const rowHeight = 5.6;
       doc.setFillColor(14, 42, 74);
       doc.rect(left, tableTop - 4.2, tableW, 6.2, "F");
       doc.setFont("helvetica", "bold");
@@ -840,7 +838,8 @@ export async function downloadSubjectLevelMeritListPdf(options: {
         doc.setTextColor(20, 20, 20);
         cells.forEach((cell, index) => {
           if (index >= 5 && index < 5 + section.length) {
-            doc.setTextColor(...tone(cell === "—" ? null : String(cell)));
+            const bandCode = subjectLevelBandCode(String(cell));
+            doc.setTextColor(...tone(bandCode === "—" ? null : bandCode));
             doc.setFont("helvetica", "bold");
             doc.text(String(cell).slice(0, 12), xPositions[index] + widths[index] / 2, y, { align: "center", maxWidth: widths[index] - 1 });
             doc.setFont("helvetica", "normal");
@@ -862,7 +861,9 @@ export async function downloadSubjectLevelMeritListPdf(options: {
       doc.setFont("helvetica", "normal");
       doc.setFontSize(6.5);
       doc.setTextColor(100, 100, 100);
-      doc.text(`Rows ${pageIndex * rowsPerPage + 1}–${Math.min((pageIndex + 1) * rowsPerPage, options.rows.length)} of ${options.rows.length} · Subject level values follow the configured assessment-band scale.`, left, pageH - 8);
+      const rowsBeforePage = pageChunks.slice(0, pageIndex).reduce((count, chunk) => count + chunk.length, 0);
+      const rowRange = pageRows.length ? `Rows ${rowsBeforePage + 1}–${rowsBeforePage + pageRows.length} of ${options.rows.length}` : "No learner rows";
+      doc.text(`${rowRange} · Subject level values follow the configured assessment-band scale.`, left, pageH - 8);
     });
   });
 

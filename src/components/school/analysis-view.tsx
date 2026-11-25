@@ -368,7 +368,7 @@ export function AnalysisView({ ws, flash }: Gate) {
         profile: ws.profile,
         logo: await logoDataUrl(ws.profile.logoData),
         title: `SUBJECT LEVEL MERIT LIST — ${grade.name}${streamId ? ` · ${ws.streams.find((item) => item.id === streamId)?.name ?? ""}` : " · All streams"}`,
-        periodLabel: `${meritPeriod} · Overall merit ranked, subject levels averaged across the active assessments`,
+        periodLabel: `${meritPeriod} · Merit positions, subject scores, and levels follow ${currentMode === "avg" ? "the average across active assessments" : modeName}`,
         orientation: meritOrientation,
         analytics: pdfWithAnalytics ? {
           summary: [
