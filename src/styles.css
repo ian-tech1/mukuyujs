@@ -1067,6 +1067,7 @@ html[data-portal-motion="reduced"] .portal-loading-orbit::after {
 .portal-loading-progress-meta strong { color:#c8f5ff; font-variant-numeric:tabular-nums; text-shadow:0 0 10px rgba(82,203,255,.32); }
 .portal-loading-track { width:min(100%,30rem); height:.55rem; overflow:hidden; border:1px solid rgba(188,224,255,.42); border-radius:999px; background:rgba(255,255,255,.1); box-shadow:inset 0 1px 3px rgba(0,0,0,.35),0 0 14px rgba(58,133,228,.16); }
 .portal-loading-track span { display:block; height:100%; border-radius:inherit; background:linear-gradient(90deg,#35d7ee,#61baff,#828cf8,#d980d5,#ffd274); background-size:200% 100%; box-shadow:0 0 11px rgba(82,203,255,.62); transition:width .12s linear; animation:portal-loading-track-flow 5s linear infinite; }
+.portal-opening-link .portal-loading-track span { transition-duration: 1s; }
 .portal-loading-track .download-activity-progress { width:38%; animation:download-activity-sweep 1.35s ease-in-out infinite,portal-loading-track-flow 5s linear infinite; }
 @keyframes download-activity-sweep { from { transform:translateX(-110%); } to { transform:translateX(285%); } }
 html[data-portal-motion="reduced"] .portal-loading-track .download-activity-progress { animation:none !important; transform:translateX(80%); }

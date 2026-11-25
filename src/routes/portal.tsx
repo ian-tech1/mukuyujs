@@ -54,11 +54,9 @@ function NatureBackdropVideo({ scene, visible, motionEnabled }: { scene: number;
 
   useEffect(() => {
     const video = videoRef.current;
-    if (!video) return;
+    if (!video || !visible || !motionEnabled) return;
     video.pause();
-    if (!visible) return;
     video.load();
-    if (!motionEnabled) return;
     const playWhenReady = () => {
       if (visible && motionEnabled) void video.play().catch(() => undefined);
     };
@@ -71,8 +69,37 @@ function NatureBackdropVideo({ scene, visible, motionEnabled }: { scene: number;
   }, [source, visible, motionEnabled]);
 
   return <div className="portal-nature-scene" data-active={visible} aria-hidden="true">
-    <video ref={videoRef} className="portal-nature-video" src={visible ? source : undefined} muted loop playsInline preload={visible ? "auto" : "none"} />
+    <video ref={videoRef} className="portal-nature-video" src={visible && motionEnabled ? source : undefined} muted loop playsInline preload={visible && motionEnabled ? "auto" : "none"} />
   </div>;
+}
+
+function PortalBackdrop({ display, systemReducedMotion }: { display: LocalDisplayPreferences; systemReducedMotion: boolean }) {
+  const [scene, setScene] = useState(0);
+  const [theme, setTheme] = useState("auto-sections");
+
+  useEffect(() => {
+    if (!display.motion || display.backgroundMode !== "animated" || systemReducedMotion || theme === "starfall") return;
+    const timer = window.setInterval(() => {
+      const count = document.documentElement.dataset.portalBackdropTheme === "nature-cycle" ? NATURE_BACKDROP_SCENE_LABELS.length : 18;
+      setScene((value) => (value + 1) % count);
+    }, 5000);
+    return () => window.clearInterval(timer);
+  }, [display.backgroundMode, display.motion, systemReducedMotion, theme]);
+
+  useEffect(() => {
+    const reset = () => {
+      setScene(0);
+      setTheme(document.documentElement.dataset.portalBackdropTheme || "auto-sections");
+    };
+    reset();
+    window.addEventListener("mukuyu-portal-backdrop-change", reset);
+    return () => window.removeEventListener("mukuyu-portal-backdrop-change", reset);
+  }, []);
+
+  return <>
+    {Array.from({ length: 18 }, (_, index) => <span key={index} className="portal-background-scene" data-background-scene={index} data-active={scene === index} aria-hidden="true" />)}
+    <NatureBackdropVideo scene={scene % NATURE_BACKDROP_SCENES.length} visible={theme === "nature-cycle" && display.backgroundMode === "animated"} motionEnabled={display.motion && !systemReducedMotion} />
+  </>;
 }
 
 function PortalPage() {
@@ -87,8 +114,6 @@ function PortalPage() {
   const [display, setDisplay] = useState<LocalDisplayPreferences>(DEFAULT_DISPLAY_PREFERENCES);
   const [dashboardPanelColorsEnabled, setDashboardPanelColorsEnabled] = useState(true);
   const [displaySettingsOpen, setDisplaySettingsOpen] = useState(false);
-  const [backdropScene, setBackdropScene] = useState(0);
-  const [backdropTheme, setBackdropTheme] = useState("auto-sections");
   const [systemReducedMotion, setSystemReducedMotion] = useState(false);
   const displayControlsRef = useRef<HTMLDivElement>(null);
 
@@ -125,25 +150,6 @@ function PortalPage() {
     update();
     media.addEventListener("change", update);
     return () => media.removeEventListener("change", update);
-  }, []);
-
-  useEffect(() => {
-    if (!display.motion || display.backgroundMode !== "animated" || systemReducedMotion) return;
-    const timer = window.setInterval(() => {
-      const count = document.documentElement.dataset.portalBackdropTheme === "nature-cycle" ? NATURE_BACKDROP_SCENE_LABELS.length : 18;
-      setBackdropScene((scene) => (scene + 1) % count);
-    }, 5000);
-    return () => window.clearInterval(timer);
-  }, [display.backgroundMode, display.motion, systemReducedMotion]);
-
-  useEffect(() => {
-    const resetScene = () => {
-      setBackdropScene(0);
-      setBackdropTheme(document.documentElement.dataset.portalBackdropTheme || "auto-sections");
-    };
-    resetScene();
-    window.addEventListener("mukuyu-portal-backdrop-change", resetScene);
-    return () => window.removeEventListener("mukuyu-portal-backdrop-change", resetScene);
   }, []);
 
   useEffect(() => {
@@ -327,8 +333,7 @@ function PortalPage() {
           </div>
         </header>
         <div className={`portal-page-content w-full min-w-0 max-w-none px-4 py-6 lg:px-8 ${dashboardPanelColorsEnabled && display.motion && display.accentMotion ? "portal-panel-color-motion" : ""}`}>
-          {Array.from({ length: 18 }, (_, scene) => <span key={scene} className="portal-background-scene" data-background-scene={scene} data-active={backdropScene === scene} aria-hidden="true" />)}
-          <NatureBackdropVideo scene={backdropScene % NATURE_BACKDROP_SCENES.length} visible={backdropTheme === "nature-cycle" && display.backgroundMode === "animated"} motionEnabled={display.motion && !systemReducedMotion} />
+          <PortalBackdrop display={display} systemReducedMotion={systemReducedMotion} />
           {error ? <p className="mb-4 rounded-md border border-bad/30 bg-card px-3 py-2 text-sm text-bad">{error}</p> : null}
           {notice ? <p className="mb-4 rounded-md border border-good/30 bg-card px-3 py-2 text-sm text-good">{notice}</p> : null}
           <Suspense fallback={<div className="grid min-h-[45vh] place-items-center text-sm font-semibold text-muted" role="status" aria-live="polite">Loading {LABELS[current] ?? "view"}…</div>}>

@@ -56,7 +56,7 @@ function OpeningIntro({ title, motto, logoSrc, durationSeconds, onComplete }: { 
       setSecondsRemaining(Math.ceil((durationMs - elapsedMs) / 1000));
     };
     updateProgress();
-    const interval = window.setInterval(updateProgress, 100);
+    const interval = window.setInterval(updateProgress, 1000);
     const timeout = window.setTimeout(() => { setVisible(false); onComplete(); }, remaining);
     return () => {
       window.clearInterval(interval);
