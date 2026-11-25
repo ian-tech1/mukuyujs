@@ -1240,3 +1240,33 @@ html[data-portal-motion="reduced"] .portal-loading-track span { animation:none !
 }
 html[data-portal-motion="reduced"] .portal-loading-opening .portal-launch-brand-card,
 html[data-portal-motion="reduced"] .portal-loading-opening .portal-loading-details { animation: none !important; opacity: 1; transform: none; }
+
+/* Browser-link opening mirrors the rotating portal loader and adds its sign-in action. */
+.portal-opening-link .portal-loading-card {
+  gap: 0;
+  padding: clamp(.75rem, 2.5vh, 1.5rem) .75rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+.portal-opening-link .portal-loading-monogram { margin-bottom: .35rem; }
+.portal-opening-link .portal-loading-kicker { color: #8feaff; text-shadow: 0 0 18px rgba(37, 213, 237, .42); animation: portal-loading-kicker-glow 6s ease-in-out infinite alternate; }
+.portal-opening-link .portal-loading-orbit {
+  width: clamp(6rem, 20vw, 8rem);
+  height: clamp(6rem, 20vw, 8rem);
+  margin: .5rem auto 0;
+  border-width: 4px;
+  background: radial-gradient(circle, rgba(7, 17, 35, .08) 42%, transparent 66%) padding-box,
+    conic-gradient(from 0deg, #2ba8c5, #6d67c5, #d273b3, #eabf56, #61b99b, #2ba8c5) border-box;
+  box-shadow: 0 0 20px rgba(74, 183, 220, .34), 0 0 30px rgba(171, 104, 180, .24);
+}
+.portal-opening-link .portal-loading-orbit > * { width: 4.25rem; height: 4.25rem; }
+.portal-opening-link .portal-loading-title { color: #fff9e9; text-shadow: 0 0 26px rgba(255, 198, 83, .42); animation: portal-loading-title-glow 5.8s ease-in-out infinite alternate; }
+.portal-opening-link .portal-loading-tagline { color: #ffd67e; animation: portal-loading-tagline-float 5.2s ease-in-out infinite alternate; }
+.portal-opening-link .portal-loading-message { color: rgba(237, 244, 255, .92); text-shadow: 0 1px 10px rgba(4, 10, 24, .65); }
+.portal-opening-link .portal-loading-track { background: rgba(255, 255, 255, .1); box-shadow: inset 0 1px 3px rgba(0, 0, 0, .35), 0 0 14px rgba(58, 133, 228, .16); }
+.portal-opening-link .portal-loading-track span { background: linear-gradient(90deg, #35d7ee, #61baff, #828cf8, #d980d5, #ffd274); box-shadow: 0 0 11px rgba(82, 203, 255, .62); }
+.portal-opening-link .portal-loading-footnote { border-color: rgba(255, 255, 255, .22); color: rgba(237, 244, 255, .8); }
+.portal-opening-link .portal-loading-credit { color: #e8d5ff; text-shadow: 0 0 12px rgba(199, 113, 255, .28); }

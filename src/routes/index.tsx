@@ -79,24 +79,21 @@ function OpeningIntro({ title, motto, logoSrc, durationSeconds, onComplete }: { 
   }
 
   if (!visible) return null;
-  return <div className={`portal-loading portal-loading-opening fixed inset-0 z-[2147483000] grid min-h-[100svh] w-full place-items-center overflow-hidden px-6 ${standaloneApp ? "portal-opening-app" : "portal-opening-link"}`} role="status" aria-live="polite" aria-label={`Opening ${title}`} onKeyDown={(event) => { if (!standaloneApp && event.key === "Escape") continueToSignIn(); }}>
+  return <div className={`portal-loading portal-loading-opening fixed inset-0 z-[2147483000] grid min-h-[100svh] w-full place-items-center overflow-hidden px-6 ${standaloneApp ? "portal-opening-app" : "portal-opening-link"}`} role={standaloneApp ? "status" : "dialog"} aria-modal={standaloneApp ? undefined : true} aria-labelledby={standaloneApp ? undefined : "opening-intro-title"} aria-describedby={standaloneApp ? undefined : "opening-intro-description"} aria-label={standaloneApp ? `Opening ${title}` : undefined} aria-live={standaloneApp ? "polite" : undefined} onKeyDown={(event) => { if (!standaloneApp && event.key === "Escape") continueToSignIn(); }}>
     <PortalLoadingBackdrop className="portal-opening-backdrop" />
     <div className="portal-loading-center-shade" aria-hidden="true" />
     <span className="portal-opening-center-orbit" aria-hidden="true"><span className="portal-loading-orbit"><SchoolLogo src={logoSrc} className="size-24" /></span></span>
     <div className="portal-loading-card text-center">
-      <img className="portal-launch-brand-card" src="/icons/mukuyu-app-icon.svg" alt="MUKUYU JUNIOR SCHOOL · MKJ · POWERED BY IAN TECH" width={512} height={512} />
-      <div className="portal-loading-details">
-        <p className="portal-loading-kicker">MUKUYU JUNIOR SCHOOL · LEARNING PORTAL</p>
-        <span className="portal-loading-orbit" aria-hidden="true"><SchoolLogo src={logoSrc} className="size-24" /></span>
-        <h1 id="opening-intro-title" className="portal-loading-title mt-5">{title}</h1>
-        <p className="portal-loading-tagline mt-2">{motto}</p>
-        <p id="opening-intro-description" className="portal-loading-message mt-4 text-sm">A brighter school day starts here. Welcome to the Mukuyu Junior School portal.</p>
-        <div className="portal-loading-progress-meta mt-6" aria-hidden="true"><span>{countdownLabel}</span><strong>{progress}%</strong></div>
-        <div className="portal-loading-track mt-2" role="progressbar" aria-label="Welcome splash progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress} aria-valuetext={countdownLabel}><span style={{ width: `${progress}%` }} /></div>
-        <button className="portal-loading-continue mt-6" type="button" autoFocus={!standaloneApp} onClick={continueToSignIn}>Continue to sign in</button>
-        <p className="portal-loading-footnote mt-4 justify-center">MUKUYU JUNIOR SCHOOL · LEARN WITH PURPOSE</p>
-        <p className="portal-loading-credit mt-2">PORTAL DEVELOPED BY IAN TECH</p>
-      </div>
+      <p className="portal-loading-monogram" aria-label="Mukuyu Junior School initials"><span>MKJ</span></p>
+      <p className="portal-loading-kicker">MUKUYU JUNIOR SCHOOL · LEARNING PORTAL</p>
+      <span className="portal-loading-orbit" aria-hidden="true"><SchoolLogo src={logoSrc} className="size-24" /></span>
+      <h1 id="opening-intro-title" className="portal-loading-title mt-5">{title}</h1>
+      <p className="portal-loading-tagline mt-2">{motto}</p>
+      <p id="opening-intro-description" className="portal-loading-message mt-4 text-sm">Opening your school office and getting everything ready…</p>
+      <div className="portal-loading-track mt-6" role="progressbar" aria-label="Welcome splash progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress} aria-valuetext={countdownLabel}><span style={{ width: `${progress}%` }} /></div>
+      <button className="portal-loading-continue mt-6" type="button" autoFocus={!standaloneApp} onClick={continueToSignIn}>Continue to sign in</button>
+      <p className="portal-loading-footnote mt-4 justify-center">MUKUYU JUNIOR SCHOOL · LEARN WITH PURPOSE</p>
+      <p className="portal-loading-credit mt-2">PORTAL DEVELOPED BY IAN TECH</p>
     </div>
   </div>;
 }
