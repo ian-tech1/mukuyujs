@@ -1,11 +1,28 @@
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { SchoolIntelligenceCenter } from "@/components/school/school-intelligence-center";
+import { PeriodBar, useSchoolPeriod } from "@/components/school/period-bar";
 import type { Gate } from "@/components/school/gate";
 import { btnDownload } from "@/components/school/download-button";
-import { buildBoards, decorate, fmt, isAdmin, meanOf, periodMarks } from "@/lib/school/model";
+import { buildBoards, decorate, fmt, isAdmin, learnersForYear, meanOf, periodMarks } from "@/lib/school/model";
 
-export function DashboardView({ ws, refresh, flash }: Gate) {
+export function DashboardView({ ws: sourceWs, refresh, flash }: Gate) {
+  const period = useSchoolPeriod(sourceWs);
+  const selectedYear = sourceWs.years.find((year) => year.id === period.yearId);
+  const selectedTerm = sourceWs.terms.find((term) => term.id === period.termId);
+  const yearLearners = useMemo(() => learnersForYear(sourceWs, period.yearId), [sourceWs, period.yearId]);
+  const ws = useMemo(() => ({
+    ...sourceWs,
+    learners: yearLearners,
+    marks: period.marks,
+    profile: {
+      ...sourceWs.profile,
+      activeYearId: period.yearId,
+      activeTermId: period.termId,
+      academicYear: selectedYear?.name ?? sourceWs.profile.academicYear,
+      termName: selectedTerm?.name ?? sourceWs.profile.termName,
+    },
+  }), [sourceWs, yearLearners, period.marks, period.yearId, period.termId, selectedYear?.name, selectedTerm?.name]);
   const [selectedDashboardSection, setSelectedDashboardSection] = useState<"overview" | "performance" | "quality" | "interventions">("overview");
   const [focusOpen, setFocusOpen] = useState(false);
   const [focusSearch, setFocusSearch] = useState("");
@@ -300,7 +317,8 @@ export function DashboardView({ ws, refresh, flash }: Gate) {
     const csv = [["Learner", "Admission number", "Grade", "Stream", "Mean"], ...rows].map((row) => row.map((value) => `"${String(value).replaceAll('"', '""')}"`).join(",")).join("\n");
     const link = document.createElement("a");
     link.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
-    link.download = "mukuyu-dashboard-learners.csv";
+    const periodFileLabel = `${selectedYear?.name ?? period.yearId}-${selectedTerm?.name ?? period.termId}`.replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "").toLowerCase();
+    link.download = `mukuyu-dashboard-learners-${periodFileLabel}.csv`;
     link.click();
     URL.revokeObjectURL(link.href);
     flash("Filtered learner list exported.");
@@ -308,12 +326,12 @@ export function DashboardView({ ws, refresh, flash }: Gate) {
 
   async function copySelectedSummary() {
     if (!selectedFocusRow) return;
-    const text = `${selectedFocusRow.learner.fullName} · mean ${fmt(selectedFocusRow.avgMean)} · position ${selectedFocusRow.overall.position}/${selectedFocusRow.overall.outOf} · coverage ${selectedCoverage?.percent ?? 0}%`;
+    const text = `${selectedFocusRow.learner.fullName} · ${selectedTerm?.name ?? "Term"} ${selectedYear?.name ?? ""} · mean ${fmt(selectedFocusRow.avgMean)} · position ${selectedFocusRow.overall.position}/${selectedFocusRow.overall.outOf} · coverage ${selectedCoverage?.percent ?? 0}%`;
     try { await navigator.clipboard.writeText(text); flash("Learner summary copied."); } catch { flash("Copy is unavailable in this browser.", true); }
   }
 
   function saveSnapshot() {
-    const snapshot = { savedAt: new Date().toISOString(), filters: { focusSearch, focusGradeFilter, focusStream, focusSort, statusFilter, genderFilter, cohortFilter, incompleteOnly }, matchingLearners: focusRows.length, selectedLearnerId };
+    const snapshot = { savedAt: new Date().toISOString(), filters: { yearId: period.yearId, termId: period.termId, focusSearch, focusGradeFilter, focusStream, focusSort, statusFilter, genderFilter, cohortFilter, incompleteOnly }, matchingLearners: focusRows.length, selectedLearnerId };
     try { window.localStorage.setItem("mukuyu-dashboard-snapshot-v1", JSON.stringify(snapshot)); } catch { /* Keep the confirmation useful even if storage is blocked. */ }
     setSnapshotSavedAt(new Date().toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" }));
     flash("Dashboard snapshot saved on this device.");
@@ -322,7 +340,7 @@ export function DashboardView({ ws, refresh, flash }: Gate) {
   return (
     <div className="space-y-6">
       <header>
-        <p className="text-xs font-semibold tracking-[0.18em] text-brass">{ws.profile.termName} · {ws.profile.academicYear}</p>
+        <p className="text-xs font-semibold tracking-[0.18em] text-brass">Viewing {selectedTerm?.name ?? ws.profile.termName} · {selectedYear?.name ?? ws.profile.academicYear}</p>
         <h1 className="mt-1 font-serif text-3xl text-navy">{(() => {
           const hour = new Date().getHours();
           const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : hour < 21 ? "Good evening" : "Good night";
@@ -365,31 +383,41 @@ export function DashboardView({ ws, refresh, flash }: Gate) {
         </div> : null}
       </section>
       <section id="dashboard-overview" role="region" aria-label="Overview dashboard" className="scroll-mt-24 space-y-6">
-      <section id="dashboard-summary" className="scroll-mt-24 grid gap-2 sm:grid-cols-4">
-        {ws.years.map((year) => {
-          const yearMarks = periodMarks(ws.marks, year.id, ws.profile.activeTermId);
-          const mean = meanOf(buildBoards(ws.learners, yearMarks, subjects, exams, ws.bands).map((board) => board.avgMean));
-          const open = year.id === ws.profile.activeYearId;
+      <section id="dashboard-summary" className="scroll-mt-24 rounded-2xl border border-info/20 bg-gradient-to-br from-card via-card to-info/5 p-4 shadow-card" aria-labelledby="dashboard-period-title">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-info">Academic period</p><h2 id="dashboard-period-title" className="mt-1 font-serif text-2xl text-navy">Choose a year and term</h2><p className="mt-1 max-w-2xl text-sm text-muted">Dashboard results, rankings and mark-completion figures update to this selection. Past-year learners are shown in the class and stream they had in that year.</p></div>
+          <PeriodBar ws={sourceWs} yearId={period.yearId} termId={period.termId} onYear={period.setYearId} onTerm={period.setTermId} />
+        </div>
+      </section>
+      <section className="space-y-3" aria-label={`School mean comparison for ${selectedTerm?.name ?? "selected term"}`}>
+        <div><h2 className="font-serif text-xl text-navy">School mean by year · {selectedTerm?.name ?? "selected term"}</h2><p className="mt-1 text-sm text-muted">Compare the same term across years. Select a year above to open its detailed dashboard results.</p></div>
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+        {sourceWs.years.map((year) => {
+          const learners = learnersForYear(sourceWs, year.id);
+          const yearMarks = periodMarks(sourceWs.marks, year.id, period.termId);
+          const mean = meanOf(buildBoards(learners, yearMarks, subjects, exams, ws.bands).map((board) => board.avgMean));
+          const open = year.id === period.yearId;
           return (
-            <div key={year.id} className={`rounded-md border px-3 py-2 ${open ? "border-navy bg-navy text-paper" : "border-line bg-card dashboard-panel-color-cycle"}`}>
-              <p className="text-xs uppercase tracking-wide opacity-70">{year.name} · {ws.profile.termName}</p>
+            <div key={year.id} aria-current={open ? "true" : undefined} className={`rounded-xl border px-3 py-3 ${open ? "border-navy bg-navy text-paper shadow-sm" : "border-line bg-card dashboard-panel-color-cycle"}`}>
+              <p className="text-xs uppercase tracking-wide opacity-70">{year.name} · {selectedTerm?.name ?? "Term"}{open ? " · selected" : ""}</p>
               <p className="font-serif text-2xl">{fmt(mean)}</p>
             </div>
           );
         })}
+        </div>
       </section>
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <Tile label="Learners on roll" value={String(ws.learners.length)} hint={`${ws.grades.map((grade) => `${grade.level}: ${ws.learners.filter((learner) => learner.gradeId === grade.id).length}`).join(" · ")}`} />
-        <Tile label="School mean" value={fmt(schoolMean)} hint="Average of CAT 1 and CAT 2" />
+        <Tile label="Learners in selected year" value={String(ws.learners.length)} hint={`${ws.grades.map((grade) => `${grade.level}: ${ws.learners.filter((learner) => learner.gradeId === grade.id).length}`).join(" · ")}`} />
+        <Tile label="School mean" value={fmt(schoolMean)} hint={`Average across recorded marks · ${selectedTerm?.name ?? "selected term"}`} />
         <Tile label="Top class" value={topClass?.grade.name ?? "—"} hint={topClass?.mean == null ? "No marks yet" : `Mean ${fmt(topClass.mean)}`} />
         <Tile label="Top stream" value={topStream ? `${topStream.grade?.name ?? ""} ${topStream.stream.name}` : "—"} hint={topStream?.mean == null ? "" : `Mean ${fmt(topStream.mean)}`} />
       </section>
-      <section className="rounded-md border border-line bg-card p-4"><h2 className="font-serif text-xl text-navy">Class and school awards · {ws.profile.academicYear}</h2><div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3 text-sm">
+      <section className="rounded-md border border-line bg-card p-4"><h2 className="font-serif text-xl text-navy">Class and school awards · {selectedTerm?.name ?? ws.profile.termName} {selectedYear?.name ?? ws.profile.academicYear}</h2><div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3 text-sm">
         <p><strong>Best boy North:</strong> {displayNames(bestBoyNorth)}</p><p><strong>Best boy South:</strong> {displayNames(bestBoySouth)}</p><p><strong>Best boy overall:</strong> {displayNames(bestBoys)}</p>
         <p><strong>Best girl North:</strong> {displayNames(bestGirlNorth)}</p><p><strong>Best girl South:</strong> {displayNames(bestGirlSouth)}</p><p><strong>Best girl overall:</strong> {displayNames(bestGirls)}</p><p><strong>Best student overall:</strong> {displayNames(bestOverall)}</p>
         {bestSubjectLeaders.map((item) => <p key={item.subject.id}><strong>Best in {item.subject.name}:</strong> {item.names}{item.score == null ? "" : ` (${fmt(item.score)})`}</p>)}
       </div><p className="mt-2 text-xs text-muted">All ties are included. North/South awards are based on stream names containing “North” or “South”.</p></section>
-      <MarkProgress ws={ws} marks={marks} subjects={subjects} exams={exams} />
+      <MarkProgress ws={ws} marks={marks} subjects={subjects} exams={expectedExams} />
       </section>
       <section id="dashboard-performance-panel" role="region" aria-label="Performance dashboard" className="scroll-mt-24 space-y-6">
       <section id="dashboard-performance" className="scroll-mt-24 grid gap-4 lg:grid-cols-[1.3fr_0.7fr]">
@@ -690,8 +718,7 @@ function List({ title, rows, empty }: { title: string; rows: string[]; empty: st
 }
 
 function MarkProgress({ ws, marks, subjects, exams }: { ws: Gate["ws"]; marks: Gate["ws"]["marks"]; subjects: Gate["ws"]["subjects"]; exams: Gate["ws"]["exams"] }) {
-  const configured = ws.termAssessments.filter((item) => item.yearId === ws.profile.activeYearId && item.termId === ws.profile.activeTermId && item.active);
-  const expected = configured.length ? exams.filter((exam) => configured.some((item) => item.examId === exam.id)) : exams;
+  const expected = exams;
   const have = new Set(marks.map((mark) => `${mark.learnerId}|${mark.subjectId}|${mark.examId}`));
   let total = 0;
   let filled = 0;

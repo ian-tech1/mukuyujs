@@ -27,10 +27,10 @@ export function PeriodBar({
   const calendar = calendarFor(ws.calendars, yearId, termId);
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <select className={`${inputClass} max-w-[8rem]`} value={yearId} onChange={(event) => onYear(event.target.value)}>
+      <select aria-label="Academic year" className={`${inputClass} max-w-[8rem]`} value={yearId} onChange={(event) => onYear(event.target.value)}>
         {ws.years.map((year) => <option key={year.id} value={year.id}>{year.name}</option>)}
       </select>
-      <select className={`${inputClass} max-w-[8rem]`} value={termId} onChange={(event) => onTerm(event.target.value)}>
+      <select aria-label="Academic term" className={`${inputClass} max-w-[8rem]`} value={termId} onChange={(event) => onTerm(event.target.value)}>
         {ws.terms.map((term) => <option key={term.id} value={term.id}>{term.name}</option>)}
       </select>
       <p className="text-xs text-muted">
