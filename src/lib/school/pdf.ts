@@ -2,7 +2,7 @@ import type { Decorated, Exam, Grade, Profile, ReportExtras, Stream, Subject } f
 import { fmt } from "@/lib/school/model";
 import { remarkBody, reportFootnote } from "@/lib/school/extras";
 import { chunkMarklistRows } from "@/lib/school/marklist.ts";
-import { paginateSubjectLevelRows, subjectLevelBandCode, SUBJECT_LEVEL_ROW_HEIGHT_MM } from "@/lib/school/merit-pdf-layout.ts";
+import { paginateSubjectLevelRows, subjectLevelBandCode, subjectLevelSubjectColumnWidth, subjectLevelSubjectSections, SUBJECT_LEVEL_ROW_HEIGHT_MM } from "@/lib/school/merit-pdf-layout.ts";
 
 type DrawInput = {
   profile: Profile;
@@ -809,7 +809,7 @@ export async function downloadMeritListPdf(options: {
   doc.save(options.fileName);
 }
 
-/** Landscape class merit list showing a mark and performance level for every subject and learner. */
+/** Subject-level class merit list showing a mark and performance level for every subject and learner. */
 export async function downloadSubjectLevelMeritListPdf(options: {
   fileName: string;
   profile: Profile;
@@ -830,11 +830,7 @@ export async function downloadSubjectLevelMeritListPdf(options: {
   const tableW = pageW - left * 2;
   const rowHeight = SUBJECT_LEVEL_ROW_HEIGHT_MM;
   const pageChunks = paginateSubjectLevelRows(options.rows, pageH, rowHeight);
-  // Eight portrait subject columns retain comfortable score/level widths at the existing font size.
-  const subjectsPerSection = orientation === "portrait" ? 8 : 12;
-  const subjectSections = options.subjects.length
-    ? Array.from({ length: Math.ceil(options.subjects.length / subjectsPerSection) }, (_, index) => options.subjects.slice(index * subjectsPerSection, (index + 1) * subjectsPerSection))
-    : [[]];
+  const subjectSections = subjectLevelSubjectSections(options.subjects, orientation);
 
   function letterhead(sectionNumber: number, sectionCount: number) {
     doc.setFillColor(255, 252, 247);
@@ -865,10 +861,14 @@ export async function downloadSubjectLevelMeritListPdf(options: {
 
   let firstPage = true;
   subjectSections.forEach((section, sectionIndex) => {
-    const identityWidths = orientation === "portrait" ? [7, 6, 15, 34, 12, 10, 10] : [10, 9, 21, 49, 18, 14, 14];
-    const subjectWidth = Math.max(8, (tableW - identityWidths.reduce((sum, width) => sum + width, 0)) / Math.max(section.length, 1));
+    const identityWidths = orientation === "portrait" ? [6, 5, 14, 32, 11, 9, 9] : [10, 9, 21, 49, 18, 14, 14];
+    const subjectWidth = subjectLevelSubjectColumnWidth(tableW, identityWidths, section.length);
     const widths = [...identityWidths.slice(0, 5), ...section.map(() => subjectWidth), ...identityWidths.slice(5)];
-    const heads = ["POS", "NO.", "ADM NO.", "LEARNER", "STREAM", ...section.map((subject) => (subject.shortName || subject.name).slice(0, 12)), "MEAN", "OVERALL"];
+    const subjectHeaderLimit = orientation === "portrait" ? Math.max(3, Math.floor(subjectWidth * 0.72)) : 12;
+    const subjectFontSize = orientation === "portrait" ? Math.max(4.5, Math.min(6.1, subjectWidth * 0.72)) : 6.1;
+    const identityHeads = orientation === "portrait" ? ["POS", "NO.", "ADM", "LEARNER", "STR"] : ["POS", "NO.", "ADM NO.", "LEARNER", "STREAM"];
+    const endingHeads = orientation === "portrait" ? ["MEAN", "OVR"] : ["MEAN", "OVERALL"];
+    const heads = [...identityHeads, ...section.map((subject) => (subject.shortName || subject.name).slice(0, subjectHeaderLimit)), ...endingHeads];
     const xPositions = widths.reduce<number[]>((positions, width, index) => [...positions, index === 0 ? left : positions[index - 1] + widths[index - 1]], []);
     pageChunks.forEach((pageRows, pageIndex) => {
       if (!firstPage) doc.addPage();
@@ -878,7 +878,7 @@ export async function downloadSubjectLevelMeritListPdf(options: {
       doc.setFillColor(14, 42, 74);
       doc.rect(left, tableTop - 4.2, tableW, 6.2, "F");
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(5.8);
+      doc.setFontSize(orientation === "portrait" ? Math.min(5.8, subjectFontSize) : 5.8);
       doc.setTextColor(255, 255, 255);
       heads.forEach((head, index) => {
         const centered = index >= 5;
@@ -892,7 +892,7 @@ export async function downloadSubjectLevelMeritListPdf(options: {
         }
         const cells = [row.position, String(row.roll), row.admission || "—", row.name, row.stream, ...section.map((subject) => row.subjectScores[options.subjects.findIndex((item) => item.id === subject.id)] || "—"), row.mean, row.level || "—"];
         doc.setFont("helvetica", "normal");
-        doc.setFontSize(6.1);
+        doc.setFontSize(orientation === "portrait" ? subjectFontSize : 6.1);
         // The column header is white; explicitly restore dark body text so
         // learner names and identity fields are visible on every page.
         doc.setTextColor(20, 20, 20);
@@ -901,7 +901,8 @@ export async function downloadSubjectLevelMeritListPdf(options: {
             const bandCode = subjectLevelBandCode(String(cell));
             doc.setTextColor(...tone(bandCode === "—" ? null : bandCode));
             doc.setFont("helvetica", "bold");
-            doc.text(String(cell).slice(0, 12), xPositions[index] + widths[index] / 2, y, { align: "center", maxWidth: widths[index] - 1 });
+            const compactValue = String(cell).replace(/\s*·\s*/g, "·").slice(0, 12);
+            doc.text(compactValue, xPositions[index] + widths[index] / 2, y, { align: "center", maxWidth: widths[index] - 1 });
             doc.setFont("helvetica", "normal");
             doc.setTextColor(20, 20, 20);
           } else {

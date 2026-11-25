@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { paginateSubjectLevelRows, subjectLevelBandCode, subjectLevelRowsPerPage } from "./merit-pdf-layout.ts";
+import { paginateSubjectLevelRows, subjectLevelBandCode, subjectLevelRowsPerPage, subjectLevelSubjectColumnWidth, subjectLevelSubjectSections } from "./merit-pdf-layout.ts";
 
 test("subject-level portrait pagination uses the available page height without changing row height", () => {
   const portraitCapacity = subjectLevelRowsPerPage(297);
@@ -23,6 +23,25 @@ test("keeps landscape row capacity and balances pages", () => {
   const pages = paginateSubjectLevelRows(rows, 210);
   assert.deepEqual(pages.map((page) => page.length), [27, 27, 25]);
   assert.deepEqual(pages.flat(), rows);
+});
+
+test("keeps every subject in one portrait section and balances the available column width", () => {
+  const subjects = Array.from({ length: 16 }, (_, index) => `subject-${index + 1}`);
+  const sections = subjectLevelSubjectSections(subjects, "portrait");
+  const identityWidths = [6, 5, 14, 32, 11, 9, 9];
+  const subjectWidth = subjectLevelSubjectColumnWidth(200, identityWidths, subjects.length);
+
+  assert.equal(sections.length, 1);
+  assert.deepEqual(sections[0], subjects);
+  assert.equal(subjectWidth, (200 - identityWidths.reduce((total, width) => total + width, 0)) / subjects.length);
+  assert.ok(identityWidths.reduce((total, width) => total + width, 0) + subjectWidth * subjects.length <= 200);
+});
+
+test("preserves landscape subject sections", () => {
+  const subjects = Array.from({ length: 25 }, (_, index) => index + 1);
+  const sections = subjectLevelSubjectSections(subjects, "landscape");
+  assert.deepEqual(sections.map((section) => section.length), [12, 12, 1]);
+  assert.deepEqual(sections.flat(), subjects);
 });
 
 test("subject-level PDF extracts the band code rather than the numeric score for level styling", () => {

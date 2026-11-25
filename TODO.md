@@ -119,9 +119,14 @@
 ## User-requested complete Analysis merit-list roster
 
 - [x] “ensure the number of learners in merit lists is equal to numbers of learners in each grade, and no recorded marks is ommited”: ensure each Analysis CSV, Excel, standard PDF, points PDF, and subject-level PDF includes every learner in the selected academic-year and grade/stream roster; learner search and level filters must not remove rows from downloads; learners without recorded marks must remain present with blank or em-dash values; roster and grade-wide merit/coverage counts must include these learners.
-- [x] Validation: full-roster ranking regression and merit PDF pagination/subject-position tests pass (8); TypeScript passes; changed-file ESLint has 0 errors (1 unused-variable warning); `git diff --check` passes; direct production Vite build passes without migrations. Full `npm test` was not rerun because the previous run failed in unrelated app-env/PWA script tests before reaching TypeScript tests.
+- [x] Validation: full-roster ranking regression and merit PDF pagination/subject-position tests pass (8); TypeScript passes; changed-file ESLint has 0 errors (1 unused-variable warning); `git diff --check` passes; direct production Vite build passes without migrations. Full `npm test` was rerun but stopped before app-level tests because 11 unrelated `scripts/grok-pwa-plugin.test.mjs` and `scripts/with-app-env.test.mjs` checks fail in this environment.
 
 ## User-requested merit-list level and gender counts
 
 - [x] “now under merit lists the same page you added subject positions , add the number of students in each levels like ME1  3 Students 2boys 1 girl”: on the merit-list analytics page beside/below subject positions, show each achievement level’s learner total and boy/girl counts; include learners without a recorded level in an explicit unassigned category and preserve roster totals.
 - [x] Validation: 10 focused level-count, full-roster, PDF pagination, and subject-position tests pass; TypeScript passes; changed-file ESLint has 0 errors (1 existing unused-variable warning); `git diff --check` and direct production Vite build pass.
+
+## User-requested portrait subject-level merit-list layout
+
+- [x] “ensure when downloading merit lists in portrait , all the subjects should fit in one page not right others down, just balance the space for them to fit well”: in portrait subject-level merit-list PDFs, keep every subject visible together in one shared subject-column layout, balance column widths across the page, and continue paginating learner rows only when the roster requires it.
+- [x] Validation: 7 focused subject-level PDF layout tests pass; TypeScript and changed-file ESLint pass; `git diff --check` and direct production Vite build pass without migrations. Full `npm test` stops at 11 unrelated app-env/PWA script failures before reaching app-level tests.
