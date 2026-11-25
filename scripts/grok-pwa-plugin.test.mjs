@@ -520,15 +520,15 @@ test("renders a school-branded manifest and initials icon when runtime identity 
   const manifest = JSON.parse(renderWebManifest("preview.local", "Mukuyu Junior School", "/__grok/school-icon.svg"));
   const icon = renderSchoolIconSvg("Mukuyu Junior School");
   assert.equal(manifest.name, "Mukuyu Junior School");
-  assert.equal(manifest.short_name, "MJS");
+  assert.equal(manifest.short_name, "MKJ");
   assert.equal(manifest.icons[0].src, "/__grok/school-icon.svg");
   assert.equal(manifest.icons[0].purpose, "any maskable");
-  assert.match(icon, /<text[^>]*>MJS<\/text>/);
+  assert.match(icon, /<text[^>]*>MKJ<\/text>/);
   assert.match(icon, /linearGradient/);
   assert.equal(icon.includes("<script>"), false);
 });
 
-test("renders square MJS app-icon artwork in the install manifest", () => {
+test("renders square MKJ app-icon artwork in the install manifest", () => {
   const manifest = JSON.parse(renderWebManifest("preview.local", "Mukuyu Junior School", "/icons/mukuyu-app-192.png"));
   assert.deepEqual(manifest.icons, [
     { src: "/icons/mukuyu-app-192.png", sizes: "192x192", type: "image/png", purpose: "any" },

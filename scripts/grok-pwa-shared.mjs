@@ -174,7 +174,7 @@ export function renderWebManifest(hostHeader, appNameOverride, iconPath) {
   return JSON.stringify(
     {
       name,
-      short_name: /^Mukuyu Junior School$/i.test(name) ? "MJS" : name.slice(0, 20).trim(),
+      short_name: /^Mukuyu Junior School$/i.test(name) ? "MKJ" : name.slice(0, 20).trim(),
       id: "/",
       start_url: "/",
       scope: "/",
@@ -190,7 +190,7 @@ export function renderWebManifest(hostHeader, appNameOverride, iconPath) {
 
 export function renderSchoolIconSvg(schoolName = "Mukuyu Junior School") {
   const safeName = String(schoolName ?? "").trim().replace(/\s+/g, " ").slice(0, 100) || "Mukuyu Junior School";
-  const initials = safeName.split(/[^A-Za-z0-9]+/).filter(Boolean).slice(0, 3).map((part) => part[0]).join("").toUpperCase() || "M";
+  const initials = /^Mukuyu Junior School$/i.test(safeName) ? "MKJ" : safeName.split(/[^A-Za-z0-9]+/).filter(Boolean).slice(0, 3).map((part) => part[0]).join("").toUpperCase() || "M";
   const fontSize = initials.length === 1 ? 76 : initials.length === 2 ? 62 : 48;
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" role="img" aria-label="${escapeHtml(safeName)} school app icon"><defs><linearGradient id="school" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#123b70"/><stop offset=".48" stop-color="#4379b7"/><stop offset="1" stop-color="#be8d36"/></linearGradient><linearGradient id="shine" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff" stop-opacity=".36"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient></defs><rect width="192" height="192" rx="44" fill="url(#school)"/><circle cx="150" cy="39" r="39" fill="#f2a8cf" fill-opacity=".28"/><circle cx="38" cy="158" r="46" fill="#7de0e6" fill-opacity=".24"/><path d="M22 69c21-30 57-47 94-43 22 2 39 11 54 24-29-17-63-20-92-9-21 8-39 21-56 42z" fill="url(#shine)"/><path d="M47 118c17-11 29-16 49-16s32 5 49 16v34c-16-9-31-13-49-13s-33 4-49 13z" fill="#fff" fill-opacity=".18" stroke="#fff" stroke-opacity=".83" stroke-width="4" stroke-linejoin="round"/><path d="M96 103v35" stroke="#fff" stroke-opacity=".82" stroke-width="3"/><text x="96" y="92" text-anchor="middle" font-family="Georgia,serif" font-size="${fontSize}" font-weight="700" letter-spacing="-3" fill="#fffdf4" stroke="#15375e" stroke-opacity=".22" stroke-width="2" paint-order="stroke">${escapeHtml(initials)}</text><path d="M68 161h56" stroke="#f5d58a" stroke-width="5" stroke-linecap="round"/></svg>`;
 }

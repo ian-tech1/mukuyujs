@@ -50,7 +50,7 @@ function OpeningIntro({ title, motto, logoSrc, durationSeconds }: { title: strin
   }
 
   if (!visible) return null;
-  return <div className="portal-loading fixed inset-0 z-[100] grid min-h-screen w-full place-items-center px-6" role="dialog" aria-modal="true" aria-labelledby="opening-intro-title" aria-describedby="opening-intro-description" onKeyDown={(event) => { if (event.key === "Escape") continueToSignIn(); }}>
+  return <div className="portal-loading portal-loading-opening fixed inset-0 z-[100] grid min-h-screen w-full place-items-center px-6" role="dialog" aria-modal="true" aria-labelledby="opening-intro-title" aria-describedby="opening-intro-description" onKeyDown={(event) => { if (event.key === "Escape") continueToSignIn(); }}>
     <div className="portal-loading-aurora" aria-hidden="true" />
     <div className="portal-loading-ribbon-field" aria-hidden="true">
       <span className="portal-loading-ribbon portal-loading-ribbon-one" />
@@ -102,7 +102,8 @@ function OpeningIntro({ title, motto, logoSrc, durationSeconds }: { title: strin
     </div>
     <div className="portal-loading-center-shade" aria-hidden="true" />
     <div className="portal-loading-card text-center">
-      <p className="portal-loading-monogram" aria-label="MJS"><span>MJS</span></p>
+      <img className="portal-launch-brand-card" src="/icons/mukuyu-app-icon.svg" alt="MUKUYU JUNIOR SCHOOL · MKJ · POWERED BY IAN TECH" width={512} height={512} />
+      <div className="portal-loading-details">
       <p className="portal-loading-kicker">MUKUYU JUNIOR SCHOOL · LEARNING PORTAL</p>
       <span className="portal-loading-orbit" aria-hidden="true"><SchoolLogo src={logoSrc} className="size-24" /></span>
       <h1 id="opening-intro-title" className="portal-loading-title mt-5">{title}</h1>
@@ -113,6 +114,7 @@ function OpeningIntro({ title, motto, logoSrc, durationSeconds }: { title: strin
       <button className="portal-loading-continue mt-6" type="button" autoFocus onClick={continueToSignIn}>Continue to sign in</button>
       <p className="portal-loading-footnote mt-4 justify-center">MUKUYU JUNIOR SCHOOL · LEARN WITH PURPOSE</p>
       <p className="portal-loading-credit mt-2">PORTAL DEVELOPED BY IAN TECH</p>
+      </div>
     </div>
   </div>;
 }

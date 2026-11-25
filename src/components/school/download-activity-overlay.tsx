@@ -103,7 +103,7 @@ export function DownloadActivityOverlay() {
       </div>
       <div className="portal-loading-center-shade" aria-hidden="true" />
       <div className="portal-loading-card text-center">
-        <p className="portal-loading-monogram" aria-hidden="true"><span>MJS</span></p>
+        <p className="portal-loading-monogram" aria-hidden="true"><span>MKJ</span></p>
         <p className="portal-loading-kicker">MUKUYU JUNIOR SCHOOL · LEARNING PORTAL</p>
         <span className="portal-loading-orbit" aria-hidden="true"><SchoolLogo className="size-20" /></span>
         <h2 className="portal-loading-title mt-5">Preparing your download</h2>

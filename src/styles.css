@@ -1093,3 +1093,128 @@ html[data-portal-motion="reduced"] .portal-loading-track span { animation:none !
   .portal-loading-card .portal-loading-footnote { margin-top:.65rem; padding-top:.5rem; gap:.45rem; font-size:.62rem; }
   .portal-loading-card .portal-loading-credit { margin-top:.45rem; font-size:.88rem; letter-spacing:.08em; }
 }
+
+
+/* Original Mukuyu launch card: warm cream canvas, rounded MKJ brand tile, then the existing sign-in intro. */
+.portal-loading-opening {
+  color: #26364a;
+  background-color: #f5eee4;
+  background-image: radial-gradient(ellipse at 50% 42%, rgba(255, 255, 255, .96), transparent 45%), linear-gradient(145deg, #f8f3ed, #eee4d8);
+  animation: none;
+}
+.portal-loading-opening::before,
+.portal-loading-opening::after,
+.portal-loading-opening .portal-loading-aurora,
+.portal-loading-opening .portal-loading-ribbon-field,
+.portal-loading-opening .portal-loading-rays,
+.portal-loading-opening .portal-loading-atom,
+.portal-loading-opening .portal-loading-orbit-glints,
+.portal-loading-opening .portal-loading-stars,
+.portal-loading-opening .portal-loading-dust,
+.portal-loading-opening .portal-loading-motes,
+.portal-loading-opening .portal-loading-comets,
+.portal-loading-opening .portal-loading-orbiting-objects,
+.portal-loading-opening .portal-loading-center-shade { display: none; }
+.portal-loading-opening .portal-loading-card {
+  display: flex;
+  width: min(34rem, calc(100vw - 2rem));
+  max-height: 100dvh;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(.7rem, 2.5vh, 1.25rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: clamp(.9rem, 3.5vh, 1.75rem) 1rem;
+  scrollbar-width: thin;
+}
+.portal-loading-opening .portal-loading-card::before,
+.portal-loading-opening .portal-loading-card::after { display: none; }
+.portal-loading-opening .portal-launch-brand-card {
+  display: block;
+  width: min(57vw, 26rem, 35vh);
+  height: auto;
+  flex: 0 0 auto;
+  aspect-ratio: 1;
+  margin-inline: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 20px 34px rgba(60, 54, 83, .16));
+  transform-origin: center;
+  animation: mukuyu-brand-card-grow 1.15s cubic-bezier(.2, .8, .22, 1) both;
+}
+.portal-loading-opening .portal-loading-details {
+  width: min(100%, 31rem);
+  animation: mukuyu-intro-details-enter .65s ease-out .4s both;
+}
+.portal-loading-opening .portal-loading-kicker {
+  color: #536276;
+  text-shadow: none;
+  animation: none;
+}
+.portal-loading-opening .portal-loading-orbit {
+  width: 4.75rem;
+  height: 4.75rem;
+  margin-top: .6rem;
+  border-width: 3px;
+  background: radial-gradient(circle, #f7f1e9 58%, transparent 62%) padding-box,
+    conic-gradient(from 0deg, #2ba8c5, #6d67c5, #d273b3, #eabf56, #61b99b, #2ba8c5) border-box;
+  box-shadow: 0 0 14px rgba(74, 145, 176, .22), 0 0 22px rgba(171, 104, 180, .12);
+}
+.portal-loading-opening .portal-loading-orbit > * { width: 3.35rem; height: 3.35rem; }
+.portal-loading-opening .portal-loading-title {
+  color: #2c3c54;
+  text-shadow: none;
+  animation: none;
+}
+.portal-loading-opening .portal-loading-tagline {
+  color: #705197;
+  animation: none;
+}
+.portal-loading-opening .portal-loading-message {
+  color: #4b596a;
+  text-shadow: none;
+}
+.portal-loading-opening .portal-loading-progress-meta { color: #495a70; }
+.portal-loading-opening .portal-loading-track {
+  background: linear-gradient(90deg, rgba(54, 170, 190, .16), rgba(125, 99, 190, .16), rgba(231, 173, 87, .2));
+  box-shadow: inset 0 1px 2px rgba(53, 61, 80, .1);
+}
+.portal-loading-opening .portal-loading-track span {
+  background: linear-gradient(90deg, #36b9c7, #6a75d0, #ca6cb3, #e9b653);
+  box-shadow: 0 0 12px rgba(95, 137, 196, .34);
+}
+.portal-loading-opening .portal-loading-continue {
+  border-color: rgba(74, 102, 142, .4);
+  color: #fff;
+  background: linear-gradient(115deg, #365f91, #6d5da3, #a05f9f);
+  box-shadow: 0 8px 20px rgba(68, 79, 124, .2);
+}
+.portal-loading-opening .portal-loading-continue:hover { border-color: #8c77bf; box-shadow: 0 10px 24px rgba(95, 79, 148, .28); }
+.portal-loading-opening .portal-loading-continue:focus-visible { outline-color: #a58bcf; }
+.portal-loading-opening .portal-loading-footnote {
+  border-color: rgba(70, 86, 110, .18);
+  color: #687386;
+}
+.portal-loading-opening .portal-loading-credit {
+  color: #765d96;
+  text-shadow: none;
+}
+@keyframes mukuyu-brand-card-grow {
+  0% { opacity: 0; transform: scale(.16) rotate(-7deg); }
+  58% { opacity: 1; transform: scale(1.06) rotate(.5deg); }
+  78% { transform: scale(.98) rotate(0); }
+  100% { opacity: 1; transform: scale(1) rotate(0); }
+}
+@keyframes mukuyu-intro-details-enter {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (max-width: 480px) {
+  .portal-loading-opening .portal-loading-card { padding-inline: .35rem; }
+  .portal-loading-opening .portal-launch-brand-card { width: min(60vw, 26rem, 32vh); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .portal-loading-opening .portal-launch-brand-card,
+  .portal-loading-opening .portal-loading-details { animation: none !important; opacity: 1; transform: none; }
+}
+html[data-portal-motion="reduced"] .portal-loading-opening .portal-launch-brand-card,
+html[data-portal-motion="reduced"] .portal-loading-opening .portal-loading-details { animation: none !important; opacity: 1; transform: none; }

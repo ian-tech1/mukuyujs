@@ -248,7 +248,7 @@ function PortalPage() {
       <main className="portal-loading grid min-h-screen place-items-center bg-paper px-6">
         <PortalLoadingBackdrop />
         <div className="portal-loading-card text-center" role="status" aria-live="polite">
-          <p className="portal-loading-monogram" aria-label="Mukuyu Junior School initials"><span>MJS</span></p>
+          <p className="portal-loading-monogram" aria-label="Mukuyu Junior School initials"><span>MKJ</span></p>
           <p className="portal-loading-kicker portal-loading-box portal-loading-box-kicker">MUKUYU JUNIOR SCHOOL · LEARNING PORTAL</p>
           <span className="portal-loading-orbit" aria-hidden="true"><SchoolLogo className="size-24" /></span>
           <h1 className="portal-loading-title portal-loading-box portal-loading-box-title mt-5">Mukuyu Junior School</h1>
@@ -273,7 +273,7 @@ function PortalPage() {
           <div className="flex items-center gap-2">
             <SchoolLogo className="size-12" />
             <div>
-              <span className="portal-nav-monogram" aria-label="Mukuyu Junior School initials">MJS</span>
+              <span className="portal-nav-monogram" aria-label="Mukuyu Junior School initials">MKJ</span>
               <p className="font-serif text-xl leading-tight">Mukuyu JSS</p>
               <p className="text-base text-brass-soft">Exam portal</p>
             </div>
