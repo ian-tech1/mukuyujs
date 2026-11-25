@@ -16,6 +16,7 @@ import { applyDoubleRule, auditTimetable, distributionWithDoubleDay, generateTim
 import { DEFAULT_ADMISSION_NUMBER_SETTINGS, normalizeAdmissionNumberSettings, validateAdmissionNumberSettings, type AdmissionNumberSettings } from "@/lib/school/admission-number";
 import { DEFAULT_ROLE_ACCESS, normalizeRoleAccess, canActorAccess, type RoleAccessPolicy } from "@/lib/school/role-access";
 import { normalizeReportCode, resolveReportCode } from "@/lib/school/report-code";
+import { buildReportExamChoices, filterReportMarksToGrade, remapMarksForReport, reportExamLabel, validateReportExamSelection } from "@/lib/school/report-period";
 import { isValidParentEmail, matchLearnerName, normalizeLearnerName, normalizeParentEmail } from "@/lib/school/parent-access";
 import { resolveSubjectHeader } from "@/lib/school/subject-header";
 import { sendSchoolBackupEmail } from "@/lib/school/backup-email";
@@ -307,6 +308,51 @@ async function loadGradeBook(sql: Awaited<ReturnType<typeof getSql>>, gradeId: s
     select learner_id as "learnerId", subject_id as "subjectId", exam_id as "examId", score, year_id as "yearId", term_id as "termId", grade_id as "gradeId", stream_id as "streamId", status
     from marks where year_id = ${yearId} and term_id = ${termId} and grade_id = ${gradeId}`;
   return { subjects, exams, bands, streams, learners, marks };
+}
+
+async function combinedReportForLearners(
+  sql: SqlHandle,
+  yearId: string,
+  termIds: string[],
+  examKeys: string[],
+  learnerIds: string[],
+  showTermNames: boolean,
+) {
+  const [terms, allExams, assessments] = await Promise.all([
+    sql<{ id: string; name: string; sort: number }>`select id, name, sort from terms order by sort`,
+    sql<Exam>`select id, name, code, sort from exams order by sort`,
+    sql<TermAssessment>`select year_id as "yearId", term_id as "termId", exam_id as "examId", active from term_assessments where year_id = ${yearId}`,
+  ]);
+  if (!termIds.length || new Set(termIds).size !== termIds.length || termIds.some((id) => !terms.some((term) => term.id === id))) {
+    throw new Error("Choose valid terms from the selected academic year.");
+  }
+  const allowedChoices = buildReportExamChoices(yearId, terms, allExams, assessments);
+  const selectedChoices = validateReportExamSelection(allowedChoices, termIds, examKeys);
+  if (!selectedChoices) throw new Error("Choose at least one valid exam for the selected terms.");
+  const exportExams = selectedChoices.flatMap((choice, index) => {
+    const source = allExams.find((exam) => exam.id === choice.examId);
+    return source ? [{ ...source, id: choice.key, name: reportExamLabel(choice, showTermNames), sort: index + 1 }] : [];
+  });
+  const placedLearners = await learnersAtYear(sql, yearId);
+  const targetIds = new Set(learnerIds);
+  const targetLearners = placedLearners.filter((learner) => targetIds.has(learner.id));
+  const [subjects, bands, streams, sourceMarks] = await Promise.all([
+    sql<Subject>`select id, name, short_name as "shortName", sort from subjects order by sort`,
+    sql<Band>`select min_score as "minScore", code, points, subject_remark as "subjectRemark", head_remark as "headRemark", class_remark as "classRemark" from grading_bands order by min_score desc`,
+    sql<Stream>`select id, grade_id as "gradeId", name, class_teacher_label as "classTeacherLabel", sort from streams order by sort, name`,
+    sql<Mark>`select learner_id as "learnerId", subject_id as "subjectId", exam_id as "examId", score, year_id as "yearId", term_id as "termId", grade_id as "gradeId", stream_id as "streamId", status from marks where year_id = ${yearId} and term_id = any(${termIds}::text[])`,
+  ]);
+  if (!targetLearners.length) return { rows: [] as Decorated[], exams: exportExams, terms, subjects, streams };
+  const remapped = remapMarksForReport(sourceMarks, selectedChoices);
+  const targetLearnerIds = new Set(targetLearners.map((learner) => learner.id));
+  const gradeIds = [...new Set(targetLearners.map((learner) => learner.gradeId))];
+  const rows = gradeIds.flatMap((gradeId) => {
+    const cohort = placedLearners.filter((learner) => learner.gradeId === gradeId);
+    const marks = filterReportMarksToGrade(remapped, cohort.map((learner) => learner.id), gradeId);
+    return decorate(buildBoards(cohort, marks, subjects, exportExams, bands), streams, exportExams)
+      .filter((row) => targetLearnerIds.has(row.learner.id));
+  });
+  return { rows, exams: exportExams, terms, subjects, streams };
 }
 
 function tempPassword() {
@@ -1506,7 +1552,7 @@ export const importLearners = createServerFn({ method: "POST" })
   });
 
 export const childReport = createServerFn({ method: "POST" })
-  .validator((input: { yearId: string; termId: string }) => input)
+  .validator((input: { yearId: string; termId: string; termIds?: string[]; examKeys?: string[]; showTermNames?: boolean }) => input)
   .handler(async ({ data }) => {
     const me = await requireActor();
     const sql = await getSql();
@@ -1520,6 +1566,11 @@ export const childReport = createServerFn({ method: "POST" })
     }
     if (!ids.length && isAdmin(me.role)) return { rows: [] as Decorated[] };
     if (!ids.length) throw new Error("No learner is linked to this account.");
+    if (data.termIds || data.examKeys) {
+      if (!data.termIds || !data.examKeys) throw new Error("Choose both terms and exams for a combined report.");
+      const report = await combinedReportForLearners(sql, data.yearId, data.termIds, data.examKeys, ids, data.showTermNames !== false);
+      return { rows: report.rows };
+    }
     const learnerGrades = await sql<{ id: string; grade_id: string }>`select id, grade_id from learners where status = 'active' and id = any(${ids}::text[])`;
     const historicGrades = await sql<{ grade_id: string }>`select distinct grade_id from marks where learner_id = any(${ids}::text[]) and year_id = ${data.yearId} and term_id = ${data.termId}`;
     const grades = [...new Set([...learnerGrades.map((row) => row.grade_id), ...historicGrades.map((row) => row.grade_id)])];
@@ -1892,7 +1943,7 @@ export const listBackupSnapshots = createServerFn({ method: "GET" }).handler(asy
 });
 
 export const getPublicReport = createServerFn({ method: "GET" })
-  .validator((input: { code: string; yearId?: string; termId?: string }) => input)
+  .validator((input: { code: string; yearId?: string; termId?: string; termIds?: string[]; examKeys?: string[]; showTermNames?: boolean }) => input)
   .handler(async ({ data }) => {
     const code = normalizeReportCode(data.code);
     if (!code) return null;
@@ -1937,52 +1988,96 @@ export const getPublicReport = createServerFn({ method: "GET" })
     const selectedTermId = data.termId && (await sql<{ id: string }>`select id from terms where id = ${data.termId}`)[0] ? data.termId : profile.activeTermId;
     const selectedYear = await sql<{ name: string }>`select name from academic_years where id = ${selectedYearId}`;
     const selectedTerm = await sql<{ name: string }>`select name from terms where id = ${selectedTermId}`;
-    profile.activeYearId = selectedYearId; profile.activeTermId = selectedTermId;
-    profile.academicYear = selectedYear[0]?.name ?? profile.academicYear; profile.termName = selectedTerm[0]?.name ?? profile.termName;
-    const reportCalendar = await sql<{ closingDate: string; openingDate: string; reportTitle: string }>`select closing_date as "closingDate", opening_date as "openingDate", report_title as "reportTitle" from term_dates where year_id = ${selectedYearId} and term_id = ${selectedTermId}`;
-    const placement = await sql<{ grade_id: string; stream_id: string }>`select grade_id, stream_id from marks where learner_id = ${learner.id} and year_id = ${selectedYearId} and term_id = ${selectedTermId} order by updated_at desc limit 1`;
-    const reportGradeId = placement[0]?.grade_id ?? learner.gradeId;
-    const reportStreamId = placement[0]?.stream_id ?? learner.streamId;
+    const [years, terms, allExamsForOptions, termAssessments] = await Promise.all([
+      sql<{ id: string; name: string; sort: number }>`select id, name, sort from academic_years order by sort`,
+      sql<{ id: string; name: string; sort: number }>`select id, name, sort from terms order by sort`,
+      sql<Exam>`select id, name, code, sort from exams order by sort`,
+      sql<TermAssessment>`select year_id as "yearId", term_id as "termId", exam_id as "examId", active from term_assessments`,
+    ]);
+    const combinedMode = Boolean(data.termIds || data.examKeys);
+    if (combinedMode && (!data.termIds || !data.examKeys)) throw new Error("Choose both terms and exams for a combined report.");
+    const selectedTermNames = combinedMode
+      ? terms.filter((term) => data.termIds?.includes(term.id)).map((term) => term.name)
+      : [selectedTerm[0]?.name ?? profile.termName];
+    const latestSelectedTerm = combinedMode
+      ? terms.filter((term) => data.termIds?.includes(term.id)).at(-1)
+      : undefined;
+    profile.activeYearId = selectedYearId;
+    profile.activeTermId = latestSelectedTerm?.id ?? selectedTermId;
+    profile.academicYear = selectedYear[0]?.name ?? profile.academicYear;
+    profile.termName = combinedMode
+      ? data.showTermNames === false ? "ACADEMIC YEAR" : selectedTermNames.join(", ")
+      : selectedTerm[0]?.name ?? profile.termName;
+    const reportCalendar = combinedMode ? [] : await sql<{ closingDate: string; openingDate: string; reportTitle: string }>`select closing_date as "closingDate", opening_date as "openingDate", report_title as "reportTitle" from term_dates where year_id = ${selectedYearId} and term_id = ${selectedTermId}`;
+    let reportGradeId = learner.gradeId;
+    let reportStreamId = learner.streamId;
+    let reportSubjects: Subject[];
+    let reportExams: Exam[];
+    let reportBands: Band[] = [];
+    let reportStreams: Stream[];
+    let row: Decorated | undefined;
+    let placed: Learner;
+    if (combinedMode) {
+      const combined = await combinedReportForLearners(sql, selectedYearId, data.termIds!, data.examKeys!, [learner.id], data.showTermNames !== false);
+      row = combined.rows[0];
+      if (!row) return null;
+      reportGradeId = row.learner.gradeId;
+      reportStreamId = row.learner.streamId;
+      reportSubjects = combined.subjects;
+      reportExams = combined.exams;
+      reportStreams = combined.streams;
+      placed = row.learner;
+    } else {
+      const placement = await sql<{ grade_id: string; stream_id: string }>`select grade_id, stream_id from marks where learner_id = ${learner.id} and year_id = ${selectedYearId} and term_id = ${selectedTermId} order by updated_at desc limit 1`;
+      reportGradeId = placement[0]?.grade_id ?? learner.gradeId;
+      reportStreamId = placement[0]?.stream_id ?? learner.streamId;
+      const book = await reportForGrade(sql, reportGradeId, selectedYearId, selectedTermId, [learner.id]);
+      row = book.rows[0];
+      if (!row) return null;
+      reportSubjects = book.subjects;
+      reportExams = book.exams;
+      reportBands = book.bands;
+      reportStreams = book.streams;
+      placed = { ...learner, gradeId: reportGradeId, streamId: reportStreamId };
+    }
     const grades = await sql<{ id: string; name: string; level: number; reportTitle: string }>`
       select id, name, level, report_title as "reportTitle" from grades where id = ${reportGradeId}`;
-    const book = await reportForGrade(sql, reportGradeId, selectedYearId, selectedTermId, [learner.id]);
-    const row = book.rows[0];
     if (!row || !grades[0]) return null;
-    const stream = book.streams.find((item) => item.id === reportStreamId);
-    const placed = { ...learner, gradeId: reportGradeId, streamId: reportStreamId };
+    const stream = reportStreams.find((item) => item.id === reportStreamId);
     const slots = await sql<SubjectTeacherSlot>`
       select a.subject_id as "subjectId", a.grade_id as "gradeId", a.stream_id as "streamId", u.initials
       from assignments a join users u on u.id = a.user_id
       where a.kind in ('subject_teacher', 'hod') and u.active = true and coalesce(trim(u.initials), '') <> ''`;
     const initials: Record<string, string> = {};
-    for (const subject of book.subjects) {
+    for (const subject of reportSubjects) {
       const value = initialsForSubject(slots, placed, subject.id);
       if (value) initials[subject.id] = value;
     }
-    const notes = await sql<TermNote>`
-      select learner_id as "learnerId", year_id as "yearId", term_id as "termId",
-        days_present as "daysPresent", days_expected as "daysExpected", conduct, comment
-      from learner_term_notes where learner_id = ${learner.id} and year_id = ${selectedYearId} and term_id = ${selectedTermId}`;
-    const remarkRows = await sql<{ subjectId: string; remark: string }>`
-      select subject_id as "subjectId", remark from subject_remarks
-      where learner_id = ${learner.id} and year_id = ${selectedYearId} and term_id = ${selectedTermId}`;
+    let notes: TermNote[] = [];
     const customRemarks: Record<string, string> = {};
-    for (const item of remarkRows) if (item.remark.trim()) customRemarks[item.subjectId] = item.remark.trim();
-    const years = await sql<{ id: string; name: string; sort: number }>`select id, name, sort from academic_years`;
-    const terms = await sql<{ id: string; name: string; sort: number }>`select id, name, sort from terms`;
+    if (!combinedMode) {
+      notes = await sql<TermNote>`
+        select learner_id as "learnerId", year_id as "yearId", term_id as "termId",
+          days_present as "daysPresent", days_expected as "daysExpected", conduct, comment
+        from learner_term_notes where learner_id = ${learner.id} and year_id = ${selectedYearId} and term_id = ${selectedTermId}`;
+      const remarkRows = await sql<{ subjectId: string; remark: string }>`
+        select subject_id as "subjectId", remark from subject_remarks
+        where learner_id = ${learner.id} and year_id = ${selectedYearId} and term_id = ${selectedTermId}`;
+      for (const item of remarkRows) if (item.remark.trim()) customRemarks[item.subjectId] = item.remark.trim();
+    }
     const prev = previousPeriod(years, terms, selectedYearId, selectedTermId);
     let previousMean: number | null = null;
-    if (prev) {
+    if (prev && !combinedMode) {
       const prevMarks = await sql<Mark>`
         select learner_id as "learnerId", subject_id as "subjectId", exam_id as "examId", score,
           year_id as "yearId", term_id as "termId"
         from marks where learner_id = ${learner.id} and year_id = ${prev.yearId} and term_id = ${prev.termId}`;
-      previousMean = meanForPeriod(placed, prevMarks, prev.yearId, prev.termId, book.subjects, book.exams, book.bands);
+      previousMean = meanForPeriod(placed, prevMarks, prev.yearId, prev.termId, reportSubjects, reportExams, reportBands);
     }
     const extras: ReportExtras = { initials, previousMean, termNote: notes[0] ?? null, customRemarks };
     const feedbackSettings = (await sql<{ recipientScope: "teacher" | "class_teacher" | "admin" | "super_admin"; allowTeacherSelection: boolean; autoreplyEnabled: boolean }>`select recipient_scope as "recipientScope", allow_teacher_selection as "allowTeacherSelection", autoreply_enabled as "autoreplyEnabled" from qr_feedback_settings where id=1`)[0] ?? { recipientScope: "class_teacher" as const, allowTeacherSelection: true, autoreplyEnabled: false };
     const feedbackTeachers = feedbackSettings.allowTeacherSelection ? await sql<{id:string;fullName:string;subjectName:string}>`select u.id,u.full_name as "fullName",string_agg(distinct case when a.kind='class_teacher' then 'Class teacher' when a.kind='subject_teacher' then coalesce(sb.name,'Subject') || ' teacher' when a.kind='hod' then 'Head of department' else 'Teacher' end, ', ' order by case when a.kind='class_teacher' then 'Class teacher' when a.kind='subject_teacher' then coalesce(sb.name,'Subject') || ' teacher' when a.kind='hod' then 'Head of department' else 'Teacher' end) as "subjectName" from assignments a join users u on u.id=a.user_id and u.active=true left join subjects sb on sb.id=a.subject_id where (a.grade_id is null or a.grade_id=${reportGradeId}) and (a.stream_id is null or a.stream_id=${reportStreamId}) and a.kind in ('class_teacher','subject_teacher','hod') group by u.id,u.full_name order by u.full_name` : [];
-    return { profile, grade: grades[0], stream, subjects: book.subjects, exams: book.exams, row, extras, calendar: reportCalendar[0] ?? null, reportPeriods: { years, terms }, feedbackSettings, feedbackTeachers };
+    return { profile, grade: grades[0], stream, subjects: reportSubjects, exams: reportExams, row, extras, calendar: reportCalendar[0] ?? null, reportPeriods: { years, terms, exams: allExamsForOptions, termAssessments }, feedbackSettings, feedbackTeachers };
   });
 
 export const getParentReportOptions = createServerFn({ method: "GET" })

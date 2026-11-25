@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { buildReportExamChoices, chooseReportExams, filterReportMarksToGrade, remapMarksForReport, reportExamChoiceKey, reportExamLabel } from "./report-period.ts";
+import { buildReportExamChoices, chooseReportExams, filterReportMarksToGrade, remapMarksForReport, reportChoicesForDownload, reportExamChoiceKey, reportExamLabel, reportTermIds, validateReportExamSelection } from "./report-period.ts";
 
 const terms = [
   { id: "t3", name: "Term 3", sort: 3 },
@@ -59,4 +59,21 @@ test("combined report marks stay within the selected grade and learner set", () 
   ];
   const selected = filterReportMarksToGrade(marks, ["l1"], "g1");
   assert.deepEqual(selected.map(({ gradeId, score }) => [gradeId ?? null, score]), [["g1", 70], [null, 60]]);
+});
+
+test("shared report range selection preserves term ordering and filters custom terms and exams", () => {
+  const choices = buildReportExamChoices("2026", terms, exams, []);
+  assert.deepEqual(reportTermIds("year", "t2", terms, []), ["t1", "t2", "t3"]);
+  assert.deepEqual(reportTermIds("custom", "t2", terms, ["t3", "t1", "unknown"]), ["t1", "t3"]);
+  const termIds = reportTermIds("custom", "t2", terms, ["t3", "t1"]);
+  const selected = reportChoicesForDownload(choices, "custom", termIds, [reportExamChoiceKey("t1", "e2"), reportExamChoiceKey("t3", "e1")]);
+  assert.deepEqual(selected.map(({ termId, examId }) => `${termId}/${examId}`), ["t1/e2", "t3/e1"]);
+});
+
+test("family report selection validation rejects unknown or duplicate term and exam choices", () => {
+  const choices = buildReportExamChoices("2026", terms, exams, []);
+  assert.equal(validateReportExamSelection(choices, ["t1"], [reportExamChoiceKey("t1", "e1")])?.length, 1);
+  assert.equal(validateReportExamSelection(choices, ["t1"], ["unknown"]), null);
+  assert.equal(validateReportExamSelection(choices, ["t1", "t1"], [reportExamChoiceKey("t1", "e1")]), null);
+  assert.equal(validateReportExamSelection(choices, ["t1"], [reportExamChoiceKey("t1", "e1"), reportExamChoiceKey("t1", "e1")]), null);
 });

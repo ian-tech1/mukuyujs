@@ -10,6 +10,7 @@ export type ReportExamChoice = {
   examSort: number;
   examCode: string;
 };
+export type ReportDownloadScope = "current" | "year" | "custom";
 
 type ExamInput = { id: string; name: string; code: string; sort: number };
 type AssessmentInput = { yearId: string; termId: string; examId: string; active: boolean };
@@ -55,6 +56,39 @@ export function chooseReportExams(choices: ReportExamChoice[], termIds: string[]
   const selectedTerms = new Set(termIds);
   const selectedExams = new Set(examKeys);
   return choices.filter((choice) => selectedTerms.has(choice.termId) && selectedExams.has(choice.key));
+}
+
+export function reportTermIds(
+  scope: ReportDownloadScope,
+  currentTermId: string,
+  terms: ReportTermChoice[],
+  selectedTermIds: string[],
+): string[] {
+  if (scope === "current") return [currentTermId];
+  if (scope === "year") return [...terms].sort((a, b) => a.sort - b.sort).map((term) => term.id);
+  const selected = new Set(selectedTermIds);
+  return [...terms].sort((a, b) => a.sort - b.sort).filter((term) => selected.has(term.id)).map((term) => term.id);
+}
+
+export function reportChoicesForDownload(
+  choices: ReportExamChoice[],
+  scope: ReportDownloadScope,
+  termIds: string[],
+  selectedExamKeys: string[],
+): ReportExamChoice[] {
+  const available = choices.filter((choice) => termIds.includes(choice.termId));
+  return scope === "custom" ? chooseReportExams(available, termIds, selectedExamKeys) : available;
+}
+
+/** Return null when a family report request contains an unknown or duplicate term/exam choice. */
+export function validateReportExamSelection(
+  choices: ReportExamChoice[],
+  termIds: string[],
+  examKeys: string[],
+): ReportExamChoice[] | null {
+  if (!termIds.length || !examKeys.length || new Set(termIds).size !== termIds.length || new Set(examKeys).size !== examKeys.length) return null;
+  const selected = chooseReportExams(choices, termIds, examKeys);
+  return selected.length === examKeys.length ? selected : null;
 }
 
 export function filterReportMarksToGrade<T extends GradeScopedMark>(marks: T[], learnerIds: Iterable<string>, gradeId: string): T[] {

@@ -16,6 +16,8 @@ export function ReportSheet({
   openingDate,
   title,
   extras,
+  includeAllExams = false,
+  showDates = true,
 }: {
   profile: Profile;
   grade: Grade;
@@ -27,8 +29,10 @@ export function ReportSheet({
   openingDate?: string;
   title?: string;
   extras?: ReportExtras;
+  includeAllExams?: boolean;
+  showDates?: boolean;
 }) {
-  const exams = allExams.slice(0, Math.max(1, Math.min(profile.reportExamCount || 2, allExams.length)));
+  const exams = includeAllExams ? allExams : allExams.slice(0, Math.max(1, Math.min(profile.reportExamCount || 2, allExams.length)));
   const termColor = profile.activeTermId === "t1" ? (profile.term1Color || "#1d4e89") : profile.activeTermId === "t2" ? (profile.term2Color || "#9a7430") : (profile.term3Color || "#1f7a4d");
   const link = liveReportLink(profile.publicBaseUrl, row.learner.publicCode || "");
   const qr = useQr(profile.showQr ? link : "");
@@ -68,8 +72,7 @@ export function ReportSheet({
             <div className="text-sm">
               <p><span className="text-muted">NAME: </span><strong>{row.learner.fullName}</strong><span className="ml-3 text-muted">ADMISSION NO: </span><strong>{row.learner.admissionNumber || "Not assigned"}</strong></p>
               <p className="mt-1"><span className="text-muted">GENDER: </span>{row.learner.gender} <span className="ml-3 text-muted">GRADE: </span>{grade.level} <span className="ml-3 text-muted">STREAM: </span>{stream?.name}</p>
-              <p className="mt-1 text-xs">CLOSING DATE: {closing || "—"}</p>
-              <p className="text-xs">OPENING DATE: {opening || "—"}</p>
+              {showDates ? <><p className="mt-1 text-xs">CLOSING DATE: {closing || "—"}</p><p className="text-xs">OPENING DATE: {opening || "—"}</p></> : null}
               <p className="mt-1 text-xs italic text-muted">{profile.catNote}</p>
               {profile.showQr ? <p className="mt-1 max-w-full break-all text-[10px] leading-tight text-info">{link}</p> : null}
             </div>
