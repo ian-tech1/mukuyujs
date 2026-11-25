@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { ReportSheet } from "@/components/school/report-sheet";
 import type { Gate } from "@/components/school/gate";
 import { btnClass, errText, inputClass } from "@/components/school/gate";
+import { btnDownload } from "@/components/school/download-button";
 import { PeriodBar, useSchoolPeriod } from "@/components/school/period-bar";
 import { buildBoards, calendarFor, decorate, learnersForYear, type Decorated } from "@/lib/school/model";
 import { liveReportLink, logoDataUrl } from "@/lib/school/brand";
@@ -69,7 +70,7 @@ export function ResultsView({ ws, flash }: Gate) {
             {ws.learners.map((item) => <option key={item.id} value={item.id}>{item.fullName}</option>)}
           </select>
         ) : null}
-        {row && canDownload ? <button className={btnClass} type="button" onClick={async () => {
+        {row && canDownload ? <button className={btnDownload.blue} type="button" onClick={async () => {
           try {
             const link = liveReportLink(ws.profile.publicBaseUrl, row.learner.publicCode);
             const qr = ws.profile.showQr ? await qrFor(link) : "";

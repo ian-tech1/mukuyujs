@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Gate } from "@/components/school/gate";
 import { btnClass, btnGhost, errText, inputClass } from "@/components/school/gate";
+import { btnDownload } from "@/components/school/download-button";
 import { PeriodBar, useSchoolPeriod } from "@/components/school/period-bar";
 import { bandFor, buildBoards, canEditMark, canEnterMark, learnersForYear, markControlFor } from "@/lib/school/model";
 import { approveMarksPeriod, clearBulkResults, importMarksExcel, saveMarks, saveSubjectRemarks } from "@/lib/school/api";
@@ -271,7 +272,7 @@ export function MarksView({ ws, refresh, flash }: Gate) {
       <div className="flex flex-wrap gap-2">
         <button className={btnClass} type="button" onClick={save} disabled={!editable}>Save this subject</button>
         <button className={btnGhost} type="button" onClick={fillFromPrevious} disabled={!editable}>Fill blanks from the previous CAT</button>
-        <button className={btnGhost} type="button" onClick={downloadCsv} disabled={!learners.length}>Download this sheet (CSV)</button>
+        <button className={btnDownload.emerald} type="button" onClick={downloadCsv} disabled={!learners.length}>Download this sheet (CSV)</button>
       </div>
       {editable ? <section className="space-y-3 rounded-md border border-line bg-card p-4">
         <h2 className="font-serif text-xl text-navy">Subject remarks for the report card</h2>

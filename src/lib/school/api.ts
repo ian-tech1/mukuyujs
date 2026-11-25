@@ -18,6 +18,7 @@ import { DEFAULT_ROLE_ACCESS, normalizeRoleAccess, canActorAccess, type RoleAcce
 import { normalizeReportCode, resolveReportCode } from "@/lib/school/report-code";
 import { isValidParentEmail, matchLearnerName, normalizeLearnerName, normalizeParentEmail } from "@/lib/school/parent-access";
 import { resolveSubjectHeader } from "@/lib/school/subject-header";
+import { sendSchoolBackupEmail } from "@/lib/school/backup-email";
 
 type SessionData = { userId: string; v: number };
 let spotifyTokenCache: { accessToken: string; expiresAt: number } | null = null;
@@ -1682,8 +1683,48 @@ export const replyQrParentFeedback = createServerFn({ method: "POST" })
     await sql`update qr_parent_feedback set staff_reply=${reply},status='replied',replied_at=now() where id=${data.id}`;
     return { ok: true, emailSent };
   });
-export const getScheduledBackupSettings = createServerFn({method:"GET"}).handler(async()=>{const me=await requireActor();if(!isTrueSuper(me))throw new Error("Only the super admin can configure automatic backups.");const sql=await getSql();return(await sql<{enabled:boolean;recipientEmail:string;cadence:string}>`select enabled,recipient_email as "recipientEmail",cadence from scheduled_backup_settings where id=1`)[0]??{enabled:false,recipientEmail:"",cadence:"daily"};});
+export const getScheduledBackupSettings = createServerFn({ method: "GET" }).handler(async () => {
+  const me = await requireActor();
+  if (!isTrueSuper(me)) throw new Error("Only the super admin can configure automatic backups.");
+  const sql = await getSql();
+  const settings = (await sql<{ enabled: boolean; recipientEmail: string; cadence: string }>`select enabled,recipient_email as "recipientEmail",cadence from scheduled_backup_settings where id=1`)[0];
+  const rows = await sql<{ id: string; createdAt: string; createdBy: string; note: string }>`select id,created_at as "createdAt",created_by as "createdBy",note from office_backups where kind='scheduled' order by created_at desc limit 5`;
+  const recentRuns = rows.map((run) => {
+    const match = run.note.match(/email_status=(sent|failed|skipped|pending)(?:; reason=(.*))?$/);
+    const status = (match?.[1] as "sent" | "failed" | "skipped" | "pending" | undefined) ?? "unknown";
+    const reason = match?.[2];
+    const detail = status === "sent"
+      ? "Email provider accepted the message; check the inbox and provider logs for final delivery."
+      : status === "pending"
+        ? "The run did not save a final email result. Check deployment logs; delivery is unconfirmed."
+      : status === "unknown"
+        ? "This older snapshot predates saved email-delivery status."
+        : `${status === "failed" ? "Email failed" : "Email skipped"}${reason ? `: ${reason}` : "."}`;
+    return { id: run.id, createdAt: run.createdAt, source: run.createdBy === "vercel-cron" ? "Automatic schedule" : "Manual backup test", status, detail };
+  });
+  return { ...(settings ?? { enabled: false, recipientEmail: "", cadence: "daily" }), recentRuns };
+});
 export const saveScheduledBackupSettings = createServerFn({method:"POST"}).validator((input:{enabled:boolean;recipientEmail:string;cadence:"daily"|"weekly"|"monthly"})=>input).handler(async({data})=>{const me=await requireActor();if(!isTrueSuper(me))throw new Error("Only the super admin can configure automatic backups.");if(data.enabled&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.recipientEmail.trim()))throw new Error("Enter a valid backup recipient email.");const sql=await getSql();await sql`update scheduled_backup_settings set enabled=${data.enabled},recipient_email=${data.recipientEmail.trim().toLowerCase()},cadence=${data.cadence},updated_at=now() where id=1`;return{ok:true};});
+
+export const sendBackupEmailNow = createServerFn({ method: "POST" }).handler(async () => {
+  const me = await requireActor();
+  if (!isTrueSuper(me)) throw new Error("Only the super admin can email a school backup.");
+  const sql = await getSql();
+  const settings = (await sql<{ recipientEmail: string }>`select recipient_email as "recipientEmail" from scheduled_backup_settings where id=1`)[0];
+  const recipientEmail = settings?.recipientEmail.trim().toLowerCase() ?? "";
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipientEmail)) throw new Error("Save a valid backup email address before sending a test backup.");
+
+  const payload = await buildSchoolBackupPayload(sql, me.email);
+  const id = newId("bak");
+  await sql`insert into office_backups (id, kind, note, payload, created_by) values (${id}, 'scheduled', 'Manual backup email test; email_status=pending', ${JSON.stringify(payload)}, ${me.id})`;
+  await sql`delete from office_backups where kind = 'scheduled' and id not in (select id from office_backups where kind = 'scheduled' order by created_at desc limit 30)`;
+
+  const result = await sendSchoolBackupEmail(recipientEmail, payload, id, "test");
+  const status = result.sent ? "sent" : "failed";
+  const note = `Manual backup email test; email_status=${status}${result.reason ? `; reason=${result.reason}` : ""}`;
+  await sql`update office_backups set note=${note} where id=${id}`;
+  return { emailSent: result.sent, reason: result.reason, createdAt: payload.generatedAt, learnerCount: payload.tables.learners.length, markCount: payload.tables.marks.length };
+});
 
 export const exportSchoolBackup = createServerFn({ method: "GET" }).handler(async () => {
   const me = await requireActor();

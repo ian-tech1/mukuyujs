@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { btnGhost, inputClass } from "@/components/school/gate";
+import { btnDownload } from "@/components/school/download-button";
 import { formatPlaylistText, KENYA_DAILY_CHART_TRACK, KENYA_TRENDING_TRACKS, normalizeMusicOptions, parseMusicSetting, parsePlaylistText, resolveMusicSource, type MusicOptions, type MusicTrack } from "@/lib/school/music";
 import { searchMusicCatalog, searchSpotifyCatalog } from "@/lib/school/api";
 import type { MusicCatalogProvider, MusicCatalogResult } from "@/lib/school/music-catalogs/types";
@@ -274,7 +275,7 @@ export function MusicStudioCard({
         </div>
       </section>
       <section className="space-y-3 rounded-xl border border-line bg-card p-3" aria-labelledby="music-playlist-title">
-        <div className="flex flex-wrap items-start justify-between gap-3"><div><h4 id="music-playlist-title" className="font-semibold text-navy">Playlist library</h4><p className="text-xs text-muted">Mix licensed direct streams and supported provider share links. Up to 30 tracks.</p></div><div className="flex flex-wrap gap-2"><label className={btnGhost + " cursor-pointer"}>Import playlist JSON<input className="sr-only" type="file" accept="application/json,.json" onChange={(event) => { void importPlaylist(event.target.files?.[0]); event.currentTarget.value = ""; }} /></label><button className={btnGhost} type="button" onClick={exportPlaylist}>Export playlist JSON</button></div></div>
+        <div className="flex flex-wrap items-start justify-between gap-3"><div><h4 id="music-playlist-title" className="font-semibold text-navy">Playlist library</h4><p className="text-xs text-muted">Mix licensed direct streams and supported provider share links. Up to 30 tracks.</p></div><div className="flex flex-wrap gap-2"><label className={btnGhost + " cursor-pointer"}>Import playlist JSON<input className="sr-only" type="file" accept="application/json,.json" onChange={(event) => { void importPlaylist(event.target.files?.[0]); event.currentTarget.value = ""; }} /></label><button className={btnDownload.violet} type="button" onClick={exportPlaylist}>Export playlist JSON</button></div></div>
       <section className="space-y-3 rounded-xl border border-line bg-navy/5 p-3" aria-labelledby="music-catalog-title">
         <section className="space-y-3 rounded-xl border border-brass/40 bg-brass/10 p-3" aria-labelledby="kenya-chart-title">
           <div><h5 id="kenya-chart-title" className="font-semibold text-navy">Kenya trending music</h5><p className="text-xs text-muted">Four current YouTube Kenya chart picks checked against the 2–3 November 2026 charts, plus Apple's daily Top 100. Official providers control playback and any account/region restrictions.</p></div>

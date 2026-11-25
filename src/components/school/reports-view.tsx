@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { ReportSheet } from "@/components/school/report-sheet";
 import type { Gate } from "@/components/school/gate";
 import { btnClass, btnGhost, errText, inputClass } from "@/components/school/gate";
+import { btnDownload } from "@/components/school/download-button";
 import { PeriodBar, useSchoolPeriod } from "@/components/school/period-bar";
 import { buildBoards, canEditLearner, decorate, sortByPerformance, sortByRoll, learnersForYear } from "@/lib/school/model";
 import { liveReportLink, logoDataUrl } from "@/lib/school/brand";
@@ -255,8 +256,8 @@ export function ReportsView({ ws, flash, refresh }: Gate) {
           <p className="text-xs text-muted">Combined reports average scores across the chosen exam columns. Attendance, previous-term comparisons, closing/opening dates, and term-specific comments are omitted from combined reports because they belong to a single term.</p>
         </div>
         {canDownload ? <div className="flex flex-wrap gap-2">
-          <button className={btnGhost} type="button" disabled={busy || !exportSelectedLearnerExists} onClick={() => download("one")}>{downloadScope === "current" ? "Download this PDF" : "Download selected report card"}</button>
-          <button className={btnClass} type="button" disabled={busy || !reportCardRows.length} onClick={() => download("all")}>{busy ? "Preparing…" : downloadScope === "current" ? "Download all, best to lowest" : "Download all selected cards, best to lowest"}</button>
+          <button className={btnDownload.blue} type="button" disabled={busy || !exportSelectedLearnerExists} onClick={() => download("one")}>{downloadScope === "current" ? "Download this PDF" : "Download selected report card"}</button>
+          <button className={btnDownload.rose} type="button" disabled={busy || !reportCardRows.length} onClick={() => download("all")}>{busy ? "Preparing…" : downloadScope === "current" ? "Download all, best to lowest" : "Download all selected cards, best to lowest"}</button>
         </div> : null}
       </section>
       <input className={inputClass} value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Find a learner by name or admission number" />

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { Gate } from "@/components/school/gate";
 import { btnClass, btnGhost, errText, inputClass } from "@/components/school/gate";
+import { btnDownload } from "@/components/school/download-button";
 import type { AppearancePalette, Band, MarkControl, PortalBackdropThemeId, Profile } from "@/lib/school/model";
 import { ACCESS_AREAS, ACCESS_GROUPS, type AccessArea, type AccessGroup, type RoleAccessPolicy } from "@/lib/school/role-access";
 import { DEFAULT_APPEARANCE, can, isAdmin } from "@/lib/school/model";
@@ -25,7 +26,7 @@ export function SettingsView({ ws, refresh, flash, onWelcomeChange }: Gate) {
       {isAdmin(ws.me.role) ? <section className="rounded-xl border border-sky-200 bg-gradient-to-r from-sky-50 to-indigo-50 p-4">
         <h2 className="font-serif text-xl text-navy">School records backup</h2>
         <p className="mt-1 text-sm text-muted">Export school settings, learner records, marks, years, terms, assignments and class-movement history. Daily snapshots are stored in the database; download separate copies for protection against database loss. Passwords and password hashes are excluded for security.</p>
-        <button className={btnClass + " mt-3"} type="button" onClick={async () => {
+        <button className={btnDownload.emerald + " mt-3"} type="button" onClick={async () => {
           try {
             const backup = await exportSchoolBackup();
             const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
@@ -139,7 +140,7 @@ function RestoreBackupPanel({ flash, refresh }: Pick<Gate, "flash" | "refresh">)
     <input className="block text-sm" type="file" accept="application/json,.json" onChange={async (event) => { const file = event.target.files?.[0]; if (!file) return; if (file.size > 4_000_000) { flash("Backup must be 4 MB or smaller for web restore; use a database-level restore for larger files.", true); return; } try { setPayload(await file.text()); flash("Backup loaded. Type RESTORE only when you are ready."); } catch (error) { flash(errText(error), true); } }} />
     <label className="block text-sm">Type RESTORE to confirm<input className={inputClass + " mt-1 max-w-xs"} value={confirmText} onChange={(event) => setConfirmText(event.target.value)} placeholder="RESTORE" /></label>
     <button className="inline-flex h-11 items-center justify-center rounded-md border border-bad/40 px-4 text-sm font-semibold text-bad disabled:opacity-50" type="button" disabled={!payload || confirmText !== "RESTORE" || busy} onClick={async () => { if (!confirm("Restore the uploaded backup into this database? A safety snapshot will be saved first.")) return; setBusy(true); try { const result = await restoreSchoolBackup({ data: { payload, confirm: confirmText } }); flash(`Restore merged ${result.restored.learners} learners and ${result.restored.marks} marks. ${result.note}`); setPayload(""); setConfirmText(""); await refresh(); } catch (error) { flash(errText(error), true); } finally { setBusy(false); } }}>{busy ? "Restoring…" : "Restore backup (merge records)"}</button>
-    <button className={btnGhost} type="button" onClick={async () => { try { const snapshots = await listBackupSnapshots(); if (!snapshots.length) { flash("No restore safety snapshots have been saved yet."); return; } const blob = new Blob([snapshots[0].payload], { type: "application/json" }); const url = URL.createObjectURL(blob); const link = document.createElement("a"); link.href = url; link.download = `mukuyu-safety-snapshot-${new Date(snapshots[0].createdAt).toISOString().slice(0,10)}.json`; link.click(); URL.revokeObjectURL(url); flash("Latest safety snapshot downloaded."); } catch (error) { flash(errText(error), true); } }}>Download latest safety snapshot</button>
+    <button className={btnDownload.violet} type="button" onClick={async () => { try { const snapshots = await listBackupSnapshots(); if (!snapshots.length) { flash("No restore safety snapshots have been saved yet."); return; } const blob = new Blob([snapshots[0].payload], { type: "application/json" }); const url = URL.createObjectURL(blob); const link = document.createElement("a"); link.href = url; link.download = `mukuyu-safety-snapshot-${new Date(snapshots[0].createdAt).toISOString().slice(0,10)}.json`; link.click(); URL.revokeObjectURL(url); flash("Latest safety snapshot downloaded."); } catch (error) { flash(errText(error), true); } }}>Download latest safety snapshot</button>
   </div>;
 }
 

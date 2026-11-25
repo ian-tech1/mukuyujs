@@ -2,6 +2,7 @@ import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxi
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { SchoolIntelligenceCenter } from "@/components/school/school-intelligence-center";
 import type { Gate } from "@/components/school/gate";
+import { btnDownload } from "@/components/school/download-button";
 import { buildBoards, decorate, fmt, isAdmin, meanOf, periodMarks } from "@/lib/school/model";
 
 export function DashboardView({ ws, refresh, flash }: Gate) {
@@ -349,7 +350,7 @@ export function DashboardView({ ws, refresh, flash }: Gate) {
         {toolsOpen ? <div className="mt-4 space-y-4">
           <div className="flex flex-wrap gap-2">
             <button type="button" className="rounded-lg bg-navy px-3 py-2 text-xs font-semibold text-paper" onClick={() => void refreshDashboard()}>Refresh data</button>
-            <button type="button" className="rounded-lg border border-line px-3 py-2 text-xs font-semibold text-navy" onClick={exportFocusCsv}>Export filtered CSV</button>
+            <button type="button" className={btnDownload.emerald} onClick={exportFocusCsv}>Export filtered CSV</button>
             <button type="button" className="rounded-lg border border-line px-3 py-2 text-xs font-semibold text-navy" onClick={() => window.print()}>Print dashboard</button>
             <button type="button" className="rounded-lg border border-line px-3 py-2 text-xs font-semibold text-navy" onClick={saveSnapshot}>{snapshotSavedAt ? `Snapshot saved ${snapshotSavedAt}` : "Save snapshot"}</button>
             <button type="button" className={`rounded-lg border px-3 py-2 text-xs font-semibold ${focusDensity === "compact" ? "border-info bg-info/10 text-info" : "border-line text-navy"}`} onClick={() => setFocusDensity((value) => value === "compact" ? "comfortable" : "compact")} aria-pressed={focusDensity === "compact"}>{focusDensity === "compact" ? "Compact rows ✓" : "Comfortable rows"}</button>

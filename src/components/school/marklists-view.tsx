@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { Gate } from "@/components/school/gate";
-import { btnClass, errText, inputClass } from "@/components/school/gate";
+import { errText, inputClass } from "@/components/school/gate";
+import { btnDownload } from "@/components/school/download-button";
 import { PeriodBar, useSchoolPeriod } from "@/components/school/period-bar";
 import { logoDataUrl } from "@/lib/school/brand";
 import { downloadMarklist } from "@/lib/school/pdf";
@@ -136,7 +137,7 @@ export function MarklistsView({ ws, flash }: Gate) {
         </label>
       </div>
       <p className="text-sm text-muted">{rosterCount} learner(s) in this stream will be included. Long lists automatically continue on additional PDF pages.</p>
-      <div className="flex flex-wrap gap-2">{canDownload ? <><button className={btnClass} type="button" onClick={download}>Download PDF mark list</button><button className={btnClass} type="button" onClick={exportExcel}>Download Excel workbook (.xlsx)</button></> : <p className="text-sm text-muted">Mark-list downloads are disabled by the Super Admin for your role.</p>}</div>
+      <div className="flex flex-wrap gap-2">{canDownload ? <><button className={btnDownload.rose} type="button" onClick={download}>Download PDF mark list</button><button className={btnDownload.blue} type="button" onClick={exportExcel}>Download Excel workbook (.xlsx)</button></> : <p className="text-sm text-muted">Mark-list downloads are disabled by the Super Admin for your role.</p>}</div>
     </div>
   );
 }
