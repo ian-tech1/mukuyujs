@@ -1095,8 +1095,11 @@ html[data-portal-motion="reduced"] .portal-loading-track span { animation:none !
 }
 
 
-/* Browser links keep the branded intro card; installed app launches expose the orbital scene on its own. */
+/* Show the original orbital scene by itself for web links; the installed app adds its own center logo orbit. */
+.portal-opening-link,
 .portal-opening-app { isolation: isolate; pointer-events: auto; }
+.portal-opening-link .portal-loading-card,
+.portal-opening-link .portal-loading-center-shade { display: none !important; }
 .portal-opening-app .portal-loading-card,
 .portal-opening-app .portal-loading-center-shade { display: none !important; }
 .portal-opening-center-orbit { position: relative; z-index: 2; display: none; place-items: center; }

@@ -41,6 +41,12 @@ function OpeningIntro({ title, motto, logoSrc, durationSeconds, onComplete }: { 
   const countdownLabel = `Sign-in opens in ${secondsRemaining} ${secondsRemaining === 1 ? "second" : "seconds"}`;
 
   useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = previousOverflow; };
+  }, []);
+
+  useEffect(() => {
     const updateAppMode = () => setStandaloneApp(isStandalonePwa());
     updateAppMode();
     const media = window.matchMedia("(display-mode: standalone)");
@@ -72,7 +78,7 @@ function OpeningIntro({ title, motto, logoSrc, durationSeconds, onComplete }: { 
   }
 
   if (!visible) return null;
-  return <div className={`portal-loading portal-loading-opening fixed inset-0 z-[2147483000] grid min-h-[100svh] w-full place-items-center px-6 ${standaloneApp ? "portal-opening-app" : "portal-opening-link"}`} role={standaloneApp ? "status" : "dialog"} aria-modal={standaloneApp ? undefined : true} aria-labelledby={standaloneApp ? undefined : "opening-intro-title"} aria-describedby={standaloneApp ? undefined : "opening-intro-description"} aria-label={standaloneApp ? "Opening Mukuyu Junior School" : undefined} onKeyDown={(event) => { if (!standaloneApp && event.key === "Escape") continueToSignIn(); }}>
+  return <div className={`portal-loading portal-loading-opening fixed inset-0 z-[2147483000] grid min-h-[100svh] w-full place-items-center overflow-hidden px-6 ${standaloneApp ? "portal-opening-app" : "portal-opening-link"}`} role="status" aria-live="polite" aria-label={`Opening ${title}`} onKeyDown={(event) => { if (!standaloneApp && event.key === "Escape") continueToSignIn(); }}>
     <div className="portal-loading-aurora" aria-hidden="true" />
     <div className="portal-loading-ribbon-field" aria-hidden="true">
       <span className="portal-loading-ribbon portal-loading-ribbon-one" />
