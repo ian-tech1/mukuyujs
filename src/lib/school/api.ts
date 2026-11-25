@@ -452,8 +452,9 @@ export const loginParent = createServerFn({ method: "POST" })
 
 export const getParentPasswordChangeStatus = createServerFn({ method: "GET" }).handler(async () => {
   const me = await readActor();
-  if (!me || me.role !== "parent") return { required: false, email: "", fullName: "" };
-  return { required: Boolean(me.mustChangePassword), email: me.email, fullName: me.fullName };
+  if (!me) return { authenticated: false, required: false, email: "", fullName: "" };
+  if (me.role !== "parent") return { authenticated: true, required: false, email: "", fullName: "" };
+  return { authenticated: true, required: Boolean(me.mustChangePassword), email: me.email, fullName: me.fullName };
 });
 
 export const completeParentFirstLoginPasswordChange = createServerFn({ method: "POST" })
@@ -753,6 +754,16 @@ export const getWorkspace = createServerFn({ method: "GET" }).handler(async (): 
   ]);
   const profile = profileRows[0];
   if (!profile) throw new Error("School profile is missing.");
+  const isFamilyActor = me.role === "student" || me.role === "parent";
+  const familyViewAllowed = !isFamilyActor || canActorAccess(roleAccess, me.role, "familyResults", "view");
+  const familyLearnerScope = (learnerColumn: string) => {
+    if (me.role === "parent") {
+      return `exists (select 1 from parent_links pl where pl.parent_user_id = $1 and pl.learner_id = ${learnerColumn})`;
+    }
+    if (me.role === "student") return `${learnerColumn} = $1`;
+    return "";
+  };
+  const familyScopeParams = me.role === "parent" ? [me.id] : me.role === "student" ? [me.learnerId ?? ""] : [];
   const [subjects, exams, bands, years] = await Promise.all([
     sql<Subject>`select id, name, short_name as "shortName", sort from subjects order by sort`,
     sql<Exam>`select id, name, code, sort from exams order by sort`,
@@ -775,16 +786,23 @@ export const getWorkspace = createServerFn({ method: "GET" }).handler(async (): 
   ]);
 
   const [learnerRows, childRows, markRows, placementRows] = await Promise.all([
-    sql<Learner>`
-    select id, roll, full_name as "fullName", gender, grade_id as "gradeId", stream_id as "streamId", status, public_code as "publicCode", admission_number as "admissionNumber", cohort_year as "cohortYear"
-    from learners where status = 'active' order by grade_id, roll`,
+    sql.query<Learner>(`
+      select l.id, l.roll, l.full_name as "fullName", l.gender, l.grade_id as "gradeId", l.stream_id as "streamId", l.status,
+        l.public_code as "publicCode", l.admission_number as "admissionNumber", l.cohort_year as "cohortYear"
+      from learners l
+      where l.status = 'active' ${familyLearnerScope("l.id") ? `and ${familyLearnerScope("l.id")}` : ""}
+      order by l.grade_id, l.roll`, familyScopeParams),
     me.role === "parent" ? sql<{ learner_id: string }>`select learner_id from parent_links where parent_user_id = ${me.id}` : Promise.resolve([]),
-    sql<Mark>`
+    !familyViewAllowed ? Promise.resolve([] as Mark[]) : sql.query<Mark>(`
       select m.learner_id as "learnerId", m.subject_id as "subjectId", m.exam_id as "examId", m.score,
         m.year_id as "yearId", m.term_id as "termId", m.grade_id as "gradeId", m.stream_id as "streamId", m.status,
         m.updated_at::text as "updatedAt", m.updated_by as "updatedBy", u.full_name as "updatedByName"
-      from marks m left join users u on u.id = m.updated_by`,
-    sql<Placement>`select learner_id as "learnerId", year_id as "yearId", grade_id as "gradeId", stream_id as "streamId" from learner_year_placements`,
+      from marks m left join users u on u.id = m.updated_by
+      ${familyLearnerScope("m.learner_id") ? `where ${familyLearnerScope("m.learner_id")}` : ""}`, familyScopeParams),
+    sql.query<Placement>(`
+      select p.learner_id as "learnerId", p.year_id as "yearId", p.grade_id as "gradeId", p.stream_id as "streamId"
+      from learner_year_placements p
+      ${familyLearnerScope("p.learner_id") ? `where ${familyLearnerScope("p.learner_id")}` : ""}`, familyScopeParams),
   ]);
   const [assignmentRows, subjectTeacherSlots, noteRows, remarkRows] = await Promise.all([
     sql<Assignment>`
@@ -794,13 +812,15 @@ export const getWorkspace = createServerFn({ method: "GET" }).handler(async (): 
       select a.subject_id as "subjectId", a.grade_id as "gradeId", a.stream_id as "streamId", u.initials
       from assignments a join users u on u.id = a.user_id
       where a.kind in ('subject_teacher', 'hod') and u.active = true and coalesce(trim(u.initials), '') <> ''`,
-    sql<TermNote>`
-      select learner_id as "learnerId", year_id as "yearId", term_id as "termId",
+    !familyViewAllowed ? Promise.resolve([] as TermNote[]) : sql.query<TermNote>(`
+      select n.learner_id as "learnerId", n.year_id as "yearId", n.term_id as "termId",
         days_present as "daysPresent", days_expected as "daysExpected", conduct, comment
-      from learner_term_notes`,
-    sql<SubjectRemark>`
-      select learner_id as "learnerId", subject_id as "subjectId", year_id as "yearId", term_id as "termId", remark
-      from subject_remarks`,
+      from learner_term_notes n
+      ${familyLearnerScope("n.learner_id") ? `where ${familyLearnerScope("n.learner_id")}` : ""}`, familyScopeParams),
+    !familyViewAllowed ? Promise.resolve([] as SubjectRemark[]) : sql.query<SubjectRemark>(`
+      select r.learner_id as "learnerId", r.subject_id as "subjectId", r.year_id as "yearId", r.term_id as "termId", r.remark
+      from subject_remarks r
+      ${familyLearnerScope("r.learner_id") ? `where ${familyLearnerScope("r.learner_id")}` : ""}`, familyScopeParams),
   ]);
   let learners = learnerRows;
   const childIds = childRows.map((row) => row.learner_id);
@@ -830,7 +850,6 @@ export const getWorkspace = createServerFn({ method: "GET" }).handler(async (): 
       return canViewMark(me, assignments, scopedMark, markControlFor({ markControls }, mark.yearId, mark.termId, mark.examId));
     });
   }
-  const familyViewAllowed = me.role !== "student" && me.role !== "parent" || canActorAccess(roleAccess, me.role, "familyResults", "view");
   const termNotes = !familyViewAllowed ? [] : me.role === "student" || me.role === "parent" ? noteRows.filter((row) => allowed.has(row.learnerId)) : noteRows;
   const subjectRemarks = !familyViewAllowed ? [] : me.role === "student" || me.role === "parent" ? remarkRows.filter((row) => allowed.has(row.learnerId)) : remarkRows;
 
@@ -846,18 +865,18 @@ export const getWorkspace = createServerFn({ method: "GET" }).handler(async (): 
       u.full_name as "teacherName", coalesce(u.initials, '') as "teacherInitials", u.email as "teacherEmail", e.room, e.notes, e.block_length as "blockLength", e.locked
     from timetable_entries e join users u on u.id = e.teacher_user_id
     order by e.year_id, e.term_id, e.day_of_week, e.period_id, e.grade_id, e.stream_id nulls first`,
-    sql<TimetableRoom>`select id, name, capacity, room_type as "roomType", features, active from timetable_rooms order by active desc, name`,
-    sql<TimetableAvailability>`select id, year_id as "yearId", term_id as "termId", entity_type as "entityType", entity_id as "entityId", day_of_week as "dayOfWeek", period_id as "periodId", available, coalesce(level, 'off') as level, note from timetable_availability`,
+    isFamilyActor ? Promise.resolve([] as TimetableRoom[]) : sql<TimetableRoom>`select id, name, capacity, room_type as "roomType", features, active from timetable_rooms order by active desc, name`,
+    isFamilyActor ? Promise.resolve([] as TimetableAvailability[]) : sql<TimetableAvailability>`select id, year_id as "yearId", term_id as "termId", entity_type as "entityType", entity_id as "entityId", day_of_week as "dayOfWeek", period_id as "periodId", available, coalesce(level, 'off') as level, note from timetable_availability`,
   ]);
   const [timetableRequirements, subjectConstraints, teacherContracts, classConstraints] = await Promise.all([
-    sql<TimetableRequirement>`select id, year_id as "yearId", term_id as "termId", grade_id as "gradeId", stream_id as "streamId", subject_id as "subjectId", teacher_user_id as "teacherUserId", lessons_per_week as "lessonsPerWeek", block_length as "blockLength", preferred_room as "preferredRoom", coalesce(distribution, '') as distribution, preferred_double_day as "preferredDoubleDay", coalesce(timing_preference, 'none') as "timingPreference" from timetable_requirements`,
-    sql<SubjectConstraint>`select id, year_id as "yearId", term_id as "termId", subject_id as "subjectId", max_per_day as "maxPerDay", min_days_per_week as "minDaysPerWeek", no_afternoon as "noAfternoon", preferred_morning as "preferredMorning", avoid_consecutive_days as "avoidConsecutiveDays", no_last_period as "noLastPeriod", complexity, place_in_order as "placeInOrder", coalesce(distribution, '') as distribution, coalesce(color, '') as color, notes, double_count as "doubleCount", coalesce(max_before_break, 3) as "maxBeforeBreak" from subject_constraints`,
-    sql<TeacherContract>`select id, year_id as "yearId", term_id as "termId", teacher_user_id as "teacherUserId", coalesce(min_per_day, 0) as "minPerDay", max_per_day as "maxPerDay", max_per_week as "maxPerWeek", max_consecutive as "maxConsecutive", max_days as "maxDays", max_windows as "maxWindows", min_rest_periods as "minRestPeriods" from teacher_contracts`,
-    sql<ClassConstraint>`select id, year_id as "yearId", term_id as "termId", grade_id as "gradeId", stream_id as "streamId", max_per_day as "maxPerDay", no_gaps as "noGaps" from class_constraints`,
+    isFamilyActor ? Promise.resolve([] as TimetableRequirement[]) : sql<TimetableRequirement>`select id, year_id as "yearId", term_id as "termId", grade_id as "gradeId", stream_id as "streamId", subject_id as "subjectId", teacher_user_id as "teacherUserId", lessons_per_week as "lessonsPerWeek", block_length as "blockLength", preferred_room as "preferredRoom", coalesce(distribution, '') as distribution, preferred_double_day as "preferredDoubleDay", coalesce(timing_preference, 'none') as "timingPreference" from timetable_requirements`,
+    isFamilyActor ? Promise.resolve([] as SubjectConstraint[]) : sql<SubjectConstraint>`select id, year_id as "yearId", term_id as "termId", subject_id as "subjectId", max_per_day as "maxPerDay", min_days_per_week as "minDaysPerWeek", no_afternoon as "noAfternoon", preferred_morning as "preferredMorning", avoid_consecutive_days as "avoidConsecutiveDays", no_last_period as "noLastPeriod", complexity, place_in_order as "placeInOrder", coalesce(distribution, '') as distribution, coalesce(color, '') as color, notes, double_count as "doubleCount", coalesce(max_before_break, 3) as "maxBeforeBreak" from subject_constraints`,
+    isFamilyActor ? Promise.resolve([] as TeacherContract[]) : sql<TeacherContract>`select id, year_id as "yearId", term_id as "termId", teacher_user_id as "teacherUserId", coalesce(min_per_day, 0) as "minPerDay", max_per_day as "maxPerDay", max_per_week as "maxPerWeek", max_consecutive as "maxConsecutive", max_days as "maxDays", max_windows as "maxWindows", min_rest_periods as "minRestPeriods" from teacher_contracts`,
+    isFamilyActor ? Promise.resolve([] as ClassConstraint[]) : sql<ClassConstraint>`select id, year_id as "yearId", term_id as "termId", grade_id as "gradeId", stream_id as "streamId", max_per_day as "maxPerDay", no_gaps as "noGaps" from class_constraints`,
   ]);
   const [lessonRelations, timetableVersions, timetableStates, timetablePermissionRows, staff] = await Promise.all([
-    sql<LessonRelation>`select id, year_id as "yearId", term_id as "termId", grade_id as "gradeId", stream_id as "streamId", left_subject_id as "leftSubjectId", right_subject_id as "rightSubjectId", relation from lesson_relations`,
-    sql<TimetableVersion>`select id, year_id as "yearId", term_id as "termId", label, created_at as "createdAt", created_by as "createdBy" from timetable_versions order by created_at desc`,
+    isFamilyActor ? Promise.resolve([] as LessonRelation[]) : sql<LessonRelation>`select id, year_id as "yearId", term_id as "termId", grade_id as "gradeId", stream_id as "streamId", left_subject_id as "leftSubjectId", right_subject_id as "rightSubjectId", relation from lesson_relations`,
+    isFamilyActor ? Promise.resolve([] as TimetableVersion[]) : sql<TimetableVersion>`select id, year_id as "yearId", term_id as "termId", label, created_at as "createdAt", created_by as "createdBy" from timetable_versions order by created_at desc`,
     sql<TimetableState>`select year_id as "yearId", term_id as "termId", published, effective_from::text as "effectiveFrom", published_at::text as "publishedAt" from timetable_state`,
     sql<{ admins_can_edit: boolean; staff_assignments_enabled: boolean }>`select admins_can_edit, staff_assignments_enabled from timetable_admin_permissions where id = 1`,
     isAdmin(me.role)
@@ -884,19 +903,23 @@ export const getWorkspace = createServerFn({ method: "GET" }).handler(async (): 
 
   let familyReports: Decorated[] | null = null;
   if ((me.role === "student" || me.role === "parent") && canActorAccess(roleAccess, me.role, "familyResults", "view")) {
-    const [everyone, activePeriodMarks, configuredAssessments] = await Promise.all([
-      learnersAtYear(sql, profile.activeYearId),
-      sql<Mark>`
-      select learner_id as "learnerId", subject_id as "subjectId", exam_id as "examId", score,
-        year_id as "yearId", term_id as "termId", grade_id as "gradeId", stream_id as "streamId"
-      from marks where year_id is not distinct from ${profile.activeYearId} and term_id is not distinct from ${profile.activeTermId}`,
-      sql<{ exam_id: string; active: boolean }>`select exam_id, active from term_assessments where year_id = ${profile.activeYearId} and term_id = ${profile.activeTermId}`,
-    ]);
-    const activeIds = configuredAssessments.length ? new Set(configuredAssessments.filter((item) => item.active).map((item) => item.exam_id)) : null;
-    const scopedPeriodMarks = activeIds ? activePeriodMarks.filter((mark) => activeIds.has(mark.examId)) : activePeriodMarks;
+    const configuredAssessments = termAssessments.filter((item) => item.yearId === profile.activeYearId && item.termId === profile.activeTermId);
+    const activeIds = configuredAssessments.length ? new Set(configuredAssessments.filter((item) => item.active).map((item) => item.examId)) : null;
     const activeExams = activeIds ? exams.filter((exam) => activeIds.has(exam.id)) : exams;
-    const learnerMarkGrades = scopedPeriodMarks.filter((mark) => allowed.has(mark.learnerId)).map((mark) => mark.gradeId).filter((id): id is string => Boolean(id));
+    const learnerMarkGrades = markRows
+      .filter((mark) => allowed.has(mark.learnerId) && mark.yearId === profile.activeYearId && mark.termId === profile.activeTermId && (!activeIds || activeIds.has(mark.examId)))
+      .map((mark) => mark.gradeId)
+      .filter((id): id is string => Boolean(id));
     const gradeIds = [...new Set([...learners.map((learner) => learner.gradeId), ...learnerMarkGrades])];
+    const [everyone, activePeriodMarks] = await Promise.all([
+      learnersAtYear(sql, profile.activeYearId),
+      gradeIds.length ? sql.query<Mark>(`
+        select learner_id as "learnerId", subject_id as "subjectId", exam_id as "examId", score,
+          year_id as "yearId", term_id as "termId", grade_id as "gradeId", stream_id as "streamId"
+        from marks where year_id is not distinct from $1 and term_id is not distinct from $2 and grade_id = any($3::text[])`,
+      [profile.activeYearId, profile.activeTermId, gradeIds]) : Promise.resolve([] as Mark[]),
+    ]);
+    const scopedPeriodMarks = activeIds ? activePeriodMarks.filter((mark) => activeIds.has(mark.examId)) : activePeriodMarks;
     familyReports = gradeIds.flatMap((gradeId) => {
       const group = everyone.filter((learner) => learner.gradeId === gradeId);
       const gradeMarks = scopedPeriodMarks.filter((mark) => mark.gradeId === gradeId);

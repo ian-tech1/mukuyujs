@@ -3,10 +3,10 @@ import { useEffect } from "react";
 import { AuthProvider } from "@/lib/auth/provider";
 import { PreviewHostBridge } from "@/components/preview-host-bridge";
 import { DownloadActivityOverlay } from "@/components/school/download-activity-overlay";
-import { getWelcomePage } from "@/lib/school/api";
 import { PORTAL_BACKDROP_THEME_IDS, type AppearancePalette } from "@/lib/school/model";
 import { applyDisplayPreferences, applyPortalBackdropColors, readDisplayPreferences } from "@/lib/school/display";
 import { initializePwaInstallCapture } from "@/lib/pwa-install";
+import { getWelcomePageRequest } from "@/lib/school/welcome-page-request";
 import appCss from "../styles.css?url";
 
 export const Route = createRootRoute({
@@ -68,7 +68,7 @@ function AppearanceBootstrap() {
       applyPortalBackdropColors(saved as Partial<AppearancePalette>);
     };
     applyDisplayPreferences(readDisplayPreferences());
-    getWelcomePage().then((settings) => apply(settings.appearance || {})).catch(() => {
+    getWelcomePageRequest().then((settings) => apply(settings.appearance || {})).catch(() => {
       try {
         const raw = localStorage.getItem("mukuyu-super-admin-appearance-v1");
         if (raw) apply(JSON.parse(raw) as Record<string, unknown>);

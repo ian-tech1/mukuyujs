@@ -18,8 +18,9 @@ const TimetableView = lazy(() => import("@/components/school/timetable-view").th
 const SchoolServicesView = lazy(() => import("@/components/school/school-services-view").then((module) => ({ default: module.SchoolServicesView })));
 const QrParentFeedbackInbox = lazy(() => import("@/components/school/qr-parent-feedback-inbox").then((module) => ({ default: module.QrParentFeedbackInbox })));
 import { StaffMusicDock } from "@/components/school/music-dock";
-import { getWorkspace, getWelcomePage, logout } from "@/lib/school/api";
+import { getWorkspace, logout } from "@/lib/school/api";
 import { takePortalWorkspacePrefetch } from "@/lib/school/workspace-prefetch";
+import { getWelcomePageRequest } from "@/lib/school/welcome-page-request";
 import { visibleViews, type Workspace } from "@/lib/school/model";
 import { parseMusicSetting, type MusicOptions } from "@/lib/school/music";
 import { normalizeWelcomeDisplay } from "@/lib/school/welcome-display";
@@ -127,7 +128,7 @@ function PortalPage() {
       shouldFetchWorkspace.current = false;
       refresh().catch(() => navigate({ to: "/", search: { c: undefined } }));
     }
-    getWelcomePage().then((settings) => {
+    getWelcomePageRequest().then((settings) => {
       const music = parseMusicSetting(settings.musicUrl || "");
       setDashboardPanelColorsEnabled(normalizeWelcomeDisplay(settings.display).dashboardPanelColorsEnabled);
       setStaffMusic({ enabled: Boolean(settings.musicEnabled), url: settings.musicUrl || "", options: music.options });
