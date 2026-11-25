@@ -106,3 +106,7 @@
 ## User-requested merit-list page orientation
 
 - [x] “add a merit list download option , under analysis , one can select if he wants landscape or portrait download option before selecting the downloads”: provide a Landscape/Portrait choice in Analysis before the download actions, and apply the selected page orientation to merit-list PDF and Excel downloads. Validation: TypeScript, production Vite build, five focused tests, and `git diff --check` passed; ESLint reported 0 errors and 1 existing unused-variable warning.
+
+## User-requested whole-year and custom report-card downloads
+
+- [x] “Under report cards add an option where one can download report card for the whole year or selet the terms exams to be included in report cards and to select weather the specific terms to be indicated on reports or not, improve more on it”: add a download scope for the whole academic year or a custom selection of terms and exams; allow the report to show or hide term names; keep the existing single-term report-card workflow available. Validation: TypeScript passes; all 5 focused report-period tests pass; changed-file ESLint reports 0 errors and 2 existing unused-state warnings in `AttendanceEditor`; `git diff --check` and the production Vite build pass.

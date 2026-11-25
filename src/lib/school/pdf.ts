@@ -15,6 +15,9 @@ type DrawInput = {
   closingDate?: string;
   openingDate?: string;
   title?: string;
+  periodLabel?: string;
+  showDates?: boolean;
+  includeAllExams?: boolean;
   extras?: ReportExtras;
 };
 
@@ -66,7 +69,7 @@ function paintLogo(doc: import("jspdf").jsPDF, logo: string, x: number, y: numbe
 
 function drawReport(doc: import("jspdf").jsPDF, input: DrawInput) {
   const { profile, grade, stream, subjects, row, qr, logo } = input;
-  const exams = input.exams.slice(0, Math.max(1, Math.min(profile.reportExamCount || 2, input.exams.length)));
+  const exams = input.includeAllExams ? input.exams : input.exams.slice(0, Math.max(1, Math.min(profile.reportExamCount || 2, input.exams.length)));
   const navy: [number, number, number] = [14, 42, 74];
   const info: [number, number, number] = [29, 78, 137];
   const brass: [number, number, number] = [154, 116, 48];
@@ -106,6 +109,11 @@ function drawReport(doc: import("jspdf").jsPDF, input: DrawInput) {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(8);
   doc.text(input.title || grade.reportTitle || profile.reportTitle, 148.5, 47.6, { align: "center" });
+  if (input.periodLabel) {
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(6.8);
+    doc.text(input.periodLabel, 148.5, 52.2, { align: "center" });
+  }
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
@@ -120,8 +128,10 @@ function drawReport(doc: import("jspdf").jsPDF, input: DrawInput) {
 
   if (profile.showQr && qr) doc.addImage(qr, "PNG", 8, 61, 22, 22);
   doc.setFontSize(7.5);
-  doc.text(`CLOSING DATE:   ${input.closingDate ?? profile.closingDate}`, 34, 70);
-  doc.text(`OPENING DATE:   ${input.openingDate ?? profile.resumptionDate}`, 34, 76);
+  if (input.showDates !== false) {
+    doc.text(`CLOSING DATE:   ${input.closingDate ?? profile.closingDate}`, 34, 70);
+    doc.text(`OPENING DATE:   ${input.openingDate ?? profile.resumptionDate}`, 34, 76);
+  }
   doc.setFont("helvetica", "italic");
   doc.setFontSize(7);
   doc.text(profile.catNote, 34, 82);
@@ -133,8 +143,9 @@ function drawReport(doc: import("jspdf").jsPDF, input: DrawInput) {
   const showRank = Boolean(profile.showSubjectRank);
   const showInitials = Boolean(profile.showSubjectTeacherInitials);
   const fixedWidths = { subject: showRank ? 52 : 58, avg: 14, points: 14, level: 15, remarks: showRank ? 34 : 40, pos: showRank ? 12 : 0, initials: showInitials ? 19 : 0 };
-  const catWidth = Math.min(30, Math.max(16, 14 + exams.length * 2));
-  const remarksWidth = Math.max(24, tableWidth - fixedWidths.subject - fixedWidths.avg - fixedWidths.points - fixedWidths.level - fixedWidths.pos - fixedWidths.initials - catWidth * exams.length);
+  const fixedColumnWidth = fixedWidths.subject + fixedWidths.avg + fixedWidths.points + fixedWidths.level + fixedWidths.pos + fixedWidths.initials;
+  const catWidth = Math.min(30, Math.max(4, (tableWidth - fixedColumnWidth - 14) / Math.max(1, exams.length)));
+  const remarksWidth = Math.max(14, tableWidth - fixedColumnWidth - catWidth * exams.length);
   const widths = [fixedWidths.subject, ...exams.map(() => catWidth), fixedWidths.avg, fixedWidths.points, fixedWidths.level, ...(showRank ? [fixedWidths.pos] : []), remarksWidth, ...(showInitials ? [fixedWidths.initials] : [])];
   const starts: number[] = [8];
   widths.forEach((width) => starts.push(starts[starts.length - 1] + width));
@@ -143,8 +154,13 @@ function drawReport(doc: import("jspdf").jsPDF, input: DrawInput) {
   doc.rect(8, tableY, tableWidth, 6, "F");
   doc.setTextColor(255, 252, 247);
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(6.5);
-  headers.forEach((label, i) => doc.text(String(label).slice(0, 18), starts[i] + 1.2, tableY + 4.1));
+  doc.setFontSize(exams.length > 8 ? 4.8 : exams.length > 4 ? 5.6 : 6.5);
+  headers.forEach((label, i) => {
+    const maxWidth = widths[i] - 2.2;
+    let text = String(label).slice(0, 24);
+    while (text.length > 3 && doc.getTextWidth(text) > maxWidth) text = text.slice(0, -1);
+    doc.text(text, starts[i] + 1.2, tableY + 4.1);
+  });
 
   doc.setFont("helvetica", "normal");
   doc.setTextColor(20, 20, 20);
