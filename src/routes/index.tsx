@@ -508,6 +508,9 @@ function LoginPage() {
             </form>
           </section> : null}
         </div>
+        <footer className="mt-8 w-full max-w-sm border-t border-line pt-4 text-center text-[10px] font-semibold uppercase tracking-[.18em] text-muted">
+          Portal developed by <span className="text-info">IAN TECH</span>
+        </footer>
       </section>
       {featuresOpen ? <div className="welcome-features-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setFeaturesOpen(false); }}>
         <section className="welcome-features-dialog" role="dialog" aria-modal="true" aria-labelledby="welcome-features-title" aria-describedby="welcome-features-description">
