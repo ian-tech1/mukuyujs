@@ -1095,7 +1095,7 @@ html[data-portal-motion="reduced"] .portal-loading-track span { animation:none !
 }
 
 
-/* Show the original orbital scene by itself for web links; the installed app adds its own center logo orbit. */
+/* Both launches reuse the complete refresh backdrop; the installed app keeps a larger center logo orbit. */
 .portal-opening-link,
 .portal-opening-app { isolation: isolate; pointer-events: auto; }
 .portal-opening-link .portal-loading-card,
