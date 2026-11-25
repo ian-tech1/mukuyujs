@@ -5,6 +5,7 @@ import { btnGhost, errText, inputClass } from "@/components/school/gate";
 import { logoDataUrl } from "@/lib/school/brand";
 import { writeXlsxFromMatrix } from "@/lib/school/sheet";
 import { downloadMeritListPdf, downloadSubjectLevelMeritListPdf } from "@/lib/school/pdf";
+import { rankMeritRows } from "@/lib/school/analysis-merit-rows";
 import { PeriodBar, useSchoolPeriod } from "@/components/school/period-bar";
 import { canActorAccess } from "@/lib/school/role-access";
 import { bandFor, buildBoards, decorate, fmt, meanOf, periodMarks, sortByPerformance, type Decorated, learnersForYear } from "@/lib/school/model";
@@ -40,7 +41,7 @@ export function AnalysisView({ ws, flash }: Gate) {
     if (currentMode === "avg") return row.avgMean;
     return row.means[currentMode];
   }
-  const rankedAll = [...decorated].sort((a, b) => (valueOf(b) ?? -1) - (valueOf(a) ?? -1));
+  const rankedAll = rankMeritRows(decorated, valueOf);
   const ranked = rankedAll.filter((row) => {
     const query = learnerSearch.trim().toLocaleLowerCase();
     const matchesSearch = !query || [row.learner.fullName, row.learner.admissionNumber ?? "", String(row.learner.roll)].some((value) => value.toLocaleLowerCase().includes(query));
@@ -50,7 +51,8 @@ export function AnalysisView({ ws, flash }: Gate) {
     const score = valueOf(row);
     return score == null ? "—" : String(rankedAll.findIndex((item) => valueOf(item) === score) + 1);
   };
-  const classMean = meanOf(ranked.map(valueOf));
+  const topScoringLearner = rankedAll.find((row) => valueOf(row) != null);
+  const classMean = meanOf(rankedAll.map(valueOf));
   const subjectChart = subjects.map((subject) => {
     const scores = decorated.flatMap((row) => {
       const cell = row.cells.find((item) => item.subjectId === subject.id);
@@ -69,27 +71,29 @@ export function AnalysisView({ ws, flash }: Gate) {
     return { name: stream.name, mean: mean ?? 0, meanLabel: fmt(mean), learnerCount: group.length, topLearner: streamLeader?.learner.fullName ?? "—" };
   });
   const subjectPointChart = subjects.map((subject) => {
-    const values = ranked.flatMap((row) => {
+    const values = rankedAll.flatMap((row) => {
       const points = row.cells.find((cell) => cell.subjectId === subject.id)?.points;
       return points == null ? [] : [points];
     });
     return { name: subject.shortName, mean: values.length ? Math.round((values.reduce((a, b) => a + b, 0) / values.length) * 10) / 10 : 0 };
   });
   const pointsStreamCompare = streams.map((stream) => {
-    const group = ranked.filter((row) => row.learner.streamId === stream.id && row.totalPoints != null);
+    const group = rankedAll.filter((row) => row.learner.streamId === stream.id);
+    const scored = group.filter((row) => row.totalPoints != null);
     const mean = meanOf(group.map((row) => row.totalPoints));
-    const leader = [...group].sort((a, b) => (b.totalPoints ?? -1) - (a.totalPoints ?? -1))[0];
+    const leader = [...scored].sort((a, b) => (b.totalPoints ?? -1) - (a.totalPoints ?? -1))[0];
     return { name: stream.name, mean: mean ?? 0, meanLabel: fmt(mean, 0), learnerCount: group.length, topLearner: leader?.learner.fullName ?? "—" };
   });
-  const pointsRanked = [...ranked].sort((a, b) => (b.totalPoints ?? -1) - (a.totalPoints ?? -1) || a.learner.fullName.localeCompare(b.learner.fullName));
+  const pointsRanked = [...rankedAll].sort((a, b) => (b.totalPoints ?? -1) - (a.totalPoints ?? -1) || a.learner.fullName.localeCompare(b.learner.fullName));
+  const scoredPointsRanked = pointsRanked.filter((row) => row.totalPoints != null);
   const pointsRankOf = (row: Decorated) => {
     if (row.totalPoints == null) return "—";
     return String(pointsRanked.findIndex((item) => item.totalPoints === row.totalPoints) + 1);
   };
   const classPointsMean = meanOf(pointsRanked.map((row) => row.totalPoints));
   const bestStream = [...streamCompare].sort((a, b) => b.mean - a.mean)[0];
-  const girls = meanOf(ranked.filter((row) => row.learner.gender === "FEMALE").map(valueOf));
-  const boys = meanOf(ranked.filter((row) => row.learner.gender === "MALE").map(valueOf));
+  const girls = meanOf(rankedAll.filter((row) => row.learner.gender === "FEMALE").map(valueOf));
+  const boys = meanOf(rankedAll.filter((row) => row.learner.gender === "MALE").map(valueOf));
 
   const meritTitle = `CLASS ANALYSIS / MERIT LIST — ${grade?.name ?? "Class"}${streamId ? ` · ${ws.streams.find((item) => item.id === streamId)?.name ?? ""}` : " · All streams"}`;
   const meritPeriod = `${ws.terms.find((item) => item.id === period.termId)?.name ?? ws.profile.termName} · ${ws.years.find((item) => item.id === period.yearId)?.name ?? ws.profile.academicYear}`;
@@ -101,7 +105,7 @@ export function AnalysisView({ ws, flash }: Gate) {
     if (!canDownload) return;
     const header = ["Position", "Roll", "Admission Number", "Name", "Gender", "Stream", ...subjects.map((subject) => subject.shortName), "Mean", "Level"];
     const csvCell = (value: unknown) => `"${String(value ?? "").replaceAll('"', '""').replaceAll("\r", " ").replaceAll("\n", " ")}"`;
-    const lines = ranked.map((row) => {
+    const lines = rankedAll.map((row) => {
       const stream = ws.streams.find((item) => item.id === row.learner.streamId)?.name ?? "";
       const scores = subjects.map((subject) => {
         const cell = row.cells.find((item) => item.subjectId === subject.id);
@@ -119,7 +123,7 @@ export function AnalysisView({ ws, flash }: Gate) {
     link.download = `${grade?.name ?? "class"}-${currentMode}-merit.csv`;
     link.click();
     URL.revokeObjectURL(link.href);
-    flash("Analysis merit list downloaded successfully with one learner per row.");
+    flash(`Analysis merit list downloaded with all ${rankedAll.length} learners in the selected grade/stream, including learners without marks.`);
   }
 
   const termBook = ws.terms.map((term) => {
@@ -127,33 +131,33 @@ export function AnalysisView({ ws, flash }: Gate) {
     const mean = meanOf(buildBoards(learners, marks, subjects, exams, ws.bands).map((row) => row.avgMean));
     return { term, mean };
   });
-  const possibleMarks = ranked.length * subjects.length * exams.length;
-  const enteredMarks = ranked.reduce((sum, row) => sum + row.cells.reduce((cellSum, cell) => cellSum + exams.filter((exam) => cell.byExam[exam.id] != null).length, 0), 0);
+  const possibleMarks = rankedAll.length * subjects.length * exams.length;
+  const enteredMarks = rankedAll.reduce((sum, row) => sum + row.cells.reduce((cellSum, cell) => cellSum + exams.filter((exam) => cell.byExam[exam.id] != null).length, 0), 0);
   const coverage = possibleMarks ? Math.round((enteredMarks / possibleMarks) * 100) : 0;
-  const atRisk = ranked.filter((row) => row.avgMean != null && row.avgMean < 50);
-  const unscored = ranked.filter((row) => row.avgMean == null);
-  const highAchievers = ranked.filter((row) => row.avgMean != null && row.avgMean >= 80);
+  const atRisk = rankedAll.filter((row) => row.avgMean != null && row.avgMean < 50);
+  const unscored = rankedAll.filter((row) => row.avgMean == null);
+  const highAchievers = rankedAll.filter((row) => row.avgMean != null && row.avgMean >= 80);
   const subjectRanked = [...subjectChart].sort((a, b) => b.mean - a.mean);
   const strongestSubject = subjectRanked[0];
   const supportSubject = subjectRanked.filter((item) => item.mean > 0).at(-1);
-  const scoreValues = ranked.map((row) => row.avgMean).filter((value): value is number => value != null);
+  const scoreValues = rankedAll.map((row) => row.avgMean).filter((value): value is number => value != null);
   const scoreSpread = scoreValues.length ? Math.max(...scoreValues) - Math.min(...scoreValues) : 0;
   const sortedScores = [...scoreValues].sort((a, b) => a - b);
   const medianScore = sortedScores.length ? (sortedScores.length % 2 ? sortedScores[Math.floor(sortedScores.length / 2)] : (sortedScores[sortedScores.length / 2 - 1] + sortedScores[sortedScores.length / 2]) / 2) : null;
   const passCount = scoreValues.filter((score) => score >= 50).length;
   const passRate = scoreValues.length ? Math.round((passCount / scoreValues.length) * 100) : null;
-  const subjectCoverage = subjects.length && ranked.length ? Math.round((ranked.reduce((sum, row) => sum + row.cells.filter((cell) => cell.avg != null).length, 0) / (subjects.length * ranked.length)) * 100) : 0;
+  const subjectCoverage = subjects.length && rankedAll.length ? Math.round((rankedAll.reduce((sum, row) => sum + row.cells.filter((cell) => cell.avg != null).length, 0) / (subjects.length * rankedAll.length)) * 100) : 0;
   const subjectMeansAvailable = subjectChart.filter((item) => item.mean > 0);
   const subjectMeanSpread = subjectMeansAvailable.length > 1 ? Math.max(...subjectMeansAvailable.map((item) => item.mean)) - Math.min(...subjectMeansAvailable.map((item) => item.mean)) : 0;
   const learnersBelowClassMean = classMean == null ? 0 : scoreValues.filter((score) => score < classMean).length;
-  const examMeans = exams.map((exam) => ({ name: exam.name, mean: meanOf(ranked.map((row) => row.means[exam.id])) }));
+  const examMeans = exams.map((exam) => ({ name: exam.name, mean: meanOf(rankedAll.map((row) => row.means[exam.id])) }));
   const bestExam = [...examMeans].filter((item) => item.mean != null).sort((a, b) => (b.mean ?? 0) - (a.mean ?? 0))[0];
   const catDelta = examMeans.length > 1 && examMeans[0].mean != null && examMeans[1].mean != null ? examMeans[1].mean - examMeans[0].mean : null;
   const streamGap = streamCompare.length > 1 ? Math.max(...streamCompare.map((row) => row.mean)) - Math.min(...streamCompare.map((row) => row.mean)) : 0;
   const scoreBands = [
-    { label: "Below 40", count: ranked.filter((row) => row.avgMean != null && row.avgMean < 40).length },
-    { label: "40–59", count: ranked.filter((row) => row.avgMean != null && row.avgMean >= 40 && row.avgMean < 60).length },
-    { label: "60–79", count: ranked.filter((row) => row.avgMean != null && row.avgMean >= 60 && row.avgMean < 80).length },
+    { label: "Below 40", count: rankedAll.filter((row) => row.avgMean != null && row.avgMean < 40).length },
+    { label: "40–59", count: rankedAll.filter((row) => row.avgMean != null && row.avgMean >= 40 && row.avgMean < 60).length },
+    { label: "60–79", count: rankedAll.filter((row) => row.avgMean != null && row.avgMean >= 60 && row.avgMean < 80).length },
     { label: "80+", count: highAchievers.length },
   ];
   const trend = termBook.map((item) => `${item.term.name}: ${fmt(item.mean)}`).join(" · ");
@@ -162,15 +166,15 @@ export function AnalysisView({ ws, flash }: Gate) {
     const topScore = valid.length ? Math.max(...valid.map((item) => item.score)) : null;
     return topScore == null ? [] : valid.filter((item) => item.score === topScore).map((item) => item.row);
   };
-  const bestBoyNorth = bestRows(ranked.filter((row) => row.learner.gender === "MALE" && /north/i.test(ws.streams.find((stream) => stream.id === row.learner.streamId)?.name ?? "")));
-  const bestBoySouth = bestRows(ranked.filter((row) => row.learner.gender === "MALE" && /south/i.test(ws.streams.find((stream) => stream.id === row.learner.streamId)?.name ?? "")));
-  const bestGirlNorth = bestRows(ranked.filter((row) => row.learner.gender === "FEMALE" && /north/i.test(ws.streams.find((stream) => stream.id === row.learner.streamId)?.name ?? "")));
-  const bestGirlSouth = bestRows(ranked.filter((row) => row.learner.gender === "FEMALE" && /south/i.test(ws.streams.find((stream) => stream.id === row.learner.streamId)?.name ?? "")));
-  const bestBoysOverall = bestRows(ranked.filter((row) => row.learner.gender === "MALE"));
-  const bestGirlsOverall = bestRows(ranked.filter((row) => row.learner.gender === "FEMALE"));
-  const bestOverall = bestRows(ranked);
+  const bestBoyNorth = bestRows(rankedAll.filter((row) => row.learner.gender === "MALE" && /north/i.test(ws.streams.find((stream) => stream.id === row.learner.streamId)?.name ?? "")));
+  const bestBoySouth = bestRows(rankedAll.filter((row) => row.learner.gender === "MALE" && /south/i.test(ws.streams.find((stream) => stream.id === row.learner.streamId)?.name ?? "")));
+  const bestGirlNorth = bestRows(rankedAll.filter((row) => row.learner.gender === "FEMALE" && /north/i.test(ws.streams.find((stream) => stream.id === row.learner.streamId)?.name ?? "")));
+  const bestGirlSouth = bestRows(rankedAll.filter((row) => row.learner.gender === "FEMALE" && /south/i.test(ws.streams.find((stream) => stream.id === row.learner.streamId)?.name ?? "")));
+  const bestBoysOverall = bestRows(rankedAll.filter((row) => row.learner.gender === "MALE"));
+  const bestGirlsOverall = bestRows(rankedAll.filter((row) => row.learner.gender === "FEMALE"));
+  const bestOverall = bestRows(rankedAll);
   const bestBySubject = subjects.map((subject) => {
-    const candidates = ranked.map((row) => ({ row, score: row.cells.find((cell) => cell.subjectId === subject.id)?.avg ?? null })).filter((item): item is { row: Decorated; score: number } => item.score != null);
+    const candidates = rankedAll.map((row) => ({ row, score: row.cells.find((cell) => cell.subjectId === subject.id)?.avg ?? null })).filter((item): item is { row: Decorated; score: number } => item.score != null);
     const high = candidates.length ? Math.max(...candidates.map((item) => item.score)) : null;
     return { subject, rows: high == null ? [] : candidates.filter((item) => item.score === high).map((item) => item.row), score: high };
   });
@@ -189,7 +193,7 @@ export function AnalysisView({ ws, flash }: Gate) {
         periodLabel: meritPeriod,
         subjects,
         orientation: meritOrientation,
-        rows: ranked.map((row) => ({
+        rows: rankedAll.map((row) => ({
           position: rankOf(row),
           roll: row.learner.roll,
           admission: row.learner.admissionNumber ?? "",
@@ -242,14 +246,14 @@ export function AnalysisView({ ws, flash }: Gate) {
                 { label: "Best girl overall", value: names(bestGirlsOverall), detail: "Tied leaders are all included" },
                 { label: "Best student overall", value: names(bestOverall), detail: "Tied leaders are all included" },
                 ...bestBySubject.map((item) => ({ label: `Best ${item.subject.name}`, value: names(item.rows), detail: item.score == null ? "No recorded subject scores" : `Score ${fmt(item.score)}; all ties included` })),
-                { label: "Class average", value: fmt(classMean), detail: `${ranked.length} learners in current filter` },
+                { label: "Class average", value: fmt(classMean), detail: `${rankedAll.length} learners in the selected grade/stream` },
               ],
               trend,
               review: atRisk.slice(0, 12).map((row) => `${row.learner.fullName} (${fmt(row.avgMean)})`).join(" · "),
             }
           : null,
       });
-      flash("Merit list PDF downloaded.");
+      flash(`Merit list PDF downloaded with all ${rankedAll.length} learners, including learners without marks.`);
     } catch (error) {
       flash(errText(error), true);
     } finally {
@@ -294,9 +298,9 @@ export function AnalysisView({ ws, flash }: Gate) {
         analytics: pdfWithAnalytics ? {
           summary: [
             { label: "Average total points", value: classPointsMean == null ? "—" : fmt(classPointsMean, 0) },
-            { label: "Top learner", value: names(pointsRanked.length ? [pointsRanked[0]] : []) },
+            { label: "Top learner", value: names(pointsRanked[0]?.totalPoints == null ? [] : [pointsRanked[0]]) },
             { label: "Highest points", value: pointsRanked[0]?.totalPoints == null ? "—" : String(pointsRanked[0].totalPoints) },
-            { label: "Learners ranked", value: String(pointsRanked.length) },
+            { label: "Learners in roster", value: String(pointsRanked.length) },
             { label: "Top stream", value: [...pointsStreamCompare].sort((a, b) => b.mean - a.mean)[0]?.name ?? "—" },
             { label: "Score graph", value: "Included" },
           ],
@@ -306,10 +310,10 @@ export function AnalysisView({ ws, flash }: Gate) {
           scoreBands,
           insights: [
             { label: "Average total points", value: classPointsMean == null ? "—" : fmt(classPointsMean, 0), detail: "Total of the points awarded for each recorded subject level" },
-            { label: "Top learner", value: names(pointsRanked.length ? [pointsRanked[0]] : []), detail: "Highest total subject points; ties remain visible in the merit table" },
+            { label: "Top learner", value: names(pointsRanked[0]?.totalPoints == null ? [] : [pointsRanked[0]]), detail: "Highest total subject points; ties remain visible in the merit table" },
             { label: "Highest level points", value: pointsRanked[0]?.levelPoints == null ? "—" : String(pointsRanked[0].levelPoints), detail: "Overall band points for the learner" },
             { label: "Learners without points", value: String(pointsRanked.filter((row) => row.totalPoints == null).length), detail: "No recorded subject levels available for points ranking" },
-            { label: "Points range", value: pointsRanked.length ? `${pointsRanked.at(-1)?.totalPoints ?? "—"}–${pointsRanked[0]?.totalPoints ?? "—"}` : "—", detail: "Lowest to highest total points" },
+            { label: "Points range", value: scoredPointsRanked.length ? `${scoredPointsRanked.at(-1)?.totalPoints ?? "—"}–${scoredPointsRanked[0]?.totalPoints ?? "—"}` : "—", detail: "Lowest to highest recorded total points" },
             { label: "Marks coverage", value: `${coverage}%`, detail: `${enteredMarks} of ${possibleMarks} expected score cells entered` },
             { label: "Strongest subject", value: strongestSubject?.name ?? "—", detail: strongestSubject ? `Score mean ${fmt(strongestSubject.mean)}` : "No scores yet" },
             { label: "Top stream", value: [...pointsStreamCompare].sort((a, b) => b.mean - a.mean)[0]?.name ?? "—", detail: "Stream with the highest average total points" },
@@ -318,7 +322,7 @@ export function AnalysisView({ ws, flash }: Gate) {
           review: pointsRanked.filter((row) => row.totalPoints == null).slice(0, 12).map((row) => `${row.learner.fullName} (no points)`).join(" · "),
         } : null,
       });
-      flash("Points-based merit list PDF downloaded with levels, total points, graphs, and advanced analytics.");
+      flash(`Points-based merit list PDF downloaded with all ${pointsRanked.length} learners, including learners without points.`);
     } catch (error) {
       flash(errText(error), true);
     } finally {
@@ -338,7 +342,7 @@ export function AnalysisView({ ws, flash }: Gate) {
       [meritPeriod],
       [],
       ["Position", "Roll", "Admission Number", "Name", "Gender", "Stream", ...subjects.map((subject) => subject.shortName), "Mean", "Level"],
-      ...ranked.map((row) => {
+      ...rankedAll.map((row) => {
         const stream = ws.streams.find((item) => item.id === row.learner.streamId)?.name ?? "";
         const scores = subjects.map((subject) => {
           const cell = row.cells.find((item) => item.subjectId === subject.id);
@@ -355,7 +359,7 @@ export function AnalysisView({ ws, flash }: Gate) {
     const bytes = writeXlsxFromMatrix(quoteRows, { sheetName: "Merit list", headerRow: 9, orientation: meritOrientation, logo: ws.profile.logoData || "/logo.png" });
     const url = URL.createObjectURL(new Blob([bytes as BlobPart], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }));
     const link = document.createElement("a"); link.href = url; link.download = `${grade?.name ?? "class"}-${currentMode}-${meritOrientation}-merit-list.xlsx`.replace(/[^a-zA-Z0-9._-]+/g, "_"); link.click(); window.setTimeout(() => URL.revokeObjectURL(url), 0);
-    flash("Merit list Excel workbook downloaded with school letterhead, logo, headers, learners, and stream summary.");
+    flash(`Merit list Excel workbook downloaded with all ${rankedAll.length} learners, including learners without marks.`);
   }
   async function downloadSubjectLevelsPdf() {
     if (!canDownload) return;
@@ -396,7 +400,7 @@ export function AnalysisView({ ws, flash }: Gate) {
           review: atRisk.slice(0, 12).map((row) => `${row.learner.fullName} (${fmt(row.avgMean)})`).join(" · "),
         } : null,
         subjects: subjects.map(({ id, shortName, name }) => ({ id, shortName, name })),
-        rows: ranked.map((row) => ({
+        rows: rankedAll.map((row) => ({
           position: rankOf(row),
           roll: row.learner.roll,
           admission: row.learner.admissionNumber ?? "",
@@ -407,7 +411,7 @@ export function AnalysisView({ ws, flash }: Gate) {
           level: row.level ?? "—",
         })),
       });
-      flash("Subject-level merit list downloaded with marks and levels in the same merit-list format.");
+      flash(`Subject-level merit list downloaded with all ${rankedAll.length} learners, including learners without marks.`);
     } catch (error) {
       flash(errText(error), true);
     } finally {
@@ -447,8 +451,8 @@ export function AnalysisView({ ws, flash }: Gate) {
             <button className={btnGhost} type="button" onClick={download}>Download merit list (CSV)</button>
             <button className={btnGhost} type="button" onClick={() => void downloadExcel()}>Download merit list (Excel)</button>
             <button className={btnGhost} type="button" disabled={pdfBusy} onClick={downloadPdf}>{pdfBusy ? "Preparing PDF…" : "Download merit list (PDF)"}</button>
-            <button className={btnGhost} type="button" disabled={pdfBusy || !ranked.length} onClick={downloadPointsPdf}>{pdfBusy ? "Preparing PDF…" : "Download points merit list (PDF)"}</button>
-            <button className={btnGhost} type="button" disabled={pdfBusy || !ranked.length} onClick={downloadSubjectLevelsPdf}>{pdfBusy ? "Preparing PDF…" : "Download subject levels (PDF)"}</button>
+            <button className={btnGhost} type="button" disabled={pdfBusy || !rankedAll.length} onClick={downloadPointsPdf}>{pdfBusy ? "Preparing PDF…" : "Download points merit list (PDF)"}</button>
+            <button className={btnGhost} type="button" disabled={pdfBusy || !rankedAll.length} onClick={downloadSubjectLevelsPdf}>{pdfBusy ? "Preparing PDF…" : "Download subject levels (PDF)"}</button>
             <button className={btnGhost} type="button" onClick={() => { flash("Print dialog opened for the class analysis."); window.print(); }}>Print analysis</button>
           </> : <span className="text-sm text-muted">Downloads and printing are disabled by the Super Admin for your role.</span>}
         </div>
@@ -493,11 +497,11 @@ export function AnalysisView({ ws, flash }: Gate) {
         </label>
         <label className="flex items-center gap-2 pb-2 text-sm"><input type="checkbox" checked={showAdmission} onChange={(event) => setShowAdmission(event.target.checked)} />Show admission numbers</label>
         <button type="button" className={btnGhost} onClick={() => { setLearnerSearch(""); setLevelFilter("all"); setRankSort("performance"); setShowAdmission(true); }}>Reset filters</button>
-        <p className="w-full text-xs text-muted">Showing {ranked.length} of {rankedAll.length} learners. Merit positions remain based on performance, including shared positions for tied scores.</p>
+        <p className="w-full text-xs text-muted">Showing {ranked.length} of {rankedAll.length} learners. Search and level filters affect this table only; downloads and grade-wide counts include everyone in the selected grade/stream, including learners without recorded marks.</p>
       </section>
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Info label="Class mean" value={fmt(classMean)} />
-        <Info label="Top learner" value={ranked[0]?.learner.fullName ?? "—"} hint={ranked[0] ? fmt(valueOf(ranked[0])) : ""} />
+        <Info label="Top learner" value={topScoringLearner?.learner.fullName ?? "—"} hint={topScoringLearner ? fmt(valueOf(topScoringLearner)) : "No recorded marks"} />
         <Info label="Top stream" value={bestStream?.name ?? "—"} hint={bestStream ? fmt(bestStream.mean) : ""} />
         <Info label="Girls / boys" value={`${fmt(girls)} / ${fmt(boys)}`} />
       </section>
@@ -525,8 +529,8 @@ export function AnalysisView({ ws, flash }: Gate) {
           <Insight label="Stream performance gap" value={fmt(streamGap)} detail="Difference between highest and lowest stream means" />
           <Insight label="CAT improvement" value={catDelta == null ? "—" : `${catDelta > 0 ? "+" : ""}${fmt(catDelta)}`} detail={examMeans.length > 1 ? `${examMeans[0].name} compared with ${examMeans[1].name}` : "Add another CAT to compare"} />
           <Insight label="Female / male mean" value={`${fmt(girls)} / ${fmt(boys)}`} detail={girls != null && boys != null ? `Difference ${fmt(girls - boys)}` : "Not enough gender-separated scores"} />
-          <Insight label="Class average" value={fmt(classMean)} detail={`${ranked.length} learners in current filter`} />
-          <Insight label="Top learner" value={ranked[0]?.learner.fullName ?? "—"} detail={ranked[0] ? `Mean ${fmt(valueOf(ranked[0]))}` : "No scores yet"} />
+          <Insight label="Class average" value={fmt(classMean)} detail={`${rankedAll.length} learners in the selected grade/stream`} />
+          <Insight label="Top learner" value={topScoringLearner?.learner.fullName ?? "—"} detail={topScoringLearner ? `Mean ${fmt(valueOf(topScoringLearner))}` : "No recorded marks"} />
           <Insight label="Median learner score" value={fmt(medianScore)} detail="Middle score after ordering learner averages" />
           <Insight label="Pass rate" value={passRate == null ? "—" : `${passRate}%`} detail={`${passCount} of ${scoreValues.length} scored learners at 50 or above`} />
           <Insight label="Subject mark coverage" value={`${subjectCoverage}%`} detail="Learner-subject averages recorded in the selected class" />
@@ -536,13 +540,13 @@ export function AnalysisView({ ws, flash }: Gate) {
         </div>
         <div className="grid gap-4 lg:grid-cols-2">
           <div className="rounded-md border border-line bg-paper p-3"><h3 className="font-semibold text-navy">Top and support learners</h3><div className="mt-2 grid gap-3 sm:grid-cols-2 text-sm"><div><strong>Top 5</strong>{rankedAll.filter((row) => valueOf(row) != null).slice(0, 5).map((row) => <p key={row.learner.id}>{rankOf(row)}. {row.learner.fullName} — {fmt(valueOf(row))}</p>)}</div><div><strong>Bottom 5</strong>{[...rankedAll].filter((row) => valueOf(row) != null).sort((a, b) => (valueOf(a) ?? 0) - (valueOf(b) ?? 0)).slice(0, 5).map((row) => <p key={row.learner.id}>{row.learner.fullName} — {fmt(valueOf(row))}</p>)}</div></div></div>
-          <div className="rounded-md border border-line bg-paper p-3"><h3 className="font-semibold text-navy">Subject coverage</h3><div className="mt-2 space-y-2 text-sm">{subjects.map((subject) => { const scored = ranked.filter((row) => row.cells.find((cell) => cell.subjectId === subject.id)?.avg != null).length; const pct = ranked.length ? Math.round(scored / ranked.length * 100) : 0; return <div key={subject.id}><div className="flex justify-between"><span>{subject.name}</span><strong>{pct}%</strong></div><div className="h-2 rounded bg-paper"><div className="h-2 rounded bg-info" style={{ width: `${pct}%` }} /></div></div>; })}</div></div>
+          <div className="rounded-md border border-line bg-paper p-3"><h3 className="font-semibold text-navy">Subject coverage</h3><div className="mt-2 space-y-2 text-sm">{subjects.map((subject) => { const scored = rankedAll.filter((row) => row.cells.find((cell) => cell.subjectId === subject.id)?.avg != null).length; const pct = rankedAll.length ? Math.round(scored / rankedAll.length * 100) : 0; return <div key={subject.id}><div className="flex justify-between"><span>{subject.name}</span><strong>{pct}%</strong></div><div className="h-2 rounded bg-paper"><div className="h-2 rounded bg-info" style={{ width: `${pct}%` }} /></div></div>; })}</div></div>
           <div className="rounded-md border border-line bg-paper p-3"><h3 className="font-semibold text-navy">Class awards and subject leaders</h3><div className="mt-2 space-y-1 text-sm">
             <p><strong>Best boy North:</strong> {names(bestBoyNorth)}</p><p><strong>Best boy South:</strong> {names(bestBoySouth)}</p><p><strong>Best boy overall:</strong> {names(bestBoysOverall)}</p>
             <p><strong>Best girl North:</strong> {names(bestGirlNorth)}</p><p><strong>Best girl South:</strong> {names(bestGirlSouth)}</p><p><strong>Best girl overall:</strong> {names(bestGirlsOverall)}</p><p><strong>Best student overall:</strong> {names(bestOverall)}</p>
             {bestBySubject.map((item) => <p key={item.subject.id}><strong>Best in {item.subject.name}:</strong> {names(item.rows)}{item.score == null ? "" : ` (${fmt(item.score)})`}</p>)}
           </div></div>
-          <div><h3 className="font-semibold text-navy">Score distribution</h3><div className="mt-2 space-y-2">{scoreBands.map((band) => <div key={band.label} className="grid grid-cols-[5rem_1fr_2rem] items-center gap-2 text-sm"><span>{band.label}</span><div className="h-2 rounded bg-paper"><div className="h-2 rounded bg-info" style={{ width: `${ranked.length ? band.count / ranked.length * 100 : 0}%` }} /></div><strong>{band.count}</strong></div>)}</div></div>
+          <div><h3 className="font-semibold text-navy">Score distribution</h3><div className="mt-2 space-y-2">{scoreBands.map((band) => <div key={band.label} className="grid grid-cols-[5rem_1fr_2rem] items-center gap-2 text-sm"><span>{band.label}</span><div className="h-2 rounded bg-paper"><div className="h-2 rounded bg-info" style={{ width: `${rankedAll.length ? band.count / rankedAll.length * 100 : 0}%` }} /></div><strong>{band.count}</strong></div>)}</div></div>
           <div><h3 className="font-semibold text-navy">Term trend snapshot</h3><p className="mt-2 text-sm text-muted">{trend || "No term results available."}</p><h3 className="mt-4 font-semibold text-navy">Learners needing review</h3><p className="mt-1 text-sm">{atRisk.slice(0, 8).map((row) => `${row.learner.fullName} (${fmt(row.avgMean)})`).join(" · ") || "No learners currently fall below the intervention threshold."}</p></div>
         </div>
       </section>
