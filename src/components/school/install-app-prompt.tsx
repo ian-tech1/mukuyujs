@@ -143,13 +143,13 @@ export function InstallAppPrompt() {
   }
 
   return (
-    <div className="fixed inset-x-3 bottom-3 z-[100] mx-auto w-full max-w-lg sm:inset-x-auto sm:bottom-5 sm:right-5" aria-live="polite">
+    <div className="fixed inset-x-3 top-[max(0.75rem,env(safe-area-inset-top))] z-[9999] mx-auto max-h-[calc(100dvh-1.5rem)] w-full max-w-lg overflow-y-auto overscroll-contain sm:inset-x-auto sm:right-5 sm:top-5" aria-live="polite">
       <section role="dialog" aria-modal="false" aria-labelledby="app-prompt-title" className="relative overflow-hidden rounded-2xl border border-sky-200 bg-white text-slate-900 shadow-2xl shadow-slate-950/30">
         <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-emerald-500 via-cyan-500 to-amber-400" aria-hidden="true" />
         <div className="flex items-start gap-3 p-4 pb-3 sm:p-5 sm:pb-4">
           <img src="/icons/mukuyu-app-192.png" alt="" width={56} height={56} className="size-14 shrink-0 rounded-2xl border border-slate-200 shadow-sm" />
           <div className="min-w-0 flex-1 pt-0.5">
-            <p className="text-[11px] font-black uppercase tracking-[.16em] text-emerald-800">Mukuyu Junior School</p>
+            <p className="text-[11px] font-black uppercase tracking-[.16em] text-emerald-800">MUKUYU JUNIOR SCHOOL</p>
             <h2 id="app-prompt-title" className="mt-1 text-lg font-extrabold leading-tight text-slate-950">School app access</h2>
             <p className="mt-1 text-sm leading-relaxed text-slate-600">Install the school portal or refresh an older installed version.</p>
           </div>
@@ -204,7 +204,7 @@ export function InstallAppPrompt() {
             <p className="mt-2 text-xs leading-relaxed text-slate-500">Updates are checked online. If one is ready, reloading opens the latest deployed website version.</p>
           </div>
         )}
-        <div className="border-t border-slate-100 px-4 py-2.5 text-center text-[10px] font-bold uppercase tracking-[.18em] text-slate-400 sm:px-5">Powered by IAN TECH</div>
+        <div className="border-t border-slate-100 px-4 py-2.5 text-center text-[10px] font-bold uppercase tracking-[.18em] text-slate-500 sm:px-5">Developed by IAN TECH</div>
       </section>
     </div>
   );

@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="icon-title">
+  <title id="icon-title">MJS — Mukuyu Junior School</title>
+  <defs>
+    <linearGradient id="backdrop" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#15546a"/>
+      <stop offset=".52" stop-color="#0c3150"/>
+      <stop offset="1" stop-color="#081a32"/>
+    </linearGradient>
+    <radialGradient id="glow" cx=".5" cy=".36" r=".72">
+      <stop stop-color="#48d5c6" stop-opacity=".26"/>
+      <stop offset="1" stop-color="#48d5c6" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#fff0b4"/>
+      <stop offset=".48" stop-color="#f4c35f"/>
+      <stop offset="1" stop-color="#c78229"/>
+    </linearGradient>
+    <linearGradient id="pages" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#43d8cb"/>
+      <stop offset="1" stop-color="#087c88"/>
+    </linearGradient>
+    <linearGradient id="monogram" x1="0" y1="0" x2="1" y2="0">
+      <stop stop-color="#ffe08a"/>
+      <stop offset=".48" stop-color="#54e0cd"/>
+      <stop offset="1" stop-color="#fff4cb"/>
+    </linearGradient>
+    <filter id="soft-shadow" x="-.2" y="-.2" width="1.4" height="1.5" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="#020b18" flood-opacity=".48"/>
+    </filter>
+    <filter id="letter-shadow" x="-.1" y="-.15" width="1.2" height="1.35" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="4" stdDeviation="3" flood-color="#031626" flood-opacity=".72"/>
+    </filter>
+  </defs>
+  <rect width="512" height="512" fill="url(#backdrop)"/>
+  <rect width="512" height="512" fill="url(#glow)"/>
+  <circle cx="256" cy="256" r="211" fill="#092746" fill-opacity=".72" stroke="url(#gold)" stroke-width="11"/>
+  <circle cx="256" cy="256" r="197" fill="none" stroke="#f8e7b2" stroke-opacity=".34" stroke-width="3"/>
+  <g stroke="url(#gold)" stroke-linecap="round" stroke-width="13">
+    <path d="M256 78v31"/>
+    <path d="m197 91 13 27"/>
+    <path d="m315 91-13 27"/>
+    <path d="m148 126 22 21"/>
+    <path d="m364 126-22 21"/>
+  </g>
+  <circle cx="256" cy="169" r="57" fill="url(#gold)"/>
+  <g filter="url(#soft-shadow)">
+    <path d="M112 220c48-19 98-12 144 17v77c-44-25-94-30-144-15z" fill="url(#pages)" stroke="#8af0df" stroke-opacity=".82" stroke-width="5" stroke-linejoin="round"/>
+    <path d="M400 220c-48-19-98-12-144 17v77c44-25 94-30 144-15z" fill="url(#pages)" stroke="#8af0df" stroke-opacity=".82" stroke-width="5" stroke-linejoin="round"/>
+    <path d="M122 231c36-11 70-6 116 18v48c-41-20-78-25-116-16z" fill="#ecf7e8" fill-opacity=".94"/>
+    <path d="M390 231c-36-11-70-6-116 18v48c41-20 78-25 116-16z" fill="#fff2cf" fill-opacity=".96"/>
+    <path d="M144 247c26-4 52 0 77 12M144 265c26-3 52 1 77 13M368 247c-26-4-52 0-77 12M368 265c-26-3-52 1-77 13" fill="none" stroke="#62928e" stroke-opacity=".62" stroke-width="4" stroke-linecap="round"/>
+    <path d="M256 237v81" fill="none" stroke="#ffe19a" stroke-width="7" stroke-linecap="round"/>
+  </g>
+  <text x="256" y="429" text-anchor="middle" textLength="366" lengthAdjust="spacingAndGlyphs" font-family="Arial, Liberation Sans, sans-serif" font-size="154" font-weight="900" letter-spacing="-5" fill="url(#monogram)" stroke="#082640" stroke-width="8" stroke-linejoin="round" paint-order="stroke" filter="url(#letter-shadow)">MJS</text>
+  <path d="M174 451h164" stroke="url(#gold)" stroke-width="5" stroke-linecap="round"/>
+  <circle cx="158" cy="451" r="5" fill="#f4c35f"/>
+  <circle cx="354" cy="451" r="5" fill="#f4c35f"/>
+</svg>

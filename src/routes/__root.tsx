@@ -15,7 +15,8 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Mukuyu JSS Portal" },
+      { name: "application-name", content: "MUKUYU JUNIOR SCHOOL" },
+      { title: "MUKUYU JUNIOR SCHOOL" },
       { name: "theme-color", content: "#0e2a4a" },
     ],
     links: [

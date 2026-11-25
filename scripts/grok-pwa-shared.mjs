@@ -174,7 +174,7 @@ export function renderWebManifest(hostHeader, appNameOverride, iconPath) {
   return JSON.stringify(
     {
       name,
-      short_name: /^Mukuyu Junior School$/i.test(name) ? "MKJ" : name.slice(0, 20).trim(),
+      short_name: /^Mukuyu Junior School$/i.test(name) ? "MJS" : name.slice(0, 20).trim(),
       id: "/",
       start_url: "/",
       scope: "/",
