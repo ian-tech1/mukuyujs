@@ -6,6 +6,7 @@ import { logoDataUrl } from "@/lib/school/brand";
 import { writeXlsxFromMatrix } from "@/lib/school/sheet";
 import { downloadMeritListPdf, downloadSubjectLevelMeritListPdf } from "@/lib/school/pdf";
 import { rankMeritRows } from "@/lib/school/analysis-merit-rows";
+import { summarizeLearnersByLevel } from "@/lib/school/analysis-level-distribution";
 import { PeriodBar, useSchoolPeriod } from "@/components/school/period-bar";
 import { canActorAccess } from "@/lib/school/role-access";
 import { bandFor, buildBoards, decorate, fmt, meanOf, periodMarks, sortByPerformance, type Decorated, learnersForYear } from "@/lib/school/model";
@@ -42,6 +43,7 @@ export function AnalysisView({ ws, flash }: Gate) {
     return row.means[currentMode];
   }
   const rankedAll = rankMeritRows(decorated, valueOf);
+  const levelDistribution = summarizeLearnersByLevel(rankedAll.map((row) => ({ level: row.level, gender: row.learner.gender })));
   const ranked = rankedAll.filter((row) => {
     const query = learnerSearch.trim().toLocaleLowerCase();
     const matchesSearch = !query || [row.learner.fullName, row.learner.admissionNumber ?? "", String(row.learner.roll)].some((value) => value.toLocaleLowerCase().includes(query));
@@ -210,6 +212,7 @@ export function AnalysisView({ ws, flash }: Gate) {
         streamSummary: streamCompare.map((item) => ({ name: item.name, meanLabel: item.meanLabel, learnerCount: item.learnerCount, topLearner: item.topLearner })),
         analytics: pdfWithAnalytics
           ? {
+              levelDistribution,
               summary: [
                 { label: "Class mean", value: fmt(classMean) },
                 { label: "Top learner", value: names(bestOverall) },
@@ -296,6 +299,7 @@ export function AnalysisView({ ws, flash }: Gate) {
         meanHeader: "TOTAL POINTS",
         levelHeader: "LEVEL / PTS",
         analytics: pdfWithAnalytics ? {
+          levelDistribution,
           summary: [
             { label: "Average total points", value: classPointsMean == null ? "—" : fmt(classPointsMean, 0) },
             { label: "Top learner", value: names(pointsRanked[0]?.totalPoints == null ? [] : [pointsRanked[0]]) },
@@ -375,6 +379,7 @@ export function AnalysisView({ ws, flash }: Gate) {
         periodLabel: `${meritPeriod} · Merit positions, subject scores, and levels follow ${currentMode === "avg" ? "the average across active assessments" : modeName}`,
         orientation: meritOrientation,
         analytics: pdfWithAnalytics ? {
+          levelDistribution,
           summary: [
             { label: "Class mean", value: fmt(classMean) },
             { label: "Top learner", value: names(bestOverall) },

@@ -120,3 +120,8 @@
 
 - [x] “ensure the number of learners in merit lists is equal to numbers of learners in each grade, and no recorded marks is ommited”: ensure each Analysis CSV, Excel, standard PDF, points PDF, and subject-level PDF includes every learner in the selected academic-year and grade/stream roster; learner search and level filters must not remove rows from downloads; learners without recorded marks must remain present with blank or em-dash values; roster and grade-wide merit/coverage counts must include these learners.
 - [x] Validation: full-roster ranking regression and merit PDF pagination/subject-position tests pass (8); TypeScript passes; changed-file ESLint has 0 errors (1 unused-variable warning); `git diff --check` passes; direct production Vite build passes without migrations. Full `npm test` was not rerun because the previous run failed in unrelated app-env/PWA script tests before reaching TypeScript tests.
+
+## User-requested merit-list level and gender counts
+
+- [x] “now under merit lists the same page you added subject positions , add the number of students in each levels like ME1  3 Students 2boys 1 girl”: on the merit-list analytics page beside/below subject positions, show each achievement level’s learner total and boy/girl counts; include learners without a recorded level in an explicit unassigned category and preserve roster totals.
+- [x] Validation: 10 focused level-count, full-roster, PDF pagination, and subject-position tests pass; TypeScript passes; changed-file ESLint has 0 errors (1 existing unused-variable warning); `git diff --check` and direct production Vite build pass.
