@@ -520,7 +520,7 @@ test("renders a school-branded manifest and initials icon when runtime identity 
   const manifest = JSON.parse(renderWebManifest("preview.local", "Mukuyu Junior School", "/__grok/school-icon.svg"));
   const icon = renderSchoolIconSvg("Mukuyu Junior School");
   assert.equal(manifest.name, "Mukuyu Junior School");
-  assert.equal(manifest.short_name, "MKJ");
+  assert.equal(manifest.short_name, "Mukuyu Junior School");
   assert.equal(manifest.icons[0].src, "/__grok/school-icon.svg");
   assert.equal(manifest.icons[0].purpose, "any maskable");
   assert.match(icon, /<text[^>]*>MKJ<\/text>/);

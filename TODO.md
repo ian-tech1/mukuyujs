@@ -159,3 +159,9 @@
 - [x] “super admins and deputies can reset parents logins and password is sent to parents email too”: enforce Super Admin/deputy authorization server-side, send the temporary credential to the parent account email, require a password change before portal access, expire admin-issued parent temporary passwords after 24 hours, and never display the credential after successful email submission. Do not overwrite an existing parent password when linking another learner.
 - [x] “they can also download parents details too on permissions from super admin”: add a default-deny parent-detail role permission controlled only by the Super Admin; provide a protected parent-contact CSV export with an audit record; enforce the same permission on full school-backup downloads because backups contain guardian and parent details.
 - Validation: TypeScript checking, migration-free development build, focused role-access tests (5), and `git diff --check` pass. The repository test command reports 193 passing and 11 unrelated existing app-environment/PWA assertion failures; deployment email delivery is not verified from this checkout.
+
+
+## User-requested returning-user launch intro and shortcut name
+
+- [x] “when opening the app app after the second stage that appears let it show the background that appears when the link is opened for first time before automatically login if was already logged in before or before opening the login page”: keep the branded animated opening intro in front of the login screen and wait for its timer or the user’s Continue action before checking a saved session and redirecting into the portal.
+- [x] “let the icon name be MUKUYU JUNIOR SCHOOL or Mukuyu Junior School”: set the installable app’s short display name to “Mukuyu Junior School” while retaining the full school name in its manifest and app metadata.

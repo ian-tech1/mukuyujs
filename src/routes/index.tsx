@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { SchoolLogo } from "@/components/school/logo";
 import { PublicReport } from "@/components/school/public-report";
 import { btnClass, errText, inputClass } from "@/components/school/gate";
@@ -31,7 +31,7 @@ function safeWhatsAppGroupInvite(enabled: boolean | undefined, rawUrl: string | 
   }
 }
 
-function OpeningIntro({ title, motto, logoSrc, durationSeconds }: { title: string; motto: string; logoSrc?: string; durationSeconds: number }) {
+function OpeningIntro({ title, motto, logoSrc, durationSeconds, onComplete }: { title: string; motto: string; logoSrc?: string; durationSeconds: number; onComplete: () => void }) {
   const [visible, setVisible] = useState(true);
   const [progress, setProgress] = useState(0);
   const [secondsRemaining, setSecondsRemaining] = useState(durationSeconds);
@@ -48,15 +48,16 @@ function OpeningIntro({ title, motto, logoSrc, durationSeconds }: { title: strin
     };
     updateProgress();
     const interval = window.setInterval(updateProgress, 100);
-    const timeout = window.setTimeout(() => setVisible(false), remaining);
+    const timeout = window.setTimeout(() => { setVisible(false); onComplete(); }, remaining);
     return () => {
       window.clearInterval(interval);
       window.clearTimeout(timeout);
     };
-  }, [durationSeconds, visible]);
+  }, [durationSeconds, visible, onComplete]);
 
   function continueToSignIn() {
     setVisible(false);
+    onComplete();
   }
 
   if (!visible) return null;
@@ -164,6 +165,8 @@ function LoginPage() {
   const [display, setDisplay] = useState<LocalDisplayPreferences>(DEFAULT_DISPLAY_PREFERENCES);
   const [paragraphColourTick, setParagraphColourTick] = useState(0);
   const [featuresOpen, setFeaturesOpen] = useState(false);
+  const [openingIntroComplete, setOpeningIntroComplete] = useState(false);
+  const completeOpeningIntro = useCallback(() => setOpeningIntroComplete(true), []);
   const welcomeDisplay = normalizeWelcomeDisplay(welcome?.display ?? DEFAULT_WELCOME_DISPLAY);
   const whatsappGroupInvite = safeWhatsAppGroupInvite(welcome?.whatsappGroupEnabled, welcome?.whatsappGroupUrl);
   const selectedPalette = display.theme ? DISPLAY_PALETTES.find((palette) => palette.id === display.theme) : undefined;
@@ -194,9 +197,6 @@ function LoginPage() {
       document.documentElement.dataset.schoolAppearance = JSON.stringify(settings.appearance);
       applyDisplayPreferences(readDisplayPreferences());
     }).catch(() => setWelcome(null));
-    getWorkspace()
-      .then(() => navigate({ to: "/portal", search: { view: "home" } }))
-      .catch(() => undefined);
     getParentPasswordChangeStatus().then((result) => {
       if (result.required) {
         setParentPasswordChangeRequired(true);
@@ -207,6 +207,13 @@ function LoginPage() {
     setDisplay(preferences);
     applyDisplayPreferences(preferences);
   }, [navigate]);
+
+  useEffect(() => {
+    if (!openingIntroComplete) return;
+    getWorkspace()
+      .then(() => navigate({ to: "/portal", search: { view: "home" } }))
+      .catch(() => undefined);
+  }, [openingIntroComplete, navigate]);
 
   useEffect(() => {
     if (!featuresOpen) return;
@@ -429,7 +436,7 @@ function LoginPage() {
 
   return (
     <main className={`welcome-shell grid min-h-screen lg:grid-cols-[1.1fr_0.9fr] ${welcomeDisplay.animatedWordingPanels ? "" : "welcome-word-panels-disabled"}`} style={welcomeHeroStyle}>
-      <OpeningIntro title={welcome?.title || status?.schoolName || "Mukuyu Junior School"} motto={status?.motto || "Hard Work Pays"} logoSrc={welcome?.logoData || undefined} durationSeconds={Math.max(5, Math.min(30, welcome?.splashDurationSeconds ?? 10))} />
+      {!openingIntroComplete ? <OpeningIntro title={welcome?.title || status?.schoolName || "Mukuyu Junior School"} motto={status?.motto || "Hard Work Pays"} logoSrc={welcome?.logoData || undefined} durationSeconds={Math.max(5, Math.min(30, welcome?.splashDurationSeconds ?? 10))} onComplete={completeOpeningIntro} /> : null}
       <section className={`welcome-hero relative flex flex-col justify-between px-6 py-8 text-paper sm:px-12 ${welcome?.animated === false || welcome?.animationStyle === "none" ? "welcome-static" : `welcome-animated welcome-animation-${welcome?.animationStyle || "aurora"}`} ${welcomeDisplay.showRibbons ? "" : "welcome-no-ribbons"} ${welcomeDisplay.titleShadow ? "" : "welcome-title-shadow-disabled"} ${welcomeDisplay.contentAlignment === "center" ? "welcome-content-centered" : ""}`}>
         <div className="welcome-ribbon-field" aria-hidden="true"><span className="welcome-ribbon welcome-ribbon-one" /><span className="welcome-ribbon welcome-ribbon-two" /><span className="welcome-ribbon welcome-ribbon-three" /><span className="welcome-ribbon welcome-ribbon-four" /><span className="welcome-ribbon-orb welcome-ribbon-orb-one" /><span className="welcome-ribbon-orb welcome-ribbon-orb-two" /></div>
         <div className="relative z-10 flex items-center justify-between gap-4">
