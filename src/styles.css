@@ -1095,26 +1095,10 @@ html[data-portal-motion="reduced"] .portal-loading-track span { animation:none !
 }
 
 
-/* Original Mukuyu launch card: warm cream canvas, rounded MKJ brand tile, then the existing sign-in intro. */
+/* The app launch intro reuses the same full-screen animated color scene as the linked-site opening. */
 .portal-loading-opening {
   color: #26364a;
-  background-color: #f5eee4;
-  background-image: radial-gradient(ellipse at 50% 42%, rgba(255, 255, 255, .96), transparent 45%), linear-gradient(145deg, #f8f3ed, #eee4d8);
-  animation: none;
 }
-.portal-loading-opening::before,
-.portal-loading-opening::after,
-.portal-loading-opening .portal-loading-aurora,
-.portal-loading-opening .portal-loading-ribbon-field,
-.portal-loading-opening .portal-loading-rays,
-.portal-loading-opening .portal-loading-atom,
-.portal-loading-opening .portal-loading-orbit-glints,
-.portal-loading-opening .portal-loading-stars,
-.portal-loading-opening .portal-loading-dust,
-.portal-loading-opening .portal-loading-motes,
-.portal-loading-opening .portal-loading-comets,
-.portal-loading-opening .portal-loading-orbiting-objects,
-.portal-loading-opening .portal-loading-center-shade { display: none; }
 .portal-loading-opening .portal-loading-card {
   display: flex;
   width: min(34rem, calc(100vw - 2rem));
@@ -1125,6 +1109,11 @@ html[data-portal-motion="reduced"] .portal-loading-track span { animation:none !
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: clamp(.9rem, 3.5vh, 1.75rem) 1rem;
+  border: 1px solid rgba(255, 255, 255, .72);
+  border-radius: 1.75rem;
+  background: rgba(247, 243, 236, .9);
+  box-shadow: 0 24px 80px rgba(2, 7, 16, .42), 0 0 36px rgba(100, 206, 255, .2);
+  backdrop-filter: blur(16px);
   scrollbar-width: thin;
 }
 .portal-loading-opening .portal-loading-card::before,

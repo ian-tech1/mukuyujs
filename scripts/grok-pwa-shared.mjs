@@ -179,7 +179,7 @@ export function renderWebManifest(hostHeader, appNameOverride, iconPath) {
       start_url: "/",
       scope: "/",
       display: "standalone",
-      background_color: "#f4f0e6",
+      background_color: "#030914",
       theme_color: "#0e2a4a",
       icons,
     },

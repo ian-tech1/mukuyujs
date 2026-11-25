@@ -534,7 +534,7 @@ test("renders square MKJ app-icon artwork in the install manifest", () => {
     { src: "/icons/mukuyu-app-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
     { src: "/icons/mukuyu-app-512.png", sizes: "512x512", type: "image/png", purpose: "any maskable" },
   ]);
-  assert.equal(manifest.background_color, "#f4f0e6");
+  assert.equal(manifest.background_color, "#030914");
   assert.equal(manifest.theme_color, "#0e2a4a");
 });
 
