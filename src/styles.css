@@ -865,8 +865,8 @@ html[data-portal-backdrop-theme="nature-cycle"] .portal-nature-scene[data-active
 .portal-page-content :is([class*="bg-card"], [class*="bg-white"], [class*="bg-paper"]) .text-bad { color: #9f2d2d; }
 .portal-page-content :is(input, select, textarea) { color: #1c1915; }
 .portal-page-content :is(input, textarea)::placeholder { color: #777066; }
-@keyframes mukuyu-nebula-drift { 0% { background-position: 0% 15%; filter: saturate(.96); } 50% { background-position: 100% 85%; filter: saturate(1.1); } 100% { background-position: 8% 100%; filter: saturate(1); } }
-@keyframes portal-scene-drift { from { background-position: 0% 10%; } to { background-position: 100% 90%; } }
+@keyframes mukuyu-nebula-drift { 0% { transform: translate3d(-.7%, .3%, 0) scale(1.015); } 50% { transform: translate3d(.5%, -.4%, 0) scale(1.025); } 100% { transform: translate3d(.7%, .5%, 0) scale(1.015); } }
+@keyframes portal-scene-drift { from { transform: translate3d(-.7%, -.4%, 0) scale(1.01); } to { transform: translate3d(.7%, .4%, 0) scale(1.02); } }
 @keyframes mukuyu-orbit-drift { from { transform: translate3d(-.45%, .2%, 0) rotate(-1deg); } to { transform: translate3d(.45%, -.2%, 0) rotate(1deg); } }
 @media (prefers-reduced-motion: reduce) {
   .portal-page-content::before, .portal-page-content::after, .portal-animated-background, .portal-loading, .portal-loading::before, .portal-loading::after, .portal-loading-orbit, .portal-loading-track span, .welcome-shell, .welcome-hero, .welcome-login-panel, .welcome-word-panel, .welcome-parent-toggle { animation: none !important; }
