@@ -1095,25 +1095,13 @@ html[data-portal-motion="reduced"] .portal-loading-track span { animation:none !
 }
 
 
-/* Both launches reuse the complete refresh backdrop; the installed app keeps a larger center logo orbit. */
+/* Browser links keep the branded intro card; installed app launches expose the orbital scene on its own. */
 .portal-opening-link,
 .portal-opening-app { isolation: isolate; pointer-events: auto; }
-.portal-opening-link .portal-loading-card,
-.portal-opening-link .portal-loading-center-shade { display: none !important; }
 .portal-opening-app .portal-loading-card,
 .portal-opening-app .portal-loading-center-shade { display: none !important; }
 .portal-opening-center-orbit { position: relative; z-index: 2; display: none; place-items: center; }
-.portal-opening-link .portal-opening-center-orbit { display: grid; }
 .portal-opening-app .portal-opening-center-orbit { display: grid; }
-.portal-opening-link .portal-opening-center-orbit .portal-loading-orbit {
-  width: clamp(4.4rem, 11vw, 5.25rem);
-  height: clamp(4.4rem, 11vw, 5.25rem);
-  margin: 0;
-  background: radial-gradient(circle, rgba(7, 17, 35, .08) 42%, transparent 66%) padding-box,
-    conic-gradient(from 0deg, #2ba8c5, #6d67c5, #d273b3, #eabf56, #61b99b, #2ba8c5) border-box;
-  box-shadow: 0 0 20px rgba(74, 183, 220, .34), 0 0 30px rgba(171, 104, 180, .24);
-}
-.portal-opening-link .portal-opening-center-orbit .portal-loading-orbit > * { width: 2.85rem; height: 2.85rem; }
 .portal-opening-app .portal-opening-center-orbit .portal-loading-orbit {
   width: clamp(6rem, 14vw, 7.25rem);
   height: clamp(6rem, 14vw, 7.25rem);
