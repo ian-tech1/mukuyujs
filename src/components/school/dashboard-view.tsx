@@ -3,18 +3,31 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { SchoolIntelligenceCenter } from "@/components/school/school-intelligence-center";
 import { PeriodBar, useSchoolPeriod } from "@/components/school/period-bar";
 import type { Gate } from "@/components/school/gate";
+import { inputClass } from "@/components/school/gate";
 import { btnDownload } from "@/components/school/download-button";
 import { buildBoards, decorate, fmt, isAdmin, learnersForYear, meanOf, periodMarks } from "@/lib/school/model";
 
 export function DashboardView({ ws: sourceWs, refresh, flash }: Gate) {
   const period = useSchoolPeriod(sourceWs);
+  const [gradeFilter, setGradeFilter] = useState("all");
+  const [streamFilter, setStreamFilter] = useState("all");
   const selectedYear = sourceWs.years.find((year) => year.id === period.yearId);
   const selectedTerm = sourceWs.terms.find((term) => term.id === period.termId);
   const yearLearners = useMemo(() => learnersForYear(sourceWs, period.yearId), [sourceWs, period.yearId]);
+  const selectedLearners = useMemo(() => yearLearners.filter((learner) =>
+    (gradeFilter === "all" || learner.gradeId === gradeFilter) &&
+    (streamFilter === "all" || learner.streamId === streamFilter),
+  ), [yearLearners, gradeFilter, streamFilter]);
+  const selectedLearnerIds = useMemo(() => new Set(selectedLearners.map((learner) => learner.id)), [selectedLearners]);
+  const selectedMarks = useMemo(() => period.marks.filter((mark) => selectedLearnerIds.has(mark.learnerId)), [period.marks, selectedLearnerIds]);
+  const selectedGrade = sourceWs.grades.find((grade) => grade.id === gradeFilter);
+  const selectedStream = sourceWs.streams.find((stream) => stream.id === streamFilter);
+  const scopeLabel = `${selectedGrade?.name ?? "All grades"} · ${selectedStream?.name ?? "All streams"}`;
+  const scopedStreams = sourceWs.streams.filter((stream) => gradeFilter === "all" || stream.gradeId === gradeFilter);
   const ws = useMemo(() => ({
     ...sourceWs,
-    learners: yearLearners,
-    marks: period.marks,
+    learners: selectedLearners,
+    marks: selectedMarks,
     profile: {
       ...sourceWs.profile,
       activeYearId: period.yearId,
@@ -22,7 +35,7 @@ export function DashboardView({ ws: sourceWs, refresh, flash }: Gate) {
       academicYear: selectedYear?.name ?? sourceWs.profile.academicYear,
       termName: selectedTerm?.name ?? sourceWs.profile.termName,
     },
-  }), [sourceWs, yearLearners, period.marks, period.yearId, period.termId, selectedYear?.name, selectedTerm?.name]);
+  }), [sourceWs, selectedLearners, selectedMarks, period.yearId, period.termId, selectedYear?.name, selectedTerm?.name]);
   const [selectedDashboardSection, setSelectedDashboardSection] = useState<"overview" | "performance" | "quality" | "interventions">("overview");
   const [focusOpen, setFocusOpen] = useState(false);
   const [focusSearch, setFocusSearch] = useState("");
@@ -88,7 +101,9 @@ export function DashboardView({ ws: sourceWs, refresh, flash }: Gate) {
     .sort((a, b) => b.delta - a.delta)
     .slice(0, 5);
 
-  const focusGrade = byGrade.find((row) => row.grade.id === "g8") ?? byGrade[0];
+  const focusGrade = gradeFilter === "all"
+    ? byGrade.find((row) => row.grade.id === "g8") ?? byGrade[0]
+    : byGrade.find((row) => row.grade.id === gradeFilter);
 
   // Additional live dashboard insights derived from the currently selected year and term.
   const subjectInsights = subjects.map((subject) => {
@@ -273,7 +288,11 @@ export function DashboardView({ ws: sourceWs, refresh, flash }: Gate) {
   const selectedFocusRow = focusRows.find((row) => row.learner.id === selectedLearnerId) ?? focusRows[0];
   const selectedCoverage = selectedFocusRow ? learnerCoverage.find((row) => row.learner.id === selectedFocusRow.learner.id) : undefined;
   const selectedStrength = selectedFocusRow ? learnerSubjectStrengths.find((row) => row.learner.id === selectedFocusRow.learner.id) : undefined;
-  const focusStreamOptions = focusGradeFilter === "all" ? ws.streams : ws.streams.filter((stream) => stream.gradeId === focusGradeFilter);
+  const focusGradeOptions = ws.grades.filter((grade) => ws.learners.some((learner) => learner.gradeId === grade.id));
+  const focusStreamOptions = ws.streams.filter((stream) =>
+    ws.learners.some((learner) => learner.streamId === stream.id) &&
+    (focusGradeFilter === "all" || stream.gradeId === focusGradeFilter),
+  );
   const compareRows = compareIds.map((id) => ranked.find((row) => row.learner.id === id)).filter((row): row is typeof ranked[number] => Boolean(row));
   const displayedFocusRows = maxFocusRows === "all" ? focusRows : focusRows.slice(0, Number(maxFocusRows));
   const focusStatusOptions = [...new Set(ws.learners.map((learner) => learner.status || "Unknown"))].sort();
@@ -317,7 +336,7 @@ export function DashboardView({ ws: sourceWs, refresh, flash }: Gate) {
     const csv = [["Learner", "Admission number", "Grade", "Stream", "Mean"], ...rows].map((row) => row.map((value) => `"${String(value).replaceAll('"', '""')}"`).join(",")).join("\n");
     const link = document.createElement("a");
     link.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
-    const periodFileLabel = `${selectedYear?.name ?? period.yearId}-${selectedTerm?.name ?? period.termId}`.replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "").toLowerCase();
+    const periodFileLabel = `${selectedYear?.name ?? period.yearId}-${selectedTerm?.name ?? period.termId}-${selectedGrade?.name ?? "all-grades"}-${selectedStream?.name ?? "all-streams"}`.replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "").toLowerCase();
     link.download = `mukuyu-dashboard-learners-${periodFileLabel}.csv`;
     link.click();
     URL.revokeObjectURL(link.href);
@@ -326,12 +345,14 @@ export function DashboardView({ ws: sourceWs, refresh, flash }: Gate) {
 
   async function copySelectedSummary() {
     if (!selectedFocusRow) return;
-    const text = `${selectedFocusRow.learner.fullName} · ${selectedTerm?.name ?? "Term"} ${selectedYear?.name ?? ""} · mean ${fmt(selectedFocusRow.avgMean)} · position ${selectedFocusRow.overall.position}/${selectedFocusRow.overall.outOf} · coverage ${selectedCoverage?.percent ?? 0}%`;
+    const gradeName = ws.grades.find((grade) => grade.id === selectedFocusRow.learner.gradeId)?.name ?? "Grade";
+    const streamName = ws.streams.find((stream) => stream.id === selectedFocusRow.learner.streamId)?.name ?? "No stream";
+    const text = `${selectedFocusRow.learner.fullName} · ${gradeName} · ${streamName} · ${selectedTerm?.name ?? "Term"} ${selectedYear?.name ?? ""} · mean ${fmt(selectedFocusRow.avgMean)} · position ${selectedFocusRow.overall.position}/${selectedFocusRow.overall.outOf} · coverage ${selectedCoverage?.percent ?? 0}%`;
     try { await navigator.clipboard.writeText(text); flash("Learner summary copied."); } catch { flash("Copy is unavailable in this browser.", true); }
   }
 
   function saveSnapshot() {
-    const snapshot = { savedAt: new Date().toISOString(), filters: { yearId: period.yearId, termId: period.termId, focusSearch, focusGradeFilter, focusStream, focusSort, statusFilter, genderFilter, cohortFilter, incompleteOnly }, matchingLearners: focusRows.length, selectedLearnerId };
+    const snapshot = { savedAt: new Date().toISOString(), filters: { yearId: period.yearId, termId: period.termId, gradeId: gradeFilter, streamId: streamFilter, focusSearch, focusGradeFilter, focusStream, focusSort, statusFilter, genderFilter, cohortFilter, incompleteOnly }, matchingLearners: focusRows.length, selectedLearnerId };
     try { window.localStorage.setItem("mukuyu-dashboard-snapshot-v1", JSON.stringify(snapshot)); } catch { /* Keep the confirmation useful even if storage is blocked. */ }
     setSnapshotSavedAt(new Date().toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" }));
     flash("Dashboard snapshot saved on this device.");
@@ -340,7 +361,7 @@ export function DashboardView({ ws: sourceWs, refresh, flash }: Gate) {
   return (
     <div className="space-y-6">
       <header>
-        <p className="text-xs font-semibold tracking-[0.18em] text-brass">Viewing {selectedTerm?.name ?? ws.profile.termName} · {selectedYear?.name ?? ws.profile.academicYear}</p>
+        <p className="text-xs font-semibold tracking-[0.18em] text-brass">Viewing {selectedTerm?.name ?? ws.profile.termName} · {selectedYear?.name ?? ws.profile.academicYear} · {scopeLabel}</p>
         <h1 className="mt-1 font-serif text-3xl text-navy">{(() => {
           const hour = new Date().getHours();
           const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : hour < 21 ? "Good evening" : "Good night";
@@ -385,16 +406,26 @@ export function DashboardView({ ws: sourceWs, refresh, flash }: Gate) {
       <section id="dashboard-overview" role="region" aria-label="Overview dashboard" className="scroll-mt-24 space-y-6">
       <section id="dashboard-summary" className="scroll-mt-24 rounded-2xl border border-info/20 bg-gradient-to-br from-card via-card to-info/5 p-4 shadow-card" aria-labelledby="dashboard-period-title">
         <div className="flex flex-wrap items-start justify-between gap-4">
-          <div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-info">Academic period</p><h2 id="dashboard-period-title" className="mt-1 font-serif text-2xl text-navy">Choose a year and term</h2><p className="mt-1 max-w-2xl text-sm text-muted">Dashboard results, rankings and mark-completion figures update to this selection. Past-year learners are shown in the class and stream they had in that year.</p></div>
+          <div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-info">Academic period and class scope</p><h2 id="dashboard-period-title" className="mt-1 font-serif text-2xl text-navy">Choose year, term, grade and stream</h2><p className="mt-1 max-w-2xl text-sm text-muted">Results, rankings, learner lists and mark completion update to this selection. Past-year learners are shown in the class and stream they had in that year.</p></div>
+        </div>
+        <div className="mt-4 grid gap-3 lg:grid-cols-[auto_minmax(20rem,1fr)] lg:items-end">
           <PeriodBar ws={sourceWs} yearId={period.yearId} termId={period.termId} onYear={period.setYearId} onTerm={period.setTermId} />
+          <div className="grid gap-2 sm:grid-cols-2">
+            <label className="text-xs font-semibold text-navy">Grade<select className={`${inputClass} mt-1`} value={gradeFilter} onChange={(event) => { setGradeFilter(event.target.value); setStreamFilter("all"); setFocusGradeFilter("all"); setFocusStream("all"); setSelectedLearnerId(null); }}><option value="all">All grades</option>{sourceWs.grades.map((grade) => <option key={grade.id} value={grade.id}>{grade.name}</option>)}</select></label>
+            <label className="text-xs font-semibold text-navy">Stream<select className={`${inputClass} mt-1`} value={streamFilter} onChange={(event) => { setStreamFilter(event.target.value); setFocusGradeFilter("all"); setFocusStream("all"); setSelectedLearnerId(null); }}><option value="all">All streams</option>{scopedStreams.map((stream) => <option key={stream.id} value={stream.id}>{gradeFilter === "all" ? `${sourceWs.grades.find((grade) => grade.id === stream.gradeId)?.name ?? "Grade"} · ${stream.name}` : stream.name}</option>)}</select></label>
+          </div>
         </div>
       </section>
-      <section className="space-y-3" aria-label={`School mean comparison for ${selectedTerm?.name ?? "selected term"}`}>
-        <div><h2 className="font-serif text-xl text-navy">School mean by year · {selectedTerm?.name ?? "selected term"}</h2><p className="mt-1 text-sm text-muted">Compare the same term across years. Select a year above to open its detailed dashboard results.</p></div>
+      <section className="space-y-3" aria-label={`Mean comparison for ${selectedTerm?.name ?? "selected term"}, ${scopeLabel}`}>
+        <div><h2 className="font-serif text-xl text-navy">School mean by year · {selectedTerm?.name ?? "selected term"}</h2><p className="mt-1 text-sm text-muted">Compare the same term and grade/stream scope across years. Select a year above to open its detailed dashboard results.</p></div>
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
         {sourceWs.years.map((year) => {
-          const learners = learnersForYear(sourceWs, year.id);
-          const yearMarks = periodMarks(sourceWs.marks, year.id, period.termId);
+          const learners = learnersForYear(sourceWs, year.id).filter((learner) =>
+            (gradeFilter === "all" || learner.gradeId === gradeFilter) &&
+            (streamFilter === "all" || learner.streamId === streamFilter),
+          );
+          const learnerIds = new Set(learners.map((learner) => learner.id));
+          const yearMarks = periodMarks(sourceWs.marks, year.id, period.termId).filter((mark) => learnerIds.has(mark.learnerId));
           const mean = meanOf(buildBoards(learners, yearMarks, subjects, exams, ws.bands).map((board) => board.avgMean));
           const open = year.id === period.yearId;
           return (
@@ -407,7 +438,7 @@ export function DashboardView({ ws: sourceWs, refresh, flash }: Gate) {
         </div>
       </section>
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <Tile label="Learners in selected year" value={String(ws.learners.length)} hint={`${ws.grades.map((grade) => `${grade.level}: ${ws.learners.filter((learner) => learner.gradeId === grade.id).length}`).join(" · ")}`} />
+        <Tile label="Learners in selected scope" value={String(ws.learners.length)} hint={`${ws.grades.map((grade) => `${grade.level}: ${ws.learners.filter((learner) => learner.gradeId === grade.id).length}`).filter((label) => !label.endsWith(": 0")).join(" · ") || "No learners in this selection"}`} />
         <Tile label="School mean" value={fmt(schoolMean)} hint={`Average across recorded marks · ${selectedTerm?.name ?? "selected term"}`} />
         <Tile label="Top class" value={topClass?.grade.name ?? "—"} hint={topClass?.mean == null ? "No marks yet" : `Mean ${fmt(topClass.mean)}`} />
         <Tile label="Top stream" value={topStream ? `${topStream.grade?.name ?? ""} ${topStream.stream.name}` : "—"} hint={topStream?.mean == null ? "" : `Mean ${fmt(topStream.mean)}`} />
@@ -467,7 +498,7 @@ export function DashboardView({ ws: sourceWs, refresh, flash }: Gate) {
         {focusOpen ? <>
           <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-[minmax(12rem,1.6fr)_repeat(3,minmax(9rem,1fr))_auto]">
             <label className="text-xs font-semibold text-navy">Find learner<input data-dashboard-focus-search className="mt-1 w-full rounded-lg border border-line bg-card px-3 py-2 text-sm font-normal" value={focusSearch} onChange={(event) => setFocusSearch(event.target.value)} placeholder="Name, admission no. or cohort" /></label>
-            <label className="text-xs font-semibold text-navy">Grade<select className="mt-1 w-full rounded-lg border border-line bg-card px-3 py-2 text-sm font-normal" value={focusGradeFilter} onChange={(event) => { setFocusGradeFilter(event.target.value); setFocusStream("all"); }}><option value="all">All grades</option>{ws.grades.map((grade) => <option key={grade.id} value={grade.id}>{grade.name}</option>)}</select></label>
+            <label className="text-xs font-semibold text-navy">Grade<select className="mt-1 w-full rounded-lg border border-line bg-card px-3 py-2 text-sm font-normal" value={focusGradeFilter} onChange={(event) => { setFocusGradeFilter(event.target.value); setFocusStream("all"); }}><option value="all">All grades</option>{focusGradeOptions.map((grade) => <option key={grade.id} value={grade.id}>{grade.name}</option>)}</select></label>
             <label className="text-xs font-semibold text-navy">Stream<select className="mt-1 w-full rounded-lg border border-line bg-card px-3 py-2 text-sm font-normal" value={focusStream} onChange={(event) => setFocusStream(event.target.value)}><option value="all">All streams</option>{focusStreamOptions.map((stream) => <option key={stream.id} value={stream.id}>{stream.name}</option>)}</select></label>
             <label className="text-xs font-semibold text-navy">Sort by<select className="mt-1 w-full rounded-lg border border-line bg-card px-3 py-2 text-sm font-normal" value={focusSort} onChange={(event) => setFocusSort(event.target.value as typeof focusSort)}><option value="performance">Highest mean</option><option value="support">Needs support first</option><option value="name">Name A–Z</option></select></label>
             <button type="button" className="self-end rounded-lg border border-line px-3 py-2 text-xs font-semibold text-navy" onClick={() => { setFocusSearch(""); setFocusGradeFilter("all"); setFocusStream("all"); setFocusSort("performance"); setStatusFilter("all"); setGenderFilter("all"); setCohortFilter("all"); setIncompleteOnly(false); setMaxFocusRows("40"); setSelectedLearnerId(null); }}>Clear</button>
