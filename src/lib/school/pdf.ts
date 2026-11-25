@@ -502,9 +502,11 @@ export async function downloadMeritListPdf(options: {
   analytics: MeritPdfAnalytics | null;
   meanHeader?: string;
   levelHeader?: string;
+  orientation?: "landscape" | "portrait";
 }) {
   const { jsPDF } = await import("jspdf");
-  const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+  const orientation = options.orientation ?? "landscape";
+  const doc = new jsPDF({ orientation, unit: "mm", format: "a4" });
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
 
@@ -529,7 +531,7 @@ export async function downloadMeritListPdf(options: {
     doc.text(`MOTTO: ${options.profile.motto}`, pageW / 2, 25, { align: "center" });
     doc.setFont("helvetica", "bold");
     doc.setFontSize(8.5);
-    doc.text(options.title, pageW / 2, 29.5, { align: "center" });
+    doc.text(options.title, pageW / 2, 29.5, { align: "center", maxWidth: pageW - 70 });
     doc.setFont("helvetica", "normal");
     doc.setFontSize(7.5);
     doc.text(options.periodLabel, pageW / 2, 33, { align: "center" });
@@ -540,11 +542,14 @@ export async function downloadMeritListPdf(options: {
   letterhead();
   const subjects = options.subjects;
   const left = 5;
-  const fixed = { pos: 10, roll: 9, adm: 20, name: 46, stream: 16, mean: 13, level: 11 };
-  const subjectW = Math.max(8, Math.min(16, (pageW - 10 - Object.values(fixed).reduce((a, b) => a + b, 0)) / Math.max(subjects.length, 1)));
+  const fixed = orientation === "portrait"
+    ? { pos: 7, roll: 7, adm: 17, name: 34, stream: 12, mean: 12, level: 11 }
+    : { pos: 10, roll: 9, adm: 20, name: 46, stream: 16, mean: 13, level: 11 };
+  const subjectW = Math.max(1, Math.min(16, (pageW - 10 - Object.values(fixed).reduce((a, b) => a + b, 0)) / Math.max(subjects.length, 1)));
+  const widths = [fixed.pos, fixed.roll, fixed.adm, fixed.name, fixed.stream, ...subjects.map(() => subjectW), fixed.mean, fixed.level];
   const xs: number[] = [];
   let cursor = left;
-  for (const width of [fixed.pos, fixed.roll, fixed.adm, fixed.name, fixed.stream, ...subjects.map(() => subjectW), fixed.mean, fixed.level]) {
+  for (const width of widths) {
     xs.push(cursor);
     cursor += width;
   }
@@ -555,8 +560,8 @@ export async function downloadMeritListPdf(options: {
     doc.rect(left, y - 4.5, tableRight - left, 6.5, "F");
     doc.setTextColor(255, 255, 255);
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(6.5);
-    heads.forEach((head, i) => doc.text(String(head).slice(0, 12), xs[i] + 1, y));
+    doc.setFontSize(orientation === "portrait" ? 5 : 6.5);
+    heads.forEach((head, i) => doc.text(String(head).slice(0, orientation === "portrait" ? 6 : 12), xs[i] + 0.5, y, { maxWidth: Math.max(1, widths[i] - 1) }));
     doc.setTextColor(20, 20, 20);
     doc.setFont("helvetica", "normal");
   };
@@ -576,11 +581,11 @@ export async function downloadMeritListPdf(options: {
       doc.setFillColor(246, 244, 238);
       doc.rect(left, y - 3.8, tableRight - left, rowH, "F");
     }
-    doc.setFontSize(6.5);
+    doc.setFontSize(orientation === "portrait" ? 5 : 6.5);
     const cells = [row.position, String(row.roll), row.admission || "—", row.name, row.stream, ...row.scores, row.mean, row.level];
     cells.forEach((cell, i) => {
-      const limit = i === 3 ? 30 : i === 2 ? 14 : 12;
-      doc.text(String(cell).slice(0, limit), xs[i] + 1, y);
+      const limit = i === 3 ? (orientation === "portrait" ? 22 : 30) : i === 2 ? (orientation === "portrait" ? 10 : 14) : orientation === "portrait" && i >= 5 && i < 5 + subjects.length ? 9 : 12;
+      doc.text(String(cell).slice(0, limit), xs[i] + 0.5, y, { maxWidth: Math.max(1, widths[i] - 1) });
     });
     y += rowH;
   });
@@ -594,14 +599,17 @@ export async function downloadMeritListPdf(options: {
   doc.setTextColor(14, 42, 74);
   doc.text("STREAM MEAN SUMMARY", left, y + 2);
   y += 6;
+  const streamSummaryColumns = orientation === "portrait"
+    ? { learners: left + 45, mean: left + 70, topLearner: left + 96 }
+    : { learners: left + 62, mean: left + 91, topLearner: left + 119 };
   doc.setFillColor(29, 78, 77);
   doc.rect(left, y - 3.5, pageW - 10, 5.5, "F");
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(6.5);
   doc.text("STREAM", left + 2, y);
-  doc.text("LEARNERS", left + 62, y);
-  doc.text("MEAN", left + 91, y);
-  doc.text("TOP LEARNER", left + 119, y);
+  doc.text("LEARNERS", streamSummaryColumns.learners, y);
+  doc.text("MEAN", streamSummaryColumns.mean, y);
+  doc.text("TOP LEARNER", streamSummaryColumns.topLearner, y);
   y += 6;
   doc.setTextColor(20, 20, 20);
   doc.setFont("helvetica", "normal");
@@ -610,9 +618,9 @@ export async function downloadMeritListPdf(options: {
     if (index % 2 === 1) { doc.setFillColor(246, 244, 238); doc.rect(left, y - 3.5, pageW - 10, 5.5, "F"); }
     doc.setFontSize(7);
     doc.text(item.name.slice(0, 28), left + 2, y);
-    doc.text(String(item.learnerCount), left + 62, y);
-    doc.text(item.meanLabel, left + 91, y);
-    doc.text(item.topLearner.slice(0, 48), left + 119, y);
+    doc.text(String(item.learnerCount), streamSummaryColumns.learners, y);
+    doc.text(item.meanLabel, streamSummaryColumns.mean, y);
+    doc.text(item.topLearner.slice(0, orientation === "portrait" ? 34 : 48), streamSummaryColumns.topLearner, y, { maxWidth: pageW - streamSummaryColumns.topLearner - 8 });
     y += 5.5;
   });
   if (!options.streamSummary.length) { doc.setFontSize(7); doc.text("No stream results available for this grade.", left + 2, y); y += 5; }
@@ -734,14 +742,16 @@ export async function downloadSubjectLevelMeritListPdf(options: {
   subjects: Array<{ id: string; shortName: string; name: string }>;
   rows: Array<{ position: string; roll: number; admission: string; name: string; stream: string; subjectScores: string[]; mean: string; level: string }>;
   analytics?: MeritPdfAnalytics | null;
+  orientation?: "landscape" | "portrait";
 }) {
   const { jsPDF } = await import("jspdf");
-  const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+  const orientation = options.orientation ?? "landscape";
+  const doc = new jsPDF({ orientation, unit: "mm", format: "a4" });
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
   const left = 5;
   const tableW = pageW - left * 2;
-  const subjectsPerSection = 12;
+  const subjectsPerSection = orientation === "portrait" ? 7 : 12;
   const subjectSections = options.subjects.length
     ? Array.from({ length: Math.ceil(options.subjects.length / subjectsPerSection) }, (_, index) => options.subjects.slice(index * subjectsPerSection, (index + 1) * subjectsPerSection))
     : [[]];
@@ -779,7 +789,7 @@ export async function downloadSubjectLevelMeritListPdf(options: {
 
   let firstPage = true;
   subjectSections.forEach((section, sectionIndex) => {
-    const identityWidths = [10, 9, 21, 49, 18, 14, 14];
+    const identityWidths = orientation === "portrait" ? [7, 6, 15, 34, 12, 10, 10] : [10, 9, 21, 49, 18, 14, 14];
     const subjectWidth = Math.max(8, (tableW - identityWidths.reduce((sum, width) => sum + width, 0)) / Math.max(section.length, 1));
     const widths = [...identityWidths.slice(0, 5), ...section.map(() => subjectWidth), ...identityWidths.slice(5)];
     const heads = ["POS", "NO.", "ADM NO.", "LEARNER", "STREAM", ...section.map((subject) => (subject.shortName || subject.name).slice(0, 12)), "MEAN", "OVERALL"];

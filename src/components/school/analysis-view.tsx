@@ -94,6 +94,7 @@ export function AnalysisView({ ws, flash }: Gate) {
   const meritTitle = `CLASS ANALYSIS / MERIT LIST — ${grade?.name ?? "Class"}${streamId ? ` · ${ws.streams.find((item) => item.id === streamId)?.name ?? ""}` : " · All streams"}`;
   const meritPeriod = `${ws.terms.find((item) => item.id === period.termId)?.name ?? ws.profile.termName} · ${ws.years.find((item) => item.id === period.yearId)?.name ?? ws.profile.academicYear}`;
   const [pdfWithAnalytics, setPdfWithAnalytics] = useState(true);
+  const [meritOrientation, setMeritOrientation] = useState<"landscape" | "portrait">("landscape");
   const [pdfBusy, setPdfBusy] = useState(false);
 
   function download() {
@@ -181,12 +182,13 @@ export function AnalysisView({ ws, flash }: Gate) {
     try {
       const modeName = currentMode === "avg" ? "average" : exams.find((exam) => exam.id === currentMode)?.name ?? currentMode;
       await downloadMeritListPdf({
-        fileName: `${grade?.name ?? "class"}-${modeName}-merit-list.pdf`.replace(/[^a-zA-Z0-9._-]+/g, "_"),
+        fileName: `${grade?.name ?? "class"}-${modeName}-${meritOrientation}-merit-list.pdf`.replace(/[^a-zA-Z0-9._-]+/g, "_"),
         profile: ws.profile,
         logo: await logoDataUrl(ws.profile.logoData),
         title: `${meritTitle} (${modeName})`,
         periodLabel: meritPeriod,
         subjects,
+        orientation: meritOrientation,
         rows: ranked.map((row) => ({
           position: rankOf(row),
           roll: row.learner.roll,
@@ -269,18 +271,22 @@ export function AnalysisView({ ws, flash }: Gate) {
         scores: subjects.map((subject) => {
           const cell = row.cells.find((item) => item.subjectId === subject.id);
           const score = currentMode === "avg" ? cell?.avg : cell?.byExam[currentMode];
-          return `${score == null ? "—" : Number(score.toFixed(0))} · ${cell?.level ?? "—"} (${cell?.points ?? "—"} pts)`;
+          if (score == null) return "—";
+          return meritOrientation === "portrait"
+            ? `${Number(score.toFixed(0))}·${cell?.level ?? "—"}·${cell?.points ?? "—"}`
+            : `${Number(score.toFixed(0))} · ${cell?.level ?? "—"} (${cell?.points ?? "—"} pts)`;
         }),
         mean: row.totalPoints == null ? "—" : String(row.totalPoints),
         level: `${row.level ?? "—"} · ${row.levelPoints ?? "—"} pts`,
       }));
       await downloadMeritListPdf({
-        fileName: `${grade.name}-${currentMode}-points-merit-list.pdf`.replace(/[^a-zA-Z0-9._-]+/g, "_"),
+        fileName: `${grade.name}-${currentMode}-${meritOrientation}-points-merit-list.pdf`.replace(/[^a-zA-Z0-9._-]+/g, "_"),
         profile: ws.profile,
         logo: await logoDataUrl(ws.profile.logoData),
         title: `POINTS-BASED MERIT LIST — ${grade.name}${streamId ? ` · ${ws.streams.find((item) => item.id === streamId)?.name ?? ""}` : " · All streams"}`,
         periodLabel: `${meritPeriod} · Rank by total subject points; level points shown`,
         subjects,
+        orientation: meritOrientation,
         rows: pointRows,
         streamSummary: pointsStreamCompare,
         meanHeader: "TOTAL POINTS",
@@ -346,9 +352,9 @@ export function AnalysisView({ ws, flash }: Gate) {
       ["Stream", "Learners", "Mean", "Top learner"],
       ...streamCompare.map((item) => [item.name, item.learnerCount, item.meanLabel, item.topLearner]),
     ];
-    const bytes = writeXlsxFromMatrix(quoteRows, { sheetName: "Merit list", headerRow: 9, orientation: "landscape", logo: ws.profile.logoData || "/logo.png" });
+    const bytes = writeXlsxFromMatrix(quoteRows, { sheetName: "Merit list", headerRow: 9, orientation: meritOrientation, logo: ws.profile.logoData || "/logo.png" });
     const url = URL.createObjectURL(new Blob([bytes as BlobPart], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }));
-    const link = document.createElement("a"); link.href = url; link.download = `${grade?.name ?? "class"}-${currentMode}-merit-list.xlsx`.replace(/[^a-zA-Z0-9._-]+/g, "_"); link.click(); window.setTimeout(() => URL.revokeObjectURL(url), 0);
+    const link = document.createElement("a"); link.href = url; link.download = `${grade?.name ?? "class"}-${currentMode}-${meritOrientation}-merit-list.xlsx`.replace(/[^a-zA-Z0-9._-]+/g, "_"); link.click(); window.setTimeout(() => URL.revokeObjectURL(url), 0);
     flash("Merit list Excel workbook downloaded with school letterhead, logo, headers, learners, and stream summary.");
   }
   async function downloadSubjectLevelsPdf() {
@@ -358,11 +364,12 @@ export function AnalysisView({ ws, flash }: Gate) {
     try {
       const modeName = currentMode === "avg" ? "average" : exams.find((exam) => exam.id === currentMode)?.name ?? currentMode;
       await downloadSubjectLevelMeritListPdf({
-        fileName: `${grade.name}-${modeName}-subject-level-merit-list.pdf`.replace(/[^a-zA-Z0-9._-]+/g, "_"),
+        fileName: `${grade.name}-${modeName}-${meritOrientation}-subject-level-merit-list.pdf`.replace(/[^a-zA-Z0-9._-]+/g, "_"),
         profile: ws.profile,
         logo: await logoDataUrl(ws.profile.logoData),
         title: `SUBJECT LEVEL MERIT LIST — ${grade.name}${streamId ? ` · ${ws.streams.find((item) => item.id === streamId)?.name ?? ""}` : " · All streams"}`,
         periodLabel: `${meritPeriod} · Overall merit ranked, subject levels averaged across the active assessments`,
+        orientation: meritOrientation,
         analytics: pdfWithAnalytics ? {
           summary: [
             { label: "Class mean", value: fmt(classMean) },
@@ -428,7 +435,23 @@ export function AnalysisView({ ws, flash }: Gate) {
           <h1 className="font-serif text-3xl text-navy">Analysis</h1>
           <p className="text-sm text-muted">Merit order for one year and term. Compare CAT 1, CAT 2, or the average, and see the other terms beside it.</p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">{canDownload ? <><label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={pdfWithAnalytics} onChange={(event) => setPdfWithAnalytics(event.target.checked)} />Include graphs and advanced analytics in PDF</label><button className={btnGhost} type="button" onClick={download}>Download merit list (CSV)</button><button className={btnGhost} type="button" onClick={() => void downloadExcel()}>Download merit list (Excel)</button><button className={btnGhost} type="button" disabled={pdfBusy} onClick={downloadPdf}>{pdfBusy ? "Preparing PDF…" : "Download merit list (PDF)"}</button><button className={btnGhost} type="button" disabled={pdfBusy || !ranked.length} onClick={downloadPointsPdf}>{pdfBusy ? "Preparing PDF…" : "Download points merit list (PDF)"}</button><button className={btnGhost} type="button" disabled={pdfBusy || !ranked.length} onClick={downloadSubjectLevelsPdf}>{pdfBusy ? "Preparing PDF…" : "Download subject levels (landscape PDF)"}</button><button className={btnGhost} type="button" onClick={() => { flash("Print dialog opened for the class analysis."); window.print(); }}>Print analysis</button></> : <span className="text-sm text-muted">Downloads and printing are disabled by the Super Admin for your role.</span>}</div>
+        <div className="flex flex-wrap items-center gap-2">
+          {canDownload ? <>
+            <label className="text-xs font-semibold text-muted">Page layout (PDF / Excel)
+              <select className={inputClass + " ml-2"} value={meritOrientation} onChange={(event) => setMeritOrientation(event.target.value as typeof meritOrientation)}>
+                <option value="landscape">Landscape</option>
+                <option value="portrait">Portrait</option>
+              </select>
+            </label>
+            <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={pdfWithAnalytics} onChange={(event) => setPdfWithAnalytics(event.target.checked)} />Include graphs and advanced analytics in PDF</label>
+            <button className={btnGhost} type="button" onClick={download}>Download merit list (CSV)</button>
+            <button className={btnGhost} type="button" onClick={() => void downloadExcel()}>Download merit list (Excel)</button>
+            <button className={btnGhost} type="button" disabled={pdfBusy} onClick={downloadPdf}>{pdfBusy ? "Preparing PDF…" : "Download merit list (PDF)"}</button>
+            <button className={btnGhost} type="button" disabled={pdfBusy || !ranked.length} onClick={downloadPointsPdf}>{pdfBusy ? "Preparing PDF…" : "Download points merit list (PDF)"}</button>
+            <button className={btnGhost} type="button" disabled={pdfBusy || !ranked.length} onClick={downloadSubjectLevelsPdf}>{pdfBusy ? "Preparing PDF…" : "Download subject levels (PDF)"}</button>
+            <button className={btnGhost} type="button" onClick={() => { flash("Print dialog opened for the class analysis."); window.print(); }}>Print analysis</button>
+          </> : <span className="text-sm text-muted">Downloads and printing are disabled by the Super Admin for your role.</span>}
+        </div>
       </header>
       <div className="no-print"><PeriodBar ws={ws} yearId={period.yearId} termId={period.termId} onYear={period.setYearId} onTerm={period.setTermId} /></div>
       <div className="grid gap-2 sm:grid-cols-3">

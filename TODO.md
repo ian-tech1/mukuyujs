@@ -102,3 +102,7 @@
 ## User-requested subject positions on analysis merit lists
 
 - [x] “under analysis, on the merit lists provided also add subjects arranged in position from first, let it appear on same page containing advanced learning analytics, just add another column on right side downwards”: show subjects in descending mean-score position order in a separate right-side column on the same PDF page as Advanced learner analytics, for the selected analysis scope. Include the column on analytics continuation pages and keep it within the printable page height. Validation: typecheck, focused tests (5), ESLint (0 errors; 1 existing warning), `git diff --check`, and production Vite build passed.
+
+## User-requested merit-list page orientation
+
+- [x] “add a merit list download option , under analysis , one can select if he wants landscape or portrait download option before selecting the downloads”: provide a Landscape/Portrait choice in Analysis before the download actions, and apply the selected page orientation to merit-list PDF and Excel downloads. Validation: TypeScript, production Vite build, five focused tests, and `git diff --check` passed; ESLint reported 0 errors and 1 existing unused-variable warning.
