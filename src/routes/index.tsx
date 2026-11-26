@@ -32,6 +32,15 @@ function safeWhatsAppGroupInvite(enabled: boolean | undefined, rawUrl: string | 
   }
 }
 
+const CHROME_TIP_SESSION_KEY = "mukuyu.chrome-browser-tip-seen";
+const CHROME_TIP_DURATION_MS = 12_000;
+
+function isChromeBrowser() {
+  if (typeof navigator === "undefined") return false;
+  const userAgent = navigator.userAgent;
+  return /(?:Chrome|CriOS)\//.test(userAgent) && !/(?:Edg|OPR|SamsungBrowser|Vivaldi)\//.test(userAgent);
+}
+
 function OpeningIntro({ title, motto, logoSrc, durationSeconds, onComplete }: { title: string; motto: string; logoSrc?: string; durationSeconds: number; onComplete: () => void }) {
   const [visible, setVisible] = useState(true);
   const [progress, setProgress] = useState(0);
@@ -79,7 +88,8 @@ function OpeningIntro({ title, motto, logoSrc, durationSeconds, onComplete }: { 
       <h1 id="opening-intro-title" className="portal-loading-title mt-5">{title}</h1>
       <p className="portal-loading-tagline mt-2">{motto}</p>
       <p id="opening-intro-description" className="portal-loading-message mt-4 text-sm">Opening your school office and getting everything ready…</p>
-      <div className="portal-loading-track mt-6" role="progressbar" aria-label="Welcome splash progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress} aria-valuetext={countdownLabel}><span style={{ width: `${progress}%` }} /></div>
+      <div className="portal-loading-progress-meta mt-6" aria-hidden="true"><span>{countdownLabel}</span><strong>{progress}%</strong></div>
+      <div className="portal-loading-track mt-2" role="progressbar" aria-label="Welcome splash progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress} aria-valuetext={countdownLabel}><span style={{ width: `${progress}%` }} /></div>
       <button className="portal-loading-continue mt-6" type="button" autoFocus onClick={continueToSignIn}>Continue to sign in</button>
       <p className="portal-loading-footnote mt-4 justify-center">MUKUYU JUNIOR SCHOOL · LEARN WITH PURPOSE</p>
       <p className="portal-loading-credit mt-2">PORTAL DEVELOPED BY IAN TECH</p>
@@ -122,6 +132,7 @@ function LoginPage() {
   const [paragraphColourTick, setParagraphColourTick] = useState(0);
   const [featuresOpen, setFeaturesOpen] = useState(false);
   const [openingIntroComplete, setOpeningIntroComplete] = useState(false);
+  const [chromeTipOpen, setChromeTipOpen] = useState(false);
   const completeOpeningIntro = useCallback(() => setOpeningIntroComplete(true), []);
   const welcomeDisplay = normalizeWelcomeDisplay(welcome?.display ?? DEFAULT_WELCOME_DISPLAY);
   const whatsappGroupInvite = safeWhatsAppGroupInvite(welcome?.whatsappGroupEnabled, welcome?.whatsappGroupUrl);
@@ -166,10 +177,27 @@ function LoginPage() {
 
   useEffect(() => {
     if (!openingIntroComplete) return;
+    let active = true;
     getWorkspace()
-      .then(() => navigate({ to: "/portal", search: { view: "home" } }))
-      .catch(() => undefined);
+      .then(() => { if (active) navigate({ to: "/portal", search: { view: "home" } }); })
+      .catch(() => {
+        if (!active || !isChromeBrowser()) return;
+        try {
+          if (window.sessionStorage.getItem(CHROME_TIP_SESSION_KEY)) return;
+          window.sessionStorage.setItem(CHROME_TIP_SESSION_KEY, "1");
+        } catch {
+          // Keep the advisory available when this browser blocks session storage.
+        }
+        setChromeTipOpen(true);
+      });
+    return () => { active = false; };
   }, [openingIntroComplete, navigate]);
+
+  useEffect(() => {
+    if (!chromeTipOpen) return;
+    const timeout = window.setTimeout(() => setChromeTipOpen(false), CHROME_TIP_DURATION_MS);
+    return () => window.clearTimeout(timeout);
+  }, [chromeTipOpen]);
 
   useEffect(() => {
     if (!featuresOpen) return;
@@ -512,6 +540,16 @@ function LoginPage() {
           Portal developed by <span className="text-info">IAN TECH</span>
         </footer>
       </section>
+      {chromeTipOpen ? <aside className="fixed bottom-4 left-4 z-[2147482000] w-[calc(100vw-2rem)] max-w-md rounded-2xl border border-cyan-200/70 bg-slate-950/95 p-4 pr-16 text-white shadow-2xl backdrop-blur-xl sm:left-auto sm:right-5" role="status" aria-live="polite">
+        <div className="flex items-start gap-3">
+          <span className="grid size-8 shrink-0 place-items-center rounded-full border border-cyan-200/60 bg-cyan-100/10 text-sm font-bold text-cyan-100" aria-hidden="true">i</span>
+          <div className="min-w-0">
+            <p className="text-sm font-bold">Browser tip</p>
+            <p className="mt-1 text-sm leading-relaxed text-slate-200">If Chrome is slow or stops responding, try Firefox or another up-to-date browser to sign in.</p>
+          </div>
+        </div>
+        <button className="absolute right-2 top-2 rounded-lg px-2 py-1 text-xs font-semibold text-slate-200 hover:bg-white/10" type="button" onClick={() => setChromeTipOpen(false)} aria-label="Dismiss browser tip">Close</button>
+      </aside> : null}
       {featuresOpen ? <div className="welcome-features-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setFeaturesOpen(false); }}>
         <section className="welcome-features-dialog" role="dialog" aria-modal="true" aria-labelledby="welcome-features-title" aria-describedby="welcome-features-description">
           <div className="flex items-start justify-between gap-4">

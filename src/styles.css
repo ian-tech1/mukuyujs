@@ -1252,3 +1252,8 @@ html[data-portal-motion="reduced"] .portal-loading-opening .portal-loading-detai
 .portal-opening-link .portal-loading-track span { background: linear-gradient(90deg, #35d7ee, #61baff, #828cf8, #d980d5, #ffd274); box-shadow: 0 0 11px rgba(82, 203, 255, .62); }
 .portal-opening-link .portal-loading-footnote { border-color: rgba(255, 255, 255, .22); color: rgba(237, 244, 255, .8); }
 .portal-opening-link .portal-loading-credit { color: #e8d5ff; text-shadow: 0 0 12px rgba(199, 113, 255, .28); }
+
+/* Visible remaining-time and progress percentage for the first-open school splash. */
+.portal-loading-progress-meta { display:flex; align-items:center; justify-content:space-between; width:min(100%,30rem); margin-inline:auto; color:rgba(237,244,255,.8); font-size:.75rem; font-weight:600; letter-spacing:.08em; }
+.portal-loading-progress-meta strong { color:#c8f5ff; font-variant-numeric:tabular-nums; text-shadow:0 0 10px rgba(82,203,255,.32); }
+@media (max-width: 480px) { .portal-loading-progress-meta { margin-top:.7rem; font-size:.66rem; letter-spacing:.04em; } }
