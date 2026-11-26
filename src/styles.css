@@ -1257,3 +1257,95 @@ html[data-portal-motion="reduced"] .portal-loading-opening .portal-loading-detai
 .portal-loading-progress-meta { display:flex; align-items:center; justify-content:space-between; width:min(100%,30rem); margin-inline:auto; color:rgba(237,244,255,.8); font-size:.75rem; font-weight:600; letter-spacing:.08em; }
 .portal-loading-progress-meta strong { color:#c8f5ff; font-variant-numeric:tabular-nums; text-shadow:0 0 10px rgba(82,203,255,.32); }
 @media (max-width: 480px) { .portal-loading-progress-meta { margin-top:.7rem; font-size:.66rem; letter-spacing:.04em; } }
+
+
+/* Chrome-friendly welcome/sign-in rendering: keep the palette, remove continuous paint work. */
+.welcome-shell {
+  background-size: 100% 100%;
+  animation: none !important;
+}
+.welcome-shell::before,
+.welcome-shell::after {
+  filter: none;
+  mix-blend-mode: normal;
+  animation: welcome-glow-breathe 18s ease-in-out infinite alternate;
+}
+@keyframes welcome-glow-breathe {
+  from { opacity: .12; }
+  to { opacity: .24; }
+}
+.welcome-hero.welcome-animated,
+.welcome-hero.welcome-animation-ribbons,
+.welcome-hero.welcome-animation-pulse {
+  background-size: 100% 100%;
+  filter: none;
+  animation: none !important;
+}
+.welcome-hero::before,
+.welcome-hero::after {
+  filter: none;
+  mix-blend-mode: normal;
+  animation: none !important;
+  background: radial-gradient(circle, var(--welcome-accent-alt, #8bd5ff) 0%, transparent 72%);
+}
+.welcome-hero::after {
+  background: radial-gradient(circle, var(--welcome-accent-color, #f4ca72) 0%, transparent 72%);
+}
+.welcome-title-letter,
+.welcome-heading-rule span,
+.welcome-display-dot,
+.welcome-ribbon,
+.welcome-ribbon-orb {
+  animation: none !important;
+}
+.welcome-ribbon {
+  filter: none;
+  mix-blend-mode: normal;
+}
+.welcome-ribbon-orb {
+  filter: none;
+  opacity: .26;
+  background: radial-gradient(circle, var(--welcome-accent-alt, #8bd5ff) 0%, transparent 72%);
+}
+.welcome-ribbon-orb-two {
+  background: radial-gradient(circle, var(--welcome-accent-color, #f4ca72) 0%, transparent 72%);
+}
+.welcome-highlights,
+.welcome-display-switch,
+.welcome-word-panels-disabled .welcome-word-panel-highlights {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.welcome-login-panel {
+  background-size: 100% 100%;
+  animation: none !important;
+}
+.welcome-login-panel::before,
+.welcome-login-panel::after {
+  animation: none !important;
+}
+.welcome-login-panel::before {
+  box-shadow: inset 0 0 24px color-mix(in srgb, var(--welcome-accent-alt, #8bd5ff) 7%, transparent);
+}
+.welcome-login-panel::after {
+  background-size: 100% 100%;
+}
+.welcome-login-panel > form {
+  background: color-mix(in srgb, var(--color-card) 96%, transparent);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.welcome-login-panel button[type="submit"]::after {
+  display: none;
+}
+.welcome-word-panel,
+.welcome-parent-toggle,
+.welcome-parent-safety-note {
+  background-size: 100% 100% !important;
+  animation: none !important;
+}
+.welcome-features-dialog .welcome-word-panel-feature {
+  background-size: 100% 100% !important;
+  animation: feature-card-in .5s cubic-bezier(.2,.8,.2,1) both !important;
+  animation-delay: calc(var(--feature-index, 0) * 45ms) !important;
+}
