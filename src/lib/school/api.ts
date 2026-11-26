@@ -4435,3 +4435,33 @@ export const reviewStaffAbsenceRequest = createServerFn({method:"POST"}).validat
 
 export const saveLearnerSupportEvent = createServerFn({method:"POST"}).validator((input:{id?:string;learnerId:string;eventDate:string;category:string;summary:string;followUpOwner?:string;dueDate?:string;status:"open"|"in_progress"|"closed";outcome:string})=>input).handler(async({data})=>{const me=await requireActor();requirePowerfulService(me,"manage confidential learner support records");if(!data.summary.trim()||data.summary.length>1500||!/^\d{4}-\d{2}-\d{2}$/.test(data.eventDate))throw new Error("Enter a dated, factual summary under 1500 characters.");const sql=await getSql();const id=data.id||newId("sup");if(data.id){await sql`update learner_support_events set status=${data.status},outcome=${data.outcome.slice(0,1000)},follow_up_owner=${data.followUpOwner||null},due_date=${data.dueDate||null}::date,updated_at=now() where id=${id}`;}else await sql`insert into learner_support_events(id,learner_id,event_date,category,summary,follow_up_owner,due_date,status,outcome,created_by) values(${id},${data.learnerId},${data.eventDate}::date,${data.category.slice(0,80)},${data.summary.trim()},${data.followUpOwner||null},${data.dueDate||null}::date,${data.status},${data.outcome.slice(0,1000)},${me.id})`;await writeServiceAudit(sql,me,"support_followup_saved","learner_support",id,`Confidential support follow-up ${data.status}.`);return{id};});
 export const saveLearnerEmergencyProfile = createServerFn({method:"POST"}).validator((input:{learnerId:string;contactName:string;relationship:string;phone:string;criticalNote:string})=>input).handler(async({data})=>{const me=await requireActor();const sql=await getSql();await requireLearnerContactAccess(sql,me,data.learnerId);if(data.criticalNote.length>500)throw new Error("Keep urgent-response information under 500 characters.");await sql`insert into learner_emergency_profiles(learner_id,contact_name,relationship,phone,critical_note,updated_by) values(${data.learnerId},${data.contactName.slice(0,120)},${data.relationship.slice(0,80)},${data.phone.slice(0,60)},${data.criticalNote.trim()},${me.id}) on conflict(learner_id) do update set contact_name=excluded.contact_name,relationship=excluded.relationship,phone=excluded.phone,critical_note=excluded.critical_note,updated_by=excluded.updated_by,updated_at=now()`;await writeServiceAudit(sql,me,"emergency_profile_saved","learner",data.learnerId,"Emergency contact/critical response profile updated.");return{ok:true};});
+
+
+export const getSchoolErrorReports = createServerFn({ method: "GET" }).handler(async () => {
+  const me = await requireActor();
+  if (!isTrueSuper(me)) throw new Error("Only the super admin can review technical error reports.");
+  const sql = await getSql();
+  const rows = await sql<{
+    source: string;
+    page: string;
+    errorName: string;
+    reportingWindows: number;
+    firstSeen: string | Date;
+    lastSeen: string | Date;
+  }>`
+    select source, page, error_name as "errorName",
+      reporting_windows as "reportingWindows", first_seen as "firstSeen", last_seen as "lastSeen"
+    from school_error_reports
+    order by last_seen desc
+    limit 100
+  `;
+  const iso = (value: string | Date) => value instanceof Date ? value.toISOString() : new Date(value).toISOString();
+  return rows.map((row) => ({
+    source: row.source,
+    page: row.page,
+    errorName: row.errorName,
+    reportingWindows: row.reportingWindows,
+    firstSeen: iso(row.firstSeen),
+    lastSeen: iso(row.lastSeen),
+  }));
+});

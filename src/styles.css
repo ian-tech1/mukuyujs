@@ -221,7 +221,7 @@ html[data-portal-accent-motion="off"] .portal-page-content::before, html[data-po
 @keyframes login-card-rise { from { opacity: 0; transform: translate3d(0, 14px, 0) scale(.985); } to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); } }
 @keyframes login-button-sheen { 0%,65% { left: -40%; } 88%,100% { left: 130%; } }
 @media (max-width: 1023px) {
-  .welcome-shell { background-size: 250% 250%; grid-template-columns: minmax(0, 1fr); grid-template-areas: "signin" "welcome"; }
+  .welcome-shell { background-size: 250% 250%; grid-template-columns: minmax(0, 1fr); grid-template-areas: "welcome" "signin"; }
   .welcome-login-panel { grid-area: signin; min-width: 0; align-items: stretch; justify-content: flex-start; padding: clamp(1.25rem, 4vh, 2.5rem) clamp(1rem, 5vw, 2rem); }
   .welcome-login-panel > form { max-width: 32rem; margin-inline: auto; }
   .welcome-login-panel > div { position: relative; z-index: 1; }

@@ -14,6 +14,7 @@ import { AdminAutomationCards } from "@/components/school/admin-automation-cards
 import { DEFAULT_ADMISSION_NUMBER_SETTINGS, formatAdmissionNumberExample, type AdmissionNumberSettings } from "@/lib/school/admission-number";
 import { getAdmissionNumberSettings, saveAdmissionNumberSettings } from "@/lib/school/api";
 import { MAX_GZIPPED_BACKUP_BYTES, MAX_WEB_BACKUP_JSON_BYTES } from "@/lib/school/backup-format";
+import { getSchoolErrorReports } from "@/lib/school/api";
 
 export function SettingsView({ ws, refresh, flash, onWelcomeChange }: Gate) {
   const canDownloadParentDetails = canActorAccess(ws.roleAccess, ws.me.role, "parentDetails", "download");
@@ -46,6 +47,7 @@ export function SettingsView({ ws, refresh, flash, onWelcomeChange }: Gate) {
       {canDownloadParentDetails ? <ParentContactsExportCard flash={flash} /> : null}
       {ws.me.role === "super_admin" ? <RoleAccessCard policy={ws.roleAccess} refresh={refresh} flash={flash} /> : null}
       {ws.me.role === "super_admin" ? <ParentLoginAuditCard flash={flash} /> : null}
+      {ws.me.role === "super_admin" ? <ErrorReportsCard flash={flash} /> : null}
       {ws.me.role === "super_admin" ? <AdmissionNumberFormatCard flash={flash} /> : null}
       {ws.me.role === "super_admin" ? <WelcomePageCard flash={flash} refresh={refresh} onWelcomeChange={onWelcomeChange} /> : null}
       {ws.me.role === "super_admin" ? <AppearanceColorsCard flash={flash} /> : null}
@@ -93,6 +95,51 @@ function ParentLoginAuditCard({ flash }: Pick<Gate, "flash">) {
       </article>)}</div> : <p className="rounded-xl border border-dashed border-line bg-white/70 p-5 text-center text-sm text-muted">No successful parent sign-ins have been recorded yet.</p>}
       {audit.total > audit.events.length ? <p className="text-xs text-muted">Showing the latest {audit.events.length} of {audit.total} recorded sign-ins.</p> : null}
     </> : <p className="rounded-xl border border-dashed border-line bg-white/70 p-5 text-sm text-muted">{busy ? "Loading parent access records…" : "Parent access records are not available."}</p>}
+  </section>;
+}
+
+type ErrorReportList = Awaited<ReturnType<typeof getSchoolErrorReports>>;
+
+function ErrorReportsCard({ flash }: Pick<Gate, "flash">) {
+  const [reports, setReports] = useState<ErrorReportList>([]);
+  const [busy, setBusy] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+  const load = useCallback(async () => {
+    setBusy(true);
+    try {
+      setReports(await getSchoolErrorReports());
+      setLoaded(true);
+    } catch (error) {
+      flash(errText(error), true);
+    } finally {
+      setBusy(false);
+    }
+  }, [flash]);
+  useEffect(() => { void load(); }, [load]);
+
+  const sourceLabels: Record<string, string> = {
+    server_function: "Server function",
+    window_error: "Browser runtime",
+    unhandled_rejection: "Unhandled promise",
+    route_boundary: "Page error boundary",
+  };
+  const pageLabels: Record<string, string> = { opening: "Opening page", portal: "Portal", other: "Other page" };
+
+  return <section className="space-y-4 rounded-2xl border border-rose-200 bg-gradient-to-br from-rose-50 via-white to-amber-50 p-5 shadow-card">
+    <div className="flex flex-wrap items-start justify-between gap-3">
+      <div>
+        <p className="text-xs font-bold uppercase tracking-[.18em] text-rose-800">Super Admin · private system diagnostics</p>
+        <h2 className="font-serif text-2xl text-navy">Application error reports</h2>
+        <p className="mt-1 text-sm text-muted">Review unexpected browser errors and server-function failures. Only normalized error type, source, and broad page category are retained.</p>
+      </div>
+      <button className={btnGhost} type="button" onClick={() => void load()} disabled={busy}>{busy ? "Refreshing…" : "Refresh reports"}</button>
+    </div>
+    <p className="rounded-xl border border-rose-100 bg-white/80 p-3 text-xs text-muted">No error messages, stack traces, learner or account identifiers, full URLs, IP addresses, or browser identifiers are stored. Repeated reports are deduplicated and counted at most once per 15-minute window for each error category.</p>
+    {reports.length ? <div className="space-y-2">{reports.map((report) => <article key={`${report.source}:${report.page}:${report.errorName}`} className="grid gap-2 rounded-xl border border-line bg-white/85 p-3 text-sm sm:grid-cols-[1.2fr_1fr_1fr] sm:items-center">
+      <div><p className="font-semibold text-navy">{sourceLabels[report.source] ?? "Application error"} · {pageLabels[report.page] ?? "Other page"}</p><p className="text-xs text-muted">{report.errorName}</p></div>
+      <p><span className="font-semibold">Observed windows: </span>{report.reportingWindows}</p>
+      <div className="text-xs text-muted"><p>First: <time dateTime={report.firstSeen}>{new Date(report.firstSeen).toLocaleString()}</time></p><p>Last: <time dateTime={report.lastSeen}>{new Date(report.lastSeen).toLocaleString()}</time></p></div>
+    </article>)}</div> : <p className="rounded-xl border border-dashed border-line bg-white/70 p-5 text-center text-sm text-muted">{loaded ? "No unexpected errors have been recorded." : busy ? "Loading error reports…" : "Error reports are not available yet."}</p>}
   </section>;
 }
 

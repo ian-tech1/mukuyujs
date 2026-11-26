@@ -7,6 +7,7 @@ import { PORTAL_BACKDROP_THEME_IDS, type AppearancePalette } from "@/lib/school/
 import { applyDisplayPreferences, applyPortalBackdropColors, readDisplayPreferences } from "@/lib/school/display";
 import { initializePwaInstallCapture } from "@/lib/pwa-install";
 import { getWelcomePageRequest } from "@/lib/school/welcome-page-request";
+import { reportDetectedError } from "@/lib/school/error-reporting";
 import appCss from "../styles.css?url";
 
 export const Route = createRootRoute({
@@ -53,6 +54,14 @@ export const Route = createRootRoute({
 function AppearanceBootstrap() {
   useEffect(() => {
     initializePwaInstallCapture();
+    const onWindowError = (event: ErrorEvent) => {
+      reportDetectedError("window_error", event.error ?? new Error());
+    };
+    const onUnhandledRejection = (event: PromiseRejectionEvent) => {
+      reportDetectedError("unhandled_rejection", event.reason);
+    };
+    window.addEventListener("error", onWindowError);
+    window.addEventListener("unhandledrejection", onUnhandledRejection);
     const apply = (colors: Record<string, unknown>) => {
       const saved: Record<string, string> = {};
       for (const key of ["navy", "navy2", "brass", "brassSoft", "paper", "card", "ink", "muted", "line", "good", "warn", "bad", "info"]) {
@@ -76,6 +85,10 @@ function AppearanceBootstrap() {
         // Invalid or unavailable browser storage should not prevent the portal from loading.
       }
     }).finally(() => applyDisplayPreferences(readDisplayPreferences()));
+    return () => {
+      window.removeEventListener("error", onWindowError);
+      window.removeEventListener("unhandledrejection", onUnhandledRejection);
+    };
   }, []);
   return null;
 }
