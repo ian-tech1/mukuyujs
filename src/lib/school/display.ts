@@ -21,7 +21,7 @@ export const DEFAULT_DISPLAY_PREFERENCES: LocalDisplayPreferences = {
   motion: true,
   fontFamily: "sans",
   fontScale: "normal",
-  accentMotion: false,
+  accentMotion: true,
 };
 
 export const DISPLAY_PALETTES: Array<{ id: DisplayThemeId; name: string; colors: AppearancePalette }> = [

@@ -1,26 +1,24 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Menu, Palette, SlidersHorizontal, X } from "lucide-react";
 import { SchoolLogo } from "@/components/school/logo";
 import { PortalLoadingBackdrop } from "@/components/school/portal-loading-backdrop";
 import { InstallAppPrompt } from "@/components/school/install-app-prompt";
-const AnalysisView = lazy(() => import("@/components/school/analysis-view").then((module) => ({ default: module.AnalysisView })));
-const DashboardView = lazy(() => import("@/components/school/dashboard-view").then((module) => ({ default: module.DashboardView })));
-const LearnersView = lazy(() => import("@/components/school/learners-view").then((module) => ({ default: module.LearnersView })));
-const MailView = lazy(() => import("@/components/school/mail-view").then((module) => ({ default: module.MailView })));
-const MarklistsView = lazy(() => import("@/components/school/marklists-view").then((module) => ({ default: module.MarklistsView })));
-const MarksView = lazy(() => import("@/components/school/marks-view").then((module) => ({ default: module.MarksView })));
-const ReportsView = lazy(() => import("@/components/school/reports-view").then((module) => ({ default: module.ReportsView })));
-const ResultsView = lazy(() => import("@/components/school/results-view").then((module) => ({ default: module.ResultsView })));
-const SettingsView = lazy(() => import("@/components/school/settings-view").then((module) => ({ default: module.SettingsView })));
-const StaffView = lazy(() => import("@/components/school/staff-view").then((module) => ({ default: module.StaffView })));
-const TimetableView = lazy(() => import("@/components/school/timetable-view").then((module) => ({ default: module.TimetableView })));
-const SchoolServicesView = lazy(() => import("@/components/school/school-services-view").then((module) => ({ default: module.SchoolServicesView })));
-const QrParentFeedbackInbox = lazy(() => import("@/components/school/qr-parent-feedback-inbox").then((module) => ({ default: module.QrParentFeedbackInbox })));
+import { AnalysisView } from "@/components/school/analysis-view";
+import { DashboardView } from "@/components/school/dashboard-view";
+import { LearnersView } from "@/components/school/learners-view";
+import { MailView } from "@/components/school/mail-view";
+import { MarklistsView } from "@/components/school/marklists-view";
+import { MarksView } from "@/components/school/marks-view";
+import { ReportsView } from "@/components/school/reports-view";
+import { ResultsView } from "@/components/school/results-view";
+import { SettingsView } from "@/components/school/settings-view";
+import { StaffView } from "@/components/school/staff-view";
+import { TimetableView } from "@/components/school/timetable-view";
+import { SchoolServicesView } from "@/components/school/school-services-view";
+import { QrParentFeedbackInbox } from "@/components/school/qr-parent-feedback-inbox";
 import { StaffMusicDock } from "@/components/school/music-dock";
-import { getWorkspace, logout } from "@/lib/school/api";
-import { takePortalWorkspacePrefetch } from "@/lib/school/workspace-prefetch";
-import { getWelcomePageRequest } from "@/lib/school/welcome-page-request";
+import { getWorkspace, getWelcomePage, logout } from "@/lib/school/api";
 import { visibleViews, type Workspace } from "@/lib/school/model";
 import { parseMusicSetting, type MusicOptions } from "@/lib/school/music";
 import { normalizeWelcomeDisplay } from "@/lib/school/welcome-display";
@@ -55,9 +53,11 @@ function NatureBackdropVideo({ scene, visible, motionEnabled }: { scene: number;
 
   useEffect(() => {
     const video = videoRef.current;
-    if (!video || !visible || !motionEnabled) return;
+    if (!video) return;
     video.pause();
+    if (!visible) return;
     video.load();
+    if (!motionEnabled) return;
     const playWhenReady = () => {
       if (visible && motionEnabled) void video.play().catch(() => undefined);
     };
@@ -70,44 +70,14 @@ function NatureBackdropVideo({ scene, visible, motionEnabled }: { scene: number;
   }, [source, visible, motionEnabled]);
 
   return <div className="portal-nature-scene" data-active={visible} aria-hidden="true">
-    <video ref={videoRef} className="portal-nature-video" src={visible && motionEnabled ? source : undefined} muted loop playsInline preload={visible && motionEnabled ? "auto" : "none"} />
+    <video ref={videoRef} className="portal-nature-video" src={visible ? source : undefined} muted loop playsInline preload={visible ? "auto" : "none"} />
   </div>;
-}
-
-function PortalBackdrop({ display, systemReducedMotion }: { display: LocalDisplayPreferences; systemReducedMotion: boolean }) {
-  const [scene, setScene] = useState(0);
-  const [theme, setTheme] = useState("auto-sections");
-
-  useEffect(() => {
-    if (!display.motion || display.backgroundMode !== "animated" || systemReducedMotion || theme === "starfall") return;
-    const timer = window.setInterval(() => {
-      const count = document.documentElement.dataset.portalBackdropTheme === "nature-cycle" ? NATURE_BACKDROP_SCENE_LABELS.length : 18;
-      setScene((value) => (value + 1) % count);
-    }, 5000);
-    return () => window.clearInterval(timer);
-  }, [display.backgroundMode, display.motion, systemReducedMotion, theme]);
-
-  useEffect(() => {
-    const reset = () => {
-      setScene(0);
-      setTheme(document.documentElement.dataset.portalBackdropTheme || "auto-sections");
-    };
-    reset();
-    window.addEventListener("mukuyu-portal-backdrop-change", reset);
-    return () => window.removeEventListener("mukuyu-portal-backdrop-change", reset);
-  }, []);
-
-  return <>
-    {Array.from({ length: 18 }, (_, index) => <span key={index} className="portal-background-scene" data-background-scene={index} data-active={scene === index} aria-hidden="true" />)}
-    <NatureBackdropVideo scene={scene % NATURE_BACKDROP_SCENES.length} visible={theme === "nature-cycle" && display.backgroundMode === "animated"} motionEnabled={display.motion && !systemReducedMotion} />
-  </>;
 }
 
 function PortalPage() {
   const navigate = useNavigate();
   const { view } = Route.useSearch();
-  const [ws, setWs] = useState<Workspace | null>(() => takePortalWorkspacePrefetch());
-  const shouldFetchWorkspace = useRef(ws === null);
+  const [ws, setWs] = useState<Workspace | null>(null);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [open, setOpen] = useState(false);
@@ -115,6 +85,8 @@ function PortalPage() {
   const [display, setDisplay] = useState<LocalDisplayPreferences>(DEFAULT_DISPLAY_PREFERENCES);
   const [dashboardPanelColorsEnabled, setDashboardPanelColorsEnabled] = useState(true);
   const [displaySettingsOpen, setDisplaySettingsOpen] = useState(false);
+  const [backdropScene, setBackdropScene] = useState(0);
+  const [backdropTheme, setBackdropTheme] = useState("auto-sections");
   const [systemReducedMotion, setSystemReducedMotion] = useState(false);
   const displayControlsRef = useRef<HTMLDivElement>(null);
 
@@ -124,11 +96,8 @@ function PortalPage() {
   }, []);
 
   useEffect(() => {
-    if (shouldFetchWorkspace.current) {
-      shouldFetchWorkspace.current = false;
-      refresh().catch(() => navigate({ to: "/", search: { c: undefined } }));
-    }
-    getWelcomePageRequest().then((settings) => {
+    refresh().catch(() => navigate({ to: "/", search: { c: undefined } }));
+    getWelcomePage().then((settings) => {
       const music = parseMusicSetting(settings.musicUrl || "");
       setDashboardPanelColorsEnabled(normalizeWelcomeDisplay(settings.display).dashboardPanelColorsEnabled);
       setStaffMusic({ enabled: Boolean(settings.musicEnabled), url: settings.musicUrl || "", options: music.options });
@@ -151,6 +120,25 @@ function PortalPage() {
     update();
     media.addEventListener("change", update);
     return () => media.removeEventListener("change", update);
+  }, []);
+
+  useEffect(() => {
+    if (!display.motion || display.backgroundMode !== "animated" || systemReducedMotion) return;
+    const timer = window.setInterval(() => {
+      const count = document.documentElement.dataset.portalBackdropTheme === "nature-cycle" ? NATURE_BACKDROP_SCENE_LABELS.length : 18;
+      setBackdropScene((scene) => (scene + 1) % count);
+    }, 5000);
+    return () => window.clearInterval(timer);
+  }, [display.backgroundMode, display.motion, systemReducedMotion]);
+
+  useEffect(() => {
+    const resetScene = () => {
+      setBackdropScene(0);
+      setBackdropTheme(document.documentElement.dataset.portalBackdropTheme || "auto-sections");
+    };
+    resetScene();
+    window.addEventListener("mukuyu-portal-backdrop-change", resetScene);
+    return () => window.removeEventListener("mukuyu-portal-backdrop-change", resetScene);
   }, []);
 
   useEffect(() => {
@@ -334,24 +322,23 @@ function PortalPage() {
           </div>
         </header>
         <div className={`portal-page-content w-full min-w-0 max-w-none px-4 py-6 lg:px-8 ${dashboardPanelColorsEnabled && display.motion && display.accentMotion ? "portal-panel-color-motion" : ""}`}>
-          <PortalBackdrop display={display} systemReducedMotion={systemReducedMotion} />
+          {Array.from({ length: 18 }, (_, scene) => <span key={scene} className="portal-background-scene" data-background-scene={scene} data-active={backdropScene === scene} aria-hidden="true" />)}
+          <NatureBackdropVideo scene={backdropScene % NATURE_BACKDROP_SCENES.length} visible={backdropTheme === "nature-cycle" && display.backgroundMode === "animated"} motionEnabled={display.motion && !systemReducedMotion} />
           {error ? <p className="mb-4 rounded-md border border-bad/30 bg-card px-3 py-2 text-sm text-bad">{error}</p> : null}
           {notice ? <p className="mb-4 rounded-md border border-good/30 bg-card px-3 py-2 text-sm text-good">{notice}</p> : null}
-          <Suspense fallback={<div className="grid min-h-[45vh] place-items-center text-sm font-semibold text-muted" role="status" aria-live="polite">Loading {LABELS[current] ?? "view"}…</div>}>
-            {current === "home" ? <DashboardView {...gate} /> : null}
-            {current === "learners" ? <LearnersView {...gate} /> : null}
-            {current === "marks" ? <MarksView {...gate} /> : null}
-            {current === "analysis" ? <AnalysisView {...gate} /> : null}
-            {current === "reports" ? <ReportsView {...gate} /> : null}
-            {current === "marklists" ? <MarklistsView {...gate} /> : null}
-            {current === "staff" ? <StaffView {...gate} /> : null}
-            {current === "mail" ? <MailView {...gate} /> : null}
-            {current === "timetable" ? <TimetableView {...gate} /> : null}
-            {current === "services" ? <SchoolServicesView {...gate} /> : null}
-            {current === "parent-feedback" ? <QrParentFeedbackInbox flash={flash} /> : null}
-            {current === "settings" ? <SettingsView {...gate} /> : null}
-            {current === "results" ? <ResultsView {...gate} /> : null}
-          </Suspense>
+          {current === "home" ? <DashboardView {...gate} /> : null}
+          {current === "learners" ? <LearnersView {...gate} /> : null}
+          {current === "marks" ? <MarksView {...gate} /> : null}
+          {current === "analysis" ? <AnalysisView {...gate} /> : null}
+          {current === "reports" ? <ReportsView {...gate} /> : null}
+          {current === "marklists" ? <MarklistsView {...gate} /> : null}
+          {current === "staff" ? <StaffView {...gate} /> : null}
+          {current === "mail" ? <MailView {...gate} /> : null}
+          {current === "timetable" ? <TimetableView {...gate} /> : null}
+          {current === "services" ? <SchoolServicesView {...gate} /> : null}
+          {current === "parent-feedback" ? <QrParentFeedbackInbox flash={flash} /> : null}
+          {current === "settings" ? <SettingsView {...gate} /> : null}
+          {current === "results" ? <ResultsView {...gate} /> : null}
         </div>
       </div>
       {ws.me.active ? <StaffMusicDock url={staffMusic.enabled ? staffMusic.url : ""} options={staffMusic.options || {}} /> : null}

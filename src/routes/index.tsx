@@ -4,11 +4,9 @@ import { SchoolLogo } from "@/components/school/logo";
 import { PortalLoadingBackdrop } from "@/components/school/portal-loading-backdrop";
 import { PublicReport } from "@/components/school/public-report";
 import { btnClass, errText, inputClass } from "@/components/school/gate";
-import { completeParentFirstLoginPasswordChange, getParentPasswordChangeStatus, getWorkspace, login, loginParent, logout, portalStatus, requestParentLoginCode, requestParentPasswordResetCode, resetParentPassword, verifyParentLoginCode } from "@/lib/school/api";
+import { completeParentFirstLoginPasswordChange, getParentPasswordChangeStatus, getWorkspace, getWelcomePage, login, loginParent, logout, portalStatus, requestParentLoginCode, requestParentPasswordResetCode, resetParentPassword, verifyParentLoginCode } from "@/lib/school/api";
 import { applyDisplayPreferences, DEFAULT_DISPLAY_PREFERENCES, DISPLAY_PALETTES, readDisplayPreferences, saveDisplayPreferences, type LocalDisplayPreferences } from "@/lib/school/display";
 import { DEFAULT_WELCOME_DISPLAY, hexToRgba, normalizeWelcomeDisplay, type WelcomeDisplayOptions } from "@/lib/school/welcome-display";
-import { savePortalWorkspacePrefetch } from "@/lib/school/workspace-prefetch";
-import { getWelcomePageRequest } from "@/lib/school/welcome-page-request";
 
 export const Route = createFileRoute("/")({
   validateSearch: (search: Record<string, unknown>) => {
@@ -49,9 +47,7 @@ function OpeningIntro({ title, motto, logoSrc, durationSeconds, onComplete }: { 
 
   useEffect(() => {
     if (!visible) return;
-    const isNarrowViewport = window.matchMedia("(max-width: 1023px)").matches;
-    const effectiveDurationSeconds = isNarrowViewport ? Math.min(durationSeconds, 5) : durationSeconds;
-    const durationMs = Math.max(1, effectiveDurationSeconds * 1000);
+    const durationMs = Math.max(1, durationSeconds * 1000);
     const remaining = Math.max(0, durationMs - (Date.now() - startedAt.current));
     const updateProgress = () => {
       const elapsedMs = Math.min(durationMs, Math.max(0, Date.now() - startedAt.current));
@@ -59,7 +55,7 @@ function OpeningIntro({ title, motto, logoSrc, durationSeconds, onComplete }: { 
       setSecondsRemaining(Math.ceil((durationMs - elapsedMs) / 1000));
     };
     updateProgress();
-    const interval = window.setInterval(updateProgress, 1000);
+    const interval = window.setInterval(updateProgress, 100);
     const timeout = window.setTimeout(() => { setVisible(false); onComplete(); }, remaining);
     return () => {
       window.clearInterval(interval);
@@ -126,18 +122,7 @@ function LoginPage() {
   const [paragraphColourTick, setParagraphColourTick] = useState(0);
   const [featuresOpen, setFeaturesOpen] = useState(false);
   const [openingIntroComplete, setOpeningIntroComplete] = useState(false);
-  const [workspacePrefetched, setWorkspacePrefetched] = useState(false);
-  const [parentPasswordStatusReady, setParentPasswordStatusReady] = useState(false);
-  const workspacePrefetchStarted = useRef(false);
   const completeOpeningIntro = useCallback(() => setOpeningIntroComplete(true), []);
-  const prefetchWorkspace = useCallback(() => {
-    if (workspacePrefetchStarted.current) return;
-    workspacePrefetchStarted.current = true;
-    void getWorkspace().then((workspace) => {
-      savePortalWorkspacePrefetch(workspace);
-      setWorkspacePrefetched(true);
-    }).catch(() => undefined);
-  }, []);
   const welcomeDisplay = normalizeWelcomeDisplay(welcome?.display ?? DEFAULT_WELCOME_DISPLAY);
   const whatsappGroupInvite = safeWhatsAppGroupInvite(welcome?.whatsappGroupEnabled, welcome?.whatsappGroupUrl);
   const selectedPalette = display.theme ? DISPLAY_PALETTES.find((palette) => palette.id === display.theme) : undefined;
@@ -163,32 +148,28 @@ function LoginPage() {
       setStatus(next);
       applyPublicSchoolIdentity(next.schoolName);
     }).catch(() => setStatus({ needsSetup: true, schoolName: "Mukuyu Junior School", motto: "Hard Work Pays", poBox: "", location: "" }));
-    getWelcomePageRequest().then((settings) => {
+    getWelcomePage().then((settings) => {
       setWelcome(settings);
       document.documentElement.dataset.schoolAppearance = JSON.stringify(settings.appearance);
       applyDisplayPreferences(readDisplayPreferences());
     }).catch(() => setWelcome(null));
     getParentPasswordChangeStatus().then((result) => {
-      setParentPasswordStatusReady(true);
       if (result.required) {
         setParentPasswordChangeRequired(true);
         setParentPasswordChangeEmail(result.email);
       }
-      if (result.authenticated && !result.required) prefetchWorkspace();
-    }).catch(() => setParentPasswordStatusReady(true));
+    }).catch(() => undefined);
     const preferences = readDisplayPreferences();
     setDisplay(preferences);
     applyDisplayPreferences(preferences);
-  }, [navigate, prefetchWorkspace]);
+  }, [navigate]);
 
   useEffect(() => {
-    if (!openingIntroComplete || !parentPasswordStatusReady || parentPasswordChangeRequired) return;
-    if (!workspacePrefetchStarted.current) {
-      prefetchWorkspace();
-      return;
-    }
-    if (workspacePrefetched) void navigate({ to: "/portal", search: { view: "home" } });
-  }, [openingIntroComplete, parentPasswordStatusReady, parentPasswordChangeRequired, workspacePrefetched, prefetchWorkspace, navigate]);
+    if (!openingIntroComplete) return;
+    getWorkspace()
+      .then(() => navigate({ to: "/portal", search: { view: "home" } }))
+      .catch(() => undefined);
+  }, [openingIntroComplete, navigate]);
 
   useEffect(() => {
     if (!featuresOpen) return;

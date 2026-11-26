@@ -3,11 +3,10 @@ import { useEffect } from "react";
 import { AuthProvider } from "@/lib/auth/provider";
 import { PreviewHostBridge } from "@/components/preview-host-bridge";
 import { DownloadActivityOverlay } from "@/components/school/download-activity-overlay";
+import { getWelcomePage } from "@/lib/school/api";
 import { PORTAL_BACKDROP_THEME_IDS, type AppearancePalette } from "@/lib/school/model";
 import { applyDisplayPreferences, applyPortalBackdropColors, readDisplayPreferences } from "@/lib/school/display";
 import { initializePwaInstallCapture } from "@/lib/pwa-install";
-import { getWelcomePageRequest } from "@/lib/school/welcome-page-request";
-import { reportDetectedError } from "@/lib/school/error-reporting";
 import appCss from "../styles.css?url";
 
 export const Route = createRootRoute({
@@ -22,7 +21,6 @@ export const Route = createRootRoute({
     links: [
       { rel: "icon", type: "image/png", href: "/icons/mukuyu-app-192.png?v=4" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
-      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
         rel: "stylesheet",
         href: "https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,560;8..60,700&display=swap",
@@ -54,14 +52,6 @@ export const Route = createRootRoute({
 function AppearanceBootstrap() {
   useEffect(() => {
     initializePwaInstallCapture();
-    const onWindowError = (event: ErrorEvent) => {
-      reportDetectedError("window_error", event.error ?? new Error());
-    };
-    const onUnhandledRejection = (event: PromiseRejectionEvent) => {
-      reportDetectedError("unhandled_rejection", event.reason);
-    };
-    window.addEventListener("error", onWindowError);
-    window.addEventListener("unhandledrejection", onUnhandledRejection);
     const apply = (colors: Record<string, unknown>) => {
       const saved: Record<string, string> = {};
       for (const key of ["navy", "navy2", "brass", "brassSoft", "paper", "card", "ink", "muted", "line", "good", "warn", "bad", "info"]) {
@@ -77,7 +67,7 @@ function AppearanceBootstrap() {
       applyPortalBackdropColors(saved as Partial<AppearancePalette>);
     };
     applyDisplayPreferences(readDisplayPreferences());
-    getWelcomePageRequest().then((settings) => apply(settings.appearance || {})).catch(() => {
+    getWelcomePage().then((settings) => apply(settings.appearance || {})).catch(() => {
       try {
         const raw = localStorage.getItem("mukuyu-super-admin-appearance-v1");
         if (raw) apply(JSON.parse(raw) as Record<string, unknown>);
@@ -85,10 +75,6 @@ function AppearanceBootstrap() {
         // Invalid or unavailable browser storage should not prevent the portal from loading.
       }
     }).finally(() => applyDisplayPreferences(readDisplayPreferences()));
-    return () => {
-      window.removeEventListener("error", onWindowError);
-      window.removeEventListener("unhandledrejection", onUnhandledRejection);
-    };
   }, []);
   return null;
 }
