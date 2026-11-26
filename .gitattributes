@@ -2,3 +2,4 @@
 assets/branding/mukuyu-app-master.png export-ignore
 mukuyu.zip export-ignore
 attachments/* export-ignore
+public/nature-scenes/*.mp4 export-ignore
