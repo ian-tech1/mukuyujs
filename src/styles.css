@@ -1349,3 +1349,50 @@ html[data-portal-motion="reduced"] .portal-loading-opening .portal-loading-detai
   animation: feature-card-in .5s cubic-bezier(.2,.8,.2,1) both !important;
   animation-delay: calc(var(--feature-index, 0) * 45ms) !important;
 }
+
+
+/* ===== Chrome performance patch ===== */
+
+/* 1. Stop animating background-position / filter (full-screen repaints). */
+.welcome-shell,
+.welcome-hero,
+.welcome-login-panel,
+.welcome-animated,
+.welcome-animation-ribbons,
+.welcome-animation-pulse {
+  animation: none !important;
+  background-size: 100% 100% !important;
+}
+
+/* 2. Per-letter title shine animates colour + text-shadow on every letter. */
+.welcome-title-letter { animation: none !important; }
+
+/* 3. Remove blend modes and shrink the huge blurs. */
+.welcome-ribbon { mix-blend-mode: normal !important; filter: none !important; }
+.welcome-shell::before,
+.welcome-shell::after { mix-blend-mode: normal !important; filter: blur(24px) !important; }
+.welcome-hero::before,
+.welcome-hero::after { filter: blur(24px) !important; }
+.welcome-ribbon-orb { filter: blur(16px) !important; }
+
+/* 4. Frosted glass over moving layers is the most expensive combo. */
+.welcome-login-panel > form,
+.welcome-highlights,
+.welcome-display-switch,
+.welcome-word-panel-highlights {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  background: color-mix(in srgb, var(--color-card) 92%, transparent);
+}
+.welcome-features-overlay {
+  backdrop-filter: none !important;
+  background: rgba(6, 18, 39, .8);
+}
+
+/* 5. Give the remaining moving layers their own GPU layer. */
+.welcome-ribbon,
+.welcome-ribbon-orb,
+.welcome-shell::before,
+.welcome-shell::after,
+.welcome-hero::before,
+.welcome-hero::after { will-change: transform; }
