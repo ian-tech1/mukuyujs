@@ -42,10 +42,19 @@ function browserInstallHelp() {
   return "Open this page in Chrome, then use the browser menu and choose Install app or Create shortcut. Some browsers do not support app installation.";
 }
 
+function installActionLabel() {
+  if (typeof navigator === "undefined") return "Install app";
+  const userAgent = navigator.userAgent;
+  return /Chrome\//.test(userAgent) && !/(?:Edg|OPR|SamsungBrowser|Vivaldi)\//.test(userAgent)
+    ? "Add Chrome shortcut"
+    : "Install app";
+}
+
 export function InstallAppPrompt() {
   const [installState, setInstallState] = useState<PwaInstallState>(() => getPwaInstallState());
   const [ready, setReady] = useState(false);
   const [installReminderActive, setInstallReminderActive] = useState(false);
+  const [shortcutDialogOpen, setShortcutDialogOpen] = useState(false);
   const [dismissedUpdateBuildId, setDismissedUpdateBuildId] = useState("");
   const [activeTab, setActiveTab] = useState<PopupTab>("install");
   const [showSteps, setShowSteps] = useState(false);
@@ -102,14 +111,26 @@ export function InstallAppPrompt() {
   const updateAvailable = updateStatus === "available" && isAppUpdateAvailable(getAppBuildId(), latestBuildId);
   const showUpdatePopup = installState.installed && updateAvailable && latestBuildId !== dismissedUpdateBuildId;
   const showInstallPopup = !installState.installed && !installReminderActive;
-  const shouldShow = ready && (showUpdatePopup || showInstallPopup);
+  const shouldShow = ready && (showUpdatePopup || showInstallPopup || shortcutDialogOpen);
+  const showShortcutLauncher = ready && !installState.installed && !showUpdatePopup && !showInstallPopup && !shortcutDialogOpen;
 
   useEffect(() => {
     if (showUpdatePopup) setActiveTab("update");
     else if (showInstallPopup) setActiveTab("install");
   }, [showInstallPopup, showUpdatePopup]);
 
-  if (!shouldShow) return null;
+  function openShortcutDialog() {
+    setActiveTab("install");
+    setShowSteps(false);
+    setInstallMessage("");
+    setShortcutDialogOpen(true);
+  }
+
+  if (!shouldShow) {
+    return showShortcutLauncher ? <button type="button" onClick={openShortcutDialog} className="fixed bottom-20 right-4 z-[9998] inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-emerald-700 bg-white/95 px-4 py-2 text-sm font-extrabold text-emerald-900 shadow-lg shadow-slate-950/20 transition hover:bg-emerald-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 sm:right-5">
+      <Download size={17} aria-hidden="true" />{installActionLabel()}
+    </button> : null;
+  }
 
   async function install() {
     setInstallMessage("");
@@ -132,6 +153,7 @@ export function InstallAppPrompt() {
   }
 
   function dismiss() {
+    setShortcutDialogOpen(false);
     if (showUpdatePopup) {
       setDismissedUpdateBuildId(latestBuildId);
       try { localStorage.setItem(UPDATE_DISMISSED_KEY, latestBuildId); } catch { /* Storage may be blocked. */ }
@@ -175,9 +197,9 @@ export function InstallAppPrompt() {
               <p className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900"><Check className="mr-1.5 inline" size={16} aria-hidden="true" />This device is already using the installed app.</p>
             ) : (
               <>
-                <p className="text-sm leading-relaxed text-slate-700">Add the secure school portal to your home screen for quick access. It is the same website; no app-store account or new school login is needed.</p>
+                <p className="text-sm leading-relaxed text-slate-700">Add the secure school portal to your home screen or create a Chrome shortcut for quick access. It is the same website; no app-store account or new school login is needed.</p>
                 <button type="button" onClick={() => void install()} disabled={busy} className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-emerald-800 px-4 py-2.5 text-sm font-extrabold text-white shadow-sm transition hover:bg-emerald-900 disabled:opacity-70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700">
-                  <Download size={17} aria-hidden="true" />{busy ? "Opening install…" : "Install app"}
+                  <Download size={17} aria-hidden="true" />{busy ? "Opening install…" : installActionLabel()}
                 </button>
                 {installMessage ? <p className="mt-2 text-sm text-slate-700" role="status">{installMessage}</p> : null}
                 {showSteps ? <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm leading-relaxed text-amber-950" role="status"><p className="font-bold">Install from your browser</p><p className="mt-1">{browserInstallHelp()}</p></div> : null}

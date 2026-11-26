@@ -33,7 +33,7 @@ function safeWhatsAppGroupInvite(enabled: boolean | undefined, rawUrl: string | 
 }
 
 const CHROME_TIP_SESSION_KEY = "mukuyu.chrome-browser-tip-seen";
-const CHROME_TIP_DURATION_MS = 12_000;
+const CHROME_TIP_DURATION_MS = 15_000;
 
 function isChromeBrowser() {
   if (typeof navigator === "undefined") return false;
