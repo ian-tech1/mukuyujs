@@ -1423,3 +1423,107 @@ html[data-portal-motion="reduced"] .portal-loading-opening .portal-loading-detai
 }
 .welcome-ribbon,
 .welcome-ribbon-orb { will-change: auto !important; }
+
+/* Mobile intro splash: preserve its color and key motion without full-screen paint loops. */
+@media (max-width: 640px) {
+  .portal-loading-opening.portal-opening-link {
+    animation: none !important;
+    background-size: 100% 100% !important;
+    background-position: center !important;
+  }
+  .portal-loading-opening.portal-opening-link::before,
+  .portal-loading-opening.portal-opening-link::after {
+    filter: none !important;
+    mix-blend-mode: normal !important;
+    opacity: .22 !important;
+    animation: none !important;
+  }
+  .portal-loading-opening.portal-opening-link .portal-loading-aurora {
+    inset: -8% !important;
+    filter: none !important;
+    mix-blend-mode: normal !important;
+    animation: none !important;
+    background-size: 100% 100% !important;
+    opacity: .3 !important;
+  }
+  .portal-loading-opening.portal-opening-link .portal-loading-aurora::before,
+  .portal-loading-opening.portal-opening-link .portal-loading-aurora::after {
+    display: none !important;
+  }
+  .portal-loading-opening.portal-opening-link .portal-loading-ribbon {
+    filter: none !important;
+    mix-blend-mode: normal !important;
+  }
+  .portal-loading-opening.portal-opening-link .portal-loading-ribbon-one { animation-name: portal-loading-ribbon-drift-one !important; }
+  .portal-loading-opening.portal-opening-link .portal-loading-ribbon-two { animation-name: portal-loading-ribbon-drift-two !important; }
+  .portal-loading-opening.portal-opening-link .portal-loading-ribbon-three { animation-name: portal-loading-ribbon-drift-three !important; }
+  .portal-loading-opening.portal-opening-link .portal-loading-ribbon-four { animation-name: portal-loading-ribbon-drift-one !important; }
+  .portal-loading-opening.portal-opening-link .portal-loading-ribbon-orb {
+    filter: none !important;
+    animation-name: portal-loading-ribbon-orb-float !important;
+    will-change: auto !important;
+  }
+  .portal-loading-opening.portal-opening-link .portal-loading-rays {
+    mix-blend-mode: normal !important;
+    animation: none !important;
+    background-size: 100% 100% !important;
+  }
+  .portal-loading-opening.portal-opening-link .portal-loading-rays::before,
+  .portal-loading-opening.portal-opening-link .portal-loading-rays::after {
+    filter: none !important;
+    animation: none !important;
+  }
+  .portal-loading-opening.portal-opening-link .portal-loading-stars {
+    filter: none !important;
+    animation-name: portal-loading-star-drift !important;
+    background-size: 100% 100% !important;
+  }
+  .portal-loading-opening.portal-opening-link .portal-loading-stars::before,
+  .portal-loading-opening.portal-opening-link .portal-loading-stars::after {
+    display: none !important;
+  }
+  .portal-loading-opening.portal-opening-link .portal-loading-dust {
+    filter: none !important;
+    animation: none !important;
+    background-size: 100% 100% !important;
+  }
+  .portal-loading-opening.portal-opening-link .portal-loading-dust::before,
+  .portal-loading-opening.portal-opening-link .portal-loading-dust::after {
+    filter: none !important;
+    box-shadow: none !important;
+    animation: none !important;
+  }
+  .portal-loading-opening.portal-opening-link .portal-loading-comets { display: none !important; }
+  .portal-loading-opening.portal-opening-link .portal-loading-mote { animation: none !important; }
+  .portal-loading-opening.portal-opening-link .portal-loading-object {
+    filter: none !important;
+    will-change: auto !important;
+    transform-style: flat !important;
+    animation-name: portal-loading-mobile-object-drift !important;
+  }
+  .portal-loading-opening.portal-opening-link .portal-loading-object:nth-child(n + 5) {
+    display: none !important;
+  }
+  .portal-loading-opening.portal-opening-link .portal-loading-orbit {
+    filter: none !important;
+    animation-name: portal-loading-mobile-orbit !important;
+    box-shadow: 0 0 16px rgba(74, 183, 220, .28), 0 0 24px rgba(171, 104, 180, .16) !important;
+  }
+  .portal-loading-opening.portal-opening-link .portal-loading-monogram {
+    filter: none !important;
+    background-size: 100% 100% !important;
+    animation: none !important;
+  }
+  .portal-loading-opening.portal-opening-link .portal-loading-kicker,
+  .portal-loading-opening.portal-opening-link .portal-loading-title,
+  .portal-loading-opening.portal-opening-link .portal-loading-track span {
+    animation: none !important;
+  }
+  .portal-loading-opening.portal-opening-link .portal-loading-center-shade { filter: none !important; }
+}
+
+@keyframes portal-loading-mobile-object-drift {
+  from { opacity: .76; transform: translate3d(0, 0, 0) rotate(0deg) scale(.92); }
+  to { opacity: 1; transform: translate3d(var(--object-dx, 24px), var(--object-dy, -24px), 0) rotate(28deg) scale(1.08); }
+}
+@keyframes portal-loading-mobile-orbit { to { transform: rotate(360deg); } }
