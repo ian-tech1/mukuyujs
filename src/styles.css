@@ -1396,3 +1396,30 @@ html[data-portal-motion="reduced"] .portal-loading-opening .portal-loading-detai
 .welcome-shell::after,
 .welcome-hero::before,
 .welcome-hero::after { will-change: transform; }
+
+/* Keep the standard backdrop reset through production CSS minification. */
+.welcome-login-panel > form,
+.welcome-highlights,
+.welcome-display-switch,
+.welcome-word-panel-highlights,
+.welcome-features-overlay {
+  backdrop-filter: var(--mukuyu-no-backdrop-filter, none) !important;
+}
+.welcome-login-panel > form,
+.welcome-highlights,
+.welcome-display-switch,
+.welcome-word-panel-highlights {
+  background: color-mix(in srgb, var(--color-card) 92%, transparent) !important;
+}
+.welcome-features-overlay {
+  background: rgba(6, 18, 39, .8) !important;
+}
+.welcome-shell::before,
+.welcome-shell::after,
+.welcome-hero::before,
+.welcome-hero::after {
+  animation: none !important;
+  will-change: auto !important;
+}
+.welcome-ribbon,
+.welcome-ribbon-orb { will-change: auto !important; }
