@@ -1,0 +1,4 @@
+# Keep these files available in GitHub, but exclude redundant, unreferenced, or non-runtime files from generated source ZIP downloads.
+assets/branding/mukuyu-app-master.png export-ignore
+mukuyu.zip export-ignore
+attachments/* export-ignore
