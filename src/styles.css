@@ -1834,20 +1834,22 @@ html[data-portal-motion="reduced"] .portal-opening-link .portal-loading-card::af
   to { transform: translate3d(1%, -1%, 0) scale(1.02); opacity: .5; }
 }
 
-/* The dashboard overview used to animate multiple full-page gradient images simultaneously.
-   Keep its school-colour canvas and scene changes, but stop background-position/filter repaints. */
-.portal-animated-background[data-portal-section="home"] {
+/* Keep all signed-in portal tabs on a static canvas to avoid Chrome repaint and React timer churn. */
+.portal-animated-background[data-portal-section] {
   background-size: 100% 100%;
+  background-position: center;
   animation: none !important;
 }
-.portal-animated-background[data-portal-section="home"] .portal-page-content::before,
-.portal-animated-background[data-portal-section="home"] .portal-page-content::after {
+.portal-animated-background[data-portal-section] .portal-page-content::before,
+.portal-animated-background[data-portal-section] .portal-page-content::after {
   animation: none !important;
+  transition: none !important;
 }
-.portal-animated-background[data-portal-section="home"] .portal-background-scene {
-  background-size: 100% 100%;
+.portal-animated-background[data-portal-section] .portal-background-scene,
+.portal-animated-background[data-portal-section] .portal-nature-scene {
+  display: none !important;
   animation: none !important;
-  transition: opacity 500ms ease-in-out;
+  transition: none !important;
 }
 
 /* Reuse the loader's look on tab changes and tint its glow to the selected task. */
@@ -1881,27 +1883,30 @@ html[data-portal-motion="reduced"] .welcome-hero::after,
 html[data-portal-motion="reduced"] .welcome-login-panel::after { animation: none !important; will-change: auto; }
 
 
-/* Match the opening/refresh cosmic backdrop on Overview; keep the wallpaper static in Chrome. */
-.portal-animated-background[data-portal-section="home"] {
+/* Match the opening/refresh artwork across the complete signed-in portal shell. */
+.portal-animated-background[data-portal-section] {
   background-color: #050916;
   background-size: 100% 100%;
   background-position: center;
   animation: none !important;
 }
-.portal-animated-background[data-portal-section="home"] .portal-page-content {
-  background: transparent;
+.portal-animated-background[data-portal-section] .portal-page-content {
+  background: transparent !important;
+  color: #edf4ff;
 }
-.portal-animated-background[data-portal-section="home"] .portal-page-content::before,
-.portal-animated-background[data-portal-section="home"] .portal-page-content::after {
-  display: none;
+.portal-animated-background[data-portal-section] .portal-page-content::before,
+.portal-animated-background[data-portal-section] .portal-page-content::after {
+  background-size: 100% 100%;
   animation: none !important;
+  transition: none !important;
   will-change: auto;
 }
-.portal-page-content > .portal-dashboard-backdrop {
+.portal-animated-background[data-portal-section] > .portal-dashboard-backdrop {
   position: fixed;
   inset: 0;
   z-index: -1;
   overflow: hidden;
+  pointer-events: none;
 }
 .portal-dashboard-backdrop,
 .portal-dashboard-backdrop *,
@@ -1939,6 +1944,21 @@ html[data-portal-motion="reduced"] .welcome-login-panel::after { animation: none
 }
 .portal-dashboard-backdrop .portal-loading-object::after { box-shadow: 0 0 5px currentColor; }
 .portal-dashboard-backdrop .portal-loading-object-ring { box-shadow: 0 0 8px currentColor, inset 0 0 4px currentColor; }
+.portal-animated-background[data-portal-section] .portal-page-content :is(.text-navy, .text-muted, .text-info, .text-ink) {
+  color: #edf4ff !important;
+}
+.portal-animated-background[data-portal-section] .portal-page-content :is([class*="bg-card"], [class*="bg-paper"], [class*="bg-white"], [class*="from-card"], [class*="bg-gradient-to-br"], [class*="bg-slate-50"], [class*="bg-gray-50"], [class*="bg-zinc-50"], [class*="bg-blue-50"], [class*="bg-sky-50"], [class*="bg-emerald-50"], [class*="bg-amber-50"], [class*="bg-red-50"], [class*="bg-rose-50"], [class*="bg-indigo-50"], [class*="bg-teal-50"]) {
+  color: var(--color-ink);
+}
+.portal-animated-background[data-portal-section] .portal-page-content :is([class*="bg-card"], [class*="bg-paper"], [class*="bg-white"], [class*="from-card"], [class*="bg-gradient-to-br"], [class*="bg-slate-50"], [class*="bg-gray-50"], [class*="bg-zinc-50"], [class*="bg-blue-50"], [class*="bg-sky-50"], [class*="bg-emerald-50"], [class*="bg-amber-50"], [class*="bg-red-50"], [class*="bg-rose-50"], [class*="bg-indigo-50"], [class*="bg-teal-50"]) :is(.text-navy, .text-ink) {
+  color: #102b49 !important;
+}
+.portal-animated-background[data-portal-section] .portal-page-content :is([class*="bg-card"], [class*="bg-paper"], [class*="bg-white"], [class*="from-card"], [class*="bg-gradient-to-br"], [class*="bg-slate-50"], [class*="bg-gray-50"], [class*="bg-zinc-50"], [class*="bg-blue-50"], [class*="bg-sky-50"], [class*="bg-emerald-50"], [class*="bg-amber-50"], [class*="bg-red-50"], [class*="bg-rose-50"], [class*="bg-indigo-50"], [class*="bg-teal-50"]) .text-muted {
+  color: #625b53 !important;
+}
+.portal-animated-background[data-portal-section] .portal-page-content :is([class*="bg-card"], [class*="bg-paper"], [class*="bg-white"], [class*="from-card"], [class*="bg-gradient-to-br"], [class*="bg-slate-50"], [class*="bg-gray-50"], [class*="bg-zinc-50"], [class*="bg-blue-50"], [class*="bg-sky-50"], [class*="bg-emerald-50"], [class*="bg-amber-50"], [class*="bg-red-50"], [class*="bg-rose-50"], [class*="bg-indigo-50"], [class*="bg-teal-50"]) .text-info {
+  color: #1d4e89 !important;
+}
 .portal-animated-background[data-portal-section="home"] .portal-page-content .dashboard-home-view {
   color: #edf4ff;
 }
@@ -1962,6 +1982,18 @@ html[data-portal-background-mode="original"] .portal-animated-background[data-po
   animation: none !important;
   will-change: auto;
   transform: none;
+}
+html[data-portal-backdrop-theme="nature-cycle"] .portal-animated-background[data-portal-section] .portal-page-content::before {
+  background-image: radial-gradient(ellipse at 16% 24%, color-mix(in srgb, var(--portal-glow-a) 34%, transparent), transparent 42%), radial-gradient(ellipse at 80% 72%, color-mix(in srgb, var(--portal-glow-b) 30%, transparent), transparent 40%), linear-gradient(140deg, rgba(6, 35, 30, .2), rgba(13, 54, 44, .16)) !important;
+}
+html[data-portal-backdrop-theme="nature-cycle"] .portal-animated-background[data-portal-section] .portal-page-content::after {
+  background-image: radial-gradient(ellipse at 23% 70%, color-mix(in srgb, var(--portal-glow-c) 22%, transparent), transparent 46%), radial-gradient(ellipse at 78% 24%, color-mix(in srgb, var(--portal-glow-d) 22%, transparent), transparent 42%) !important;
+}
+.portal-animated-background[data-portal-section] .portal-page-content :is([class~="bg-white/5"], [class~="bg-white/10"], [class*="from-slate-950"]) {
+  color: #edf4ff !important;
+}
+.portal-animated-background[data-portal-section] .portal-page-content :is([class~="bg-white/5"], [class~="bg-white/10"], [class*="from-slate-950"]) :is(.text-navy, .text-muted, .text-info, .text-ink) {
+  color: #edf4ff !important;
 }
 
 /* Keep the historical per-line hue cycle visible even when panel styles set inherited text colours. */
