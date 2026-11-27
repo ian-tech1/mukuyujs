@@ -15,7 +15,7 @@ import { DEFAULT_ADMISSION_NUMBER_SETTINGS, formatAdmissionNumberExample, type A
 import { getAdmissionNumberSettings, saveAdmissionNumberSettings } from "@/lib/school/api";
 import { MAX_GZIPPED_BACKUP_BYTES, MAX_WEB_BACKUP_JSON_BYTES } from "@/lib/school/backup-format";
 
-export function SettingsView({ ws, refresh, flash, onWelcomeChange }: Gate) {
+export function SettingsView({ ws, refresh, flash, beginActivity, onWelcomeChange }: Gate) {
   const canDownloadParentDetails = canActorAccess(ws.roleAccess, ws.me.role, "parentDetails", "download");
   return (
     <div className="max-w-4xl space-y-6">
@@ -47,7 +47,7 @@ export function SettingsView({ ws, refresh, flash, onWelcomeChange }: Gate) {
       {ws.me.role === "super_admin" ? <RoleAccessCard policy={ws.roleAccess} refresh={refresh} flash={flash} /> : null}
       {ws.me.role === "super_admin" ? <ParentLoginAuditCard flash={flash} /> : null}
       {ws.me.role === "super_admin" ? <AdmissionNumberFormatCard flash={flash} /> : null}
-      {ws.me.role === "super_admin" ? <WelcomePageCard flash={flash} refresh={refresh} onWelcomeChange={onWelcomeChange} /> : null}
+      {ws.me.role === "super_admin" ? <WelcomePageCard flash={flash} refresh={refresh} beginActivity={beginActivity} onWelcomeChange={onWelcomeChange} /> : null}
       {ws.me.role === "super_admin" ? <AppearanceColorsCard flash={flash} /> : null}
       {ws.me.role === "super_admin" ? <AdminAutomationCards flash={flash} /> : null}
       {ws.me.role === "super_admin" ? <WhatsAppGroupCard profile={ws.profile} flash={flash} refresh={refresh} /> : null}
@@ -231,7 +231,7 @@ function AdmissionNumberFormatCard({ flash }: Pick<Gate, "flash">) {
 
 type WelcomeForm = { title: string; subtitle: string; announcement: string; contact: string; logoData: string; backgroundStart: string; backgroundEnd: string; titleSize: number; fontFamily: string; animationStyle: string; animated: boolean; musicEnabled: boolean; musicUrl: string; highlights: string; certification: string; footerText: string; paragraphColoursEnabled: boolean; paragraphColourInterval: number; splashDurationSeconds: number; display: WelcomeDisplayOptions };
 
-function WelcomePageCard({ flash, refresh, onWelcomeChange }: Pick<Gate, "flash" | "refresh" | "onWelcomeChange">) {
+function WelcomePageCard({ flash, refresh, beginActivity, onWelcomeChange }: Pick<Gate, "flash" | "refresh" | "beginActivity" | "onWelcomeChange">) {
   const [form, setForm] = useState<WelcomeForm>({ title: "Mukuyu Junior School", subtitle: "Learner Progress Portal", announcement: "", contact: "", logoData: "", backgroundStart: "#0e2a4a", backgroundEnd: "#245b82", titleSize: 48, fontFamily: "serif", animationStyle: "aurora", animated: true, musicEnabled: false, musicUrl: "", highlights: "", certification: "© 2026 Certified", footerText: "", paragraphColoursEnabled: true, paragraphColourInterval: 4, splashDurationSeconds: 10, display: DEFAULT_WELCOME_DISPLAY });
   const [loaded, setLoaded] = useState(false);
   const [playlistText, setPlaylistText] = useState("");
@@ -258,8 +258,25 @@ function WelcomePageCard({ flash, refresh, onWelcomeChange }: Pick<Gate, "flash"
     if (file.size > 250000) { flash("Use a logo smaller than 250 KB.", true); return; }
     const reader = new FileReader(); reader.onload = () => setForm((current) => ({ ...current, logoData: String(reader.result || "") })); reader.readAsDataURL(file);
   }
-  return <form className="rounded-md border border-line bg-card p-4 space-y-3" onSubmit={async (event) => { event.preventDefault(); try { const tracks = parsePlaylistText(playlistText, musicGenre); const finalTracks = tracks.length ? tracks : (form.musicUrl && !form.musicUrl.startsWith("{") ? [{ title: "Selected audio", genre: musicGenre, url: form.musicUrl }] : []);
-      const musicUrl = automaticMusic ? JSON.stringify({ kind: "mukuyu-auto-music", genre: musicGenre, options: musicOptions }) : finalTracks.length ? JSON.stringify({ kind: "mukuyu-playlist", genre: musicGenre, tracks: finalTracks, options: musicOptions }) : (form.musicUrl.startsWith("{") ? "" : form.musicUrl); await saveWelcomePage({ data: { ...form, musicUrl } }); const latest = await getWelcomePage(); onWelcomeChange?.({ enabled: Boolean(latest.musicEnabled), url: latest.musicUrl || "" }); flash("Welcome design and music settings published for the whole school."); await refresh(); } catch (error) { flash(errText(error), true); } }}>
+  return <form className="rounded-md border border-line bg-card p-4 space-y-3" onSubmit={async (event) => {
+    event.preventDefault();
+    let finishActivity: ((finishedMessage?: string) => void) | undefined;
+    try {
+      const tracks = parsePlaylistText(playlistText, musicGenre);
+      const finalTracks = tracks.length ? tracks : (form.musicUrl && !form.musicUrl.startsWith("{") ? [{ title: "Selected audio", genre: musicGenre, url: form.musicUrl }] : []);
+      const musicUrl = automaticMusic ? JSON.stringify({ kind: "mukuyu-auto-music", genre: musicGenre, options: musicOptions }) : finalTracks.length ? JSON.stringify({ kind: "mukuyu-playlist", genre: musicGenre, tracks: finalTracks, options: musicOptions }) : (form.musicUrl.startsWith("{") ? "" : form.musicUrl);
+      finishActivity = beginActivity?.("Welcome page is being published…");
+      await saveWelcomePage({ data: { ...form, musicUrl } });
+      const latest = await getWelcomePage();
+      finishActivity?.("Welcome page published for the whole school.");
+      onWelcomeChange?.({ enabled: Boolean(latest.musicEnabled), url: latest.musicUrl || "" });
+      flash("Welcome page published for the whole school.");
+      await refresh();
+    } catch (error) {
+      finishActivity?.();
+      flash(errText(error), true);
+    }
+  }}>
     <h2 className="font-serif text-xl text-navy">Welcome screen designer</h2>
     <p className="text-sm text-muted">Super Admin only. Changes are saved centrally and appear to everyone who opens the site.</p>
     <label className="block text-sm">Page title<input className={inputClass + " mt-1"} value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} required maxLength={100} /></label>

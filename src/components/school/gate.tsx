@@ -5,6 +5,7 @@ export type Gate = {
   ws: Workspace;
   refresh: () => Promise<void>;
   flash: (message: string, bad?: boolean) => void;
+  beginActivity?: (message: string) => (finishedMessage?: string) => void;
   onWelcomeChange?: (settings: { enabled: boolean; url: string }) => void;
 };
 

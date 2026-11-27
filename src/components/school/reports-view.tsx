@@ -12,7 +12,7 @@ import { buildReportExamChoices, chooseReportExams, filterReportMarksToGrade, re
 import { saveTermNote } from "@/lib/school/api";
 import { canActorAccess } from "@/lib/school/role-access";
 
-export function ReportsView({ ws, flash, refresh }: Gate) {
+export function ReportsView({ ws, flash, refresh, beginActivity }: Gate) {
   const canDownload = canActorAccess(ws.roleAccess, ws.me.role, "reports", "download");
   const subjects = [...ws.subjects].sort((a, b) => a.sort - b.sort);
   const allExams = [...ws.exams].sort((a, b) => a.sort - b.sort);
@@ -280,7 +280,7 @@ export function ReportsView({ ws, flash, refresh }: Gate) {
       {current && grade ? (
         <>
           <ReportSheet profile={profileForPeriod} grade={grade} stream={ws.streams.find((stream) => stream.id === current.learner.streamId)} subjects={subjects} exams={displayExams} row={current} closingDate={period.calendar?.closingDate ?? ""} openingDate={period.calendar?.openingDate ?? ""} title={period.calendar?.reportTitle} extras={currentExtras} />
-          {canEditLearner(ws.me, ws.assignments, current.learner.streamId) ? <AttendanceEditor key={`${current.learner.id}-${period.yearId}-${period.termId}`} ws={ws} flash={flash} refresh={refresh} learnerId={current.learner.id} learnerName={current.learner.fullName} yearId={period.yearId} termId={period.termId} note={currentExtras?.termNote ?? null} /> : null}
+          {canEditLearner(ws.me, ws.assignments, current.learner.streamId) ? <AttendanceEditor key={`${current.learner.id}-${period.yearId}-${period.termId}`} ws={ws} flash={flash} refresh={refresh} beginActivity={beginActivity} learnerId={current.learner.id} learnerName={current.learner.fullName} yearId={period.yearId} termId={period.termId} note={currentExtras?.termNote ?? null} /> : null}
         </>
       ) : <p className="text-sm text-muted">{query.trim() ? "No learner matches that name or admission number." : "No learners in this class yet."}</p>}
     </div>
@@ -288,11 +288,12 @@ export function ReportsView({ ws, flash, refresh }: Gate) {
 }
 
 function AttendanceEditor({
-  ws, flash, refresh, learnerId, learnerName, yearId, termId, note,
+  ws, flash, refresh, beginActivity, learnerId, learnerName, yearId, termId, note,
 }: {
   ws: Gate["ws"];
   flash: Gate["flash"];
   refresh: Gate["refresh"];
+  beginActivity: Gate["beginActivity"];
   learnerId: string;
   learnerName: string;
   yearId: string;
@@ -309,6 +310,7 @@ function AttendanceEditor({
     <form className="no-print space-y-3 rounded-md border border-line bg-card p-4" onSubmit={async (event) => {
       event.preventDefault();
       setBusy(true);
+      const finishActivity = beginActivity?.("Report attendance and conduct are being saved…");
       try {
         await saveTermNote({ data: {
           learnerId, yearId, termId,
@@ -316,9 +318,10 @@ function AttendanceEditor({
           daysExpected: expected.trim() === "" ? null : Number(expected),
           conduct, comment,
         } });
+        finishActivity?.("Report attendance and conduct saved.");
         await refresh();
         flash(ws.profile.showAttendance ? "Attendance and conduct saved. They show on this report card." : "Attendance and conduct saved. Turn on “Show attendance” in report layout to print them.");
-      } catch (error) { flash(errText(error), true); }
+      } catch (error) { finishActivity?.(); flash(errText(error), true); }
       finally { setBusy(false); }
     }}>
       <h2 className="font-serif text-xl text-navy">Attendance and conduct · {learnerName}</h2>

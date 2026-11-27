@@ -24,7 +24,7 @@ function parseEnteredScore(raw: string, denominator = 100): number | null {
   return Math.round((score / denominator) * 100);
 }
 
-export function MarksView({ ws, refresh, flash }: Gate) {
+export function MarksView({ ws, refresh, flash, beginActivity }: Gate) {
   const [, refreshDeadlineClock] = useState(0);
   useEffect(() => {
     const timer = window.setInterval(() => refreshDeadlineClock((value) => value + 1), 30000);
@@ -154,6 +154,7 @@ export function MarksView({ ws, refresh, flash }: Gate) {
   }
 
   async function save() {
+    let finishActivity: ((finishedMessage?: string) => void) | undefined;
     try {
       const parsedScores = learners.map((learner) => ({ learner, score: parseEnteredScore(scores[learner.id] ?? "", subjectMaximum) }));
       const invalid = parsedScores.find(({ score }) => score != null && (!Number.isFinite(score) || score < 0 || score > 100));
@@ -161,6 +162,7 @@ export function MarksView({ ws, refresh, flash }: Gate) {
         flash(`Invalid score for ${invalid.learner.fullName}. Enter a mark from 0 to ${subjectMaximum}, or use obtained/maximum such as 30/70.`, true);
         return;
       }
+      finishActivity = beginActivity?.("Results are being saved…");
       await saveMarks({
         data: {
           subjectId,
@@ -173,9 +175,11 @@ export function MarksView({ ws, refresh, flash }: Gate) {
           })),
         },
       });
+      finishActivity?.("Results saved.");
       flash("Learner\x27s results saved.");
       await refresh();
     } catch (error) {
+      finishActivity?.();
       flash(errText(error), true);
     }
   }
@@ -289,14 +293,17 @@ export function MarksView({ ws, refresh, flash }: Gate) {
           })}
         </div>
         <button className={btnClass} type="button" onClick={async () => {
+          let finishActivity: ((finishedMessage?: string) => void) | undefined;
           try {
+            finishActivity = beginActivity?.("Subject remarks are being saved…");
             await saveSubjectRemarks({ data: {
               subjectId, yearId: period.yearId, termId: period.termId,
               rows: learners.filter((learner) => canEditMark(ws.me, ws.assignments, learner, subjectId)).map((learner) => ({ learnerId: learner.id, remark: remarks[learner.id] ?? "" })),
             } });
+            finishActivity?.("Subject remarks saved.");
             flash("Subject remarks saved.");
             await refresh();
-          } catch (error) { flash(errText(error), true); }
+          } catch (error) { finishActivity?.(); flash(errText(error), true); }
         }}>Save subject remarks</button>
       </section> : null}
       {(ws.me.role === "super_admin" || ws.me.isDeputy || ws.me.privImport || ws.me.role === "admin") ? <section className="marks-import-panel space-y-3 rounded-2xl border border-line p-4 shadow-sm">
@@ -329,19 +336,21 @@ export function MarksView({ ws, refresh, flash }: Gate) {
           if (flat.some(({ score }) => !Number.isFinite(score) || score < 0 || score > 100)) { flash("Correct invalid mark cells first. Enter a score from 0 to 100, or use obtained/maximum such as 30/40.", true); return; }
           if (uploadSubjects.some(({ subject }) => !subject)) { flash("Review the unmatched subject columns above. Only recognized subject headers can be saved.", true); return; }
           setUploadBusy(true);
+          const finishActivity = beginActivity?.("Imported results are being saved…");
           try {
             const result = await importMarksExcel({ data: { yearId: period.yearId, termId: period.termId, examId, rows: flat } });
             setUploadErrors(result.errors);
+            finishActivity?.(result.errors.length ? `${result.saved} result(s) saved; ${result.errors.length} row(s) need attention.` : "Imported results saved.");
             flash(result.errors.length ? `${result.saved} mark(s) saved; ${result.errors.length} row(s) need attention. See the full error list below.` : `${result.saved} mark(s) saved successfully.` , result.errors.length > 0);
             if (!result.errors.length) setUploadRows([]);
             await refresh();
-          } catch (error) { flash(errText(error), true); }
+          } catch (error) { finishActivity?.(); flash(errText(error), true); }
           finally { setUploadBusy(false); }
         }}>{uploadBusy ? "Saving marks…" : "Validate and save uploaded marks"}</button>
         {uploadErrors.length ? <div className="max-h-48 overflow-auto rounded-xl border border-rose-300 bg-rose-50 p-3 text-xs text-rose-900" role="alert"><p className="font-bold">{uploadErrors.length} row(s) were not saved. Correct the learner/subject data and retry; already-saved unchanged marks will not be duplicated.</p><ul className="mt-2 list-inside list-disc space-y-1">{uploadErrors.slice(0, 100).map((error, index) => <li key={`${index}-${error}`}>{error}</li>)}</ul>{uploadErrors.length > 100 ? <p className="mt-2">Showing the first 100 errors.</p> : null}</div> : null}
       </section> : null}
       {ws.me.role === "super_admin" ? <ClearBulkResultsCard ws={ws} gradeId={gradeId} streamId={streamId} yearId={period.yearId} termId={period.termId} examId={examId} flash={flash} refresh={refresh} /> : null}
-      {(ws.me.role === "super_admin" || ws.me.isDeputy || (ws.me.role === "admin" && ws.me.privCalendar)) ? <section className="rounded-md border border-line bg-card p-4 space-y-3"><h2 className="font-serif text-xl text-navy">Approve recorded marks</h2><p className="text-sm text-muted">Approval applies to existing marks for the selected academic year, term and grade/stream. Any later edit or import changes the affected mark back to Recorded so it must be reviewed again.</p><p className="text-sm">Approved marks: {period.marks.filter((mark) => mark.status === "approved" && mark.gradeId === gradeId && (!streamId || mark.streamId === streamId)).length} · Recorded but not approved: {period.marks.filter((mark) => mark.status !== "approved" && mark.gradeId === gradeId && (!streamId || mark.streamId === streamId)).length}</p><button className={btnClass} type="button" onClick={async () => { if (!confirm(`Approve all currently recorded marks for ${ws.grades.find((grade) => grade.id === gradeId)?.name ?? "this grade"}, ${ws.terms.find((term) => term.id === period.termId)?.name ?? "selected term"}?`)) return; try { const result = await approveMarksPeriod({ data: { yearId: period.yearId, termId: period.termId, gradeId, streamId: streamId || undefined } }); flash(`${result.approved} mark(s) approved.`); await refresh(); } catch (error) { flash(errText(error), true); } }}>Approve marks for selected period</button></section> : null}
+      {(ws.me.role === "super_admin" || ws.me.isDeputy || (ws.me.role === "admin" && ws.me.privCalendar)) ? <section className="rounded-md border border-line bg-card p-4 space-y-3"><h2 className="font-serif text-xl text-navy">Approve recorded marks</h2><p className="text-sm text-muted">Approval applies to existing marks for the selected academic year, term and grade/stream. Any later edit or import changes the affected mark back to Recorded so it must be reviewed again.</p><p className="text-sm">Approved marks: {period.marks.filter((mark) => mark.status === "approved" && mark.gradeId === gradeId && (!streamId || mark.streamId === streamId)).length} · Recorded but not approved: {period.marks.filter((mark) => mark.status !== "approved" && mark.gradeId === gradeId && (!streamId || mark.streamId === streamId)).length}</p><button className={btnClass} type="button" onClick={async () => { if (!confirm(`Approve all currently recorded marks for ${ws.grades.find((grade) => grade.id === gradeId)?.name ?? "this grade"}, ${ws.terms.find((term) => term.id === period.termId)?.name ?? "selected term"}?`)) return; const finishActivity = beginActivity?.("Recorded results are being approved…"); try { const result = await approveMarksPeriod({ data: { yearId: period.yearId, termId: period.termId, gradeId, streamId: streamId || undefined } }); finishActivity?.(`${result.approved} result(s) approved.`); flash(`${result.approved} mark(s) approved.`); await refresh(); } catch (error) { finishActivity?.(); flash(errText(error), true); } }}>Approve marks for selected period</button></section> : null}
       <section className="rounded-md border border-line bg-card p-4 space-y-3">
         <h2 className="font-serif text-xl text-navy">Missing marks and teacher follow-up</h2>
         <p className="text-sm text-muted">Checks the selected grade/stream for the selected year and term. Only CATs enabled for that term are counted when a term CAT list has been configured.</p>

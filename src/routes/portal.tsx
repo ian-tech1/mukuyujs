@@ -88,12 +88,45 @@ function PortalPage() {
   const [backdropScene, setBackdropScene] = useState(0);
   const [backdropTheme, setBackdropTheme] = useState("auto-sections");
   const [systemReducedMotion, setSystemReducedMotion] = useState(false);
+  const [activityMessage, setActivityMessage] = useState("");
   const displayControlsRef = useRef<HTMLDivElement>(null);
+  const previousViewRef = useRef(view);
+  const activityTokenRef = useRef(0);
+  const activityTimerRef = useRef<number | null>(null);
+  const noticeTimerRef = useRef<number | null>(null);
 
   const refresh = useCallback(async () => {
     const next = await getWorkspace();
     setWs(next);
   }, []);
+
+  const showActivity = useCallback((message: string, durationMs = 0) => {
+    const token = ++activityTokenRef.current;
+    if (activityTimerRef.current !== null) window.clearTimeout(activityTimerRef.current);
+    activityTimerRef.current = null;
+    setActivityMessage(message);
+    if (durationMs > 0) {
+      activityTimerRef.current = window.setTimeout(() => {
+        if (activityTokenRef.current !== token) return;
+        activityTimerRef.current = null;
+        setActivityMessage("");
+      }, durationMs);
+    }
+    return () => {
+      if (activityTokenRef.current !== token) return;
+      if (activityTimerRef.current !== null) window.clearTimeout(activityTimerRef.current);
+      activityTimerRef.current = null;
+      setActivityMessage("");
+    };
+  }, []);
+
+  const beginActivity = useCallback((message: string) => {
+    const clearPending = showActivity(message);
+    return (finishedMessage?: string) => {
+      if (finishedMessage) showActivity(finishedMessage, 1600);
+      else clearPending();
+    };
+  }, [showActivity]);
 
   useEffect(() => {
     refresh().catch(() => navigate({ to: "/", search: { c: undefined } }));
@@ -146,8 +179,18 @@ function PortalPage() {
     setDisplaySettingsOpen(false);
     window.scrollTo(0, 0);
     const frame = window.requestAnimationFrame(() => window.scrollTo(0, 0));
+    if (previousViewRef.current !== view) {
+      previousViewRef.current = view;
+      const label = view === "settings" && ws?.me.role === "super_admin" ? "Welcome Page" : LABELS[view] ?? view;
+      showActivity(`Opening ${label}…`, 700);
+    }
     return () => window.cancelAnimationFrame(frame);
-  }, [view]);
+  }, [view, showActivity, ws?.me.role]);
+
+  useEffect(() => () => {
+    if (activityTimerRef.current !== null) window.clearTimeout(activityTimerRef.current);
+    if (noticeTimerRef.current !== null) window.clearTimeout(noticeTimerRef.current);
+  }, []);
 
   useEffect(() => {
     if (!displaySettingsOpen) return;
@@ -173,9 +216,11 @@ function PortalPage() {
       setNotice(message);
       setError("");
     }
-    window.setTimeout(() => {
+    if (noticeTimerRef.current !== null) window.clearTimeout(noticeTimerRef.current);
+    noticeTimerRef.current = window.setTimeout(() => {
       setError("");
       setNotice("");
+      noticeTimerRef.current = null;
     }, 4200);
   }, []);
 
@@ -196,7 +241,7 @@ function PortalPage() {
         <div className="portal-loading-card text-center" role="status" aria-live="polite">
           <p className="portal-loading-monogram" aria-label="Mukuyu Junior School initials"><span>MKJ</span></p>
           <p className="portal-loading-kicker portal-loading-box portal-loading-box-kicker">MUKUYU JUNIOR SCHOOL · LEARNING PORTAL</p>
-          <span className="portal-loading-orbit" aria-hidden="true"><SchoolLogo className="size-24" /></span>
+          <span className="portal-loading-orbit" aria-hidden="true"><SchoolLogo className="size-[6.5rem]" /></span>
           <h1 className="portal-loading-title portal-loading-box portal-loading-box-title mt-5">Mukuyu Junior School</h1>
           <p className="portal-loading-tagline portal-loading-box portal-loading-box-tagline mt-2">Learn with purpose. Grow with confidence.</p>
           <p className="portal-loading-message portal-loading-box portal-loading-box-message mt-4 text-sm">Opening your school office and getting everything ready…</p>
@@ -209,7 +254,17 @@ function PortalPage() {
 
   const views = visibleViews(ws.me, ws.roleAccess);
   const current = views.includes(view) ? view : views[0];
-  const gate = { ws, refresh, flash, onWelcomeChange: (settings: { enabled: boolean; url: string }) => setStaffMusic({ ...settings, options: parseMusicSetting(settings.url || "").options }) };
+  function navigateToView(item: string) {
+    const label = item === "settings" && ws?.me.role === "super_admin" ? "Welcome Page" : LABELS[item] ?? item;
+    showActivity(`Opening ${label}…`, 700);
+    previousViewRef.current = item;
+    setOpen(false);
+    setDisplaySettingsOpen(false);
+    window.scrollTo(0, 0);
+    void navigate({ to: "/portal", search: { view: item } });
+  }
+
+  const gate = { ws, refresh, flash, beginActivity, onWelcomeChange: (settings: { enabled: boolean; url: string }) => setStaffMusic({ ...settings, options: parseMusicSetting(settings.url || "").options }) };
 
   return (
     <div className="portal-animated-background min-h-screen w-full min-w-0 max-w-none overflow-x-clip bg-paper lg:grid lg:grid-cols-[16rem_minmax(0,1fr)]" data-portal-section={current}>
@@ -236,12 +291,7 @@ function PortalPage() {
               type="button"
               className={`portal-nav-item flex h-14 w-full items-center rounded-xl px-4 text-left text-xl font-bold ${current === item ? "portal-nav-item-active text-paper" : "text-paper/90"}`}
               aria-current={current === item ? "page" : undefined}
-              onClick={() => {
-                setOpen(false);
-                setDisplaySettingsOpen(false);
-                window.scrollTo(0, 0);
-                void navigate({ to: "/portal", search: { view: item } });
-              }}
+              onClick={() => navigateToView(item)}
             >
               {LABELS[item] ?? item}
             </button>
@@ -317,7 +367,7 @@ function PortalPage() {
                 <button type="button" className="rounded-xl border border-line px-3 py-2 text-left text-xs font-semibold" aria-pressed={display.density === "compact"} onClick={() => updateDisplay({ density: display.density === "compact" ? "comfortable" : "compact" })}>{display.density === "compact" ? "Compact spacing ✓" : "Comfortable spacing"}</button>
                 <button type="button" className="rounded-xl border border-line px-3 py-2 text-left text-xs font-semibold" aria-pressed={display.accentMotion} onClick={() => updateDisplay({ accentMotion: !display.accentMotion })}>{display.accentMotion ? "Panel colour effect: on" : "Panel colour effect: off"}</button><button type="button" className="rounded-xl border border-line px-3 py-2 text-left text-xs font-semibold" aria-pressed={display.motion} onClick={() => updateDisplay({ motion: !display.motion })}>{display.motion ? "Other motion: on" : "Other motion: off"}</button>
               </div>
-              <div className="mt-4 border-t border-line pt-3"><h3 className="text-xs font-bold uppercase tracking-wide text-navy">Welcome page design</h3><p className="mt-1 text-xs text-muted">The 16 shared welcome and dashboard display controls are saved centrally by the Super Admin.</p>{ws.me.role === "super_admin" ? <button type="button" className="mt-2 w-full rounded-xl border border-line px-3 py-2 text-xs font-semibold text-navy" onClick={() => { setDisplaySettingsOpen(false); navigate({ to: "/portal", search: { view: "settings" } }); }}>Open welcome screen designer</button> : <p className="mt-2 text-xs text-muted">Your colour, font, size and spacing choices above remain private to this device.</p>}</div><button type="button" className="mt-3 w-full rounded-xl border border-line px-3 py-2 text-xs font-semibold text-navy" onClick={() => updateDisplay(DEFAULT_DISPLAY_PREFERENCES)}>Reset display and follow school defaults</button>
+              <div className="mt-4 border-t border-line pt-3"><h3 className="text-xs font-bold uppercase tracking-wide text-navy">Welcome page design</h3><p className="mt-1 text-xs text-muted">The 16 shared welcome and dashboard display controls are saved centrally by the Super Admin.</p>{ws.me.role === "super_admin" ? <button type="button" className="mt-2 w-full rounded-xl border border-line px-3 py-2 text-xs font-semibold text-navy" onClick={() => navigateToView("settings")}>Open welcome screen designer</button> : <p className="mt-2 text-xs text-muted">Your colour, font, size and spacing choices above remain private to this device.</p>}</div><button type="button" className="mt-3 w-full rounded-xl border border-line px-3 py-2 text-xs font-semibold text-navy" onClick={() => updateDisplay(DEFAULT_DISPLAY_PREFERENCES)}>Reset display and follow school defaults</button>
             </section> : null}
           </div>
         </header>
@@ -342,6 +392,17 @@ function PortalPage() {
         </div>
       </div>
       {ws.me.active ? <StaffMusicDock url={staffMusic.enabled ? staffMusic.url : ""} options={staffMusic.options || {}} /> : null}
+      {activityMessage ? <div className="portal-loading portal-loading-action-feedback fixed inset-0 z-[2147483000] grid min-h-[100svh] w-full place-items-center overflow-hidden px-4" role="status" aria-live="polite" aria-atomic="true">
+        <PortalLoadingBackdrop />
+        <div className="portal-loading-center-shade" aria-hidden="true" />
+        <section className="portal-loading-card portal-loading-action-card text-center">
+          <p className="portal-loading-kicker">MUKUYU JUNIOR SCHOOL · LEARNING PORTAL</p>
+          <span className="portal-loading-orbit" aria-hidden="true"><SchoolLogo className="size-[6.5rem]" /></span>
+          <h2 className="portal-loading-feedback-message mt-5">{activityMessage}</h2>
+          <p className="portal-loading-feedback-note mt-2">Please wait a moment…</p>
+          <div className="portal-loading-track mt-5" aria-hidden="true"><span /></div>
+        </section>
+      </div> : null}
     </div>
   );
 }

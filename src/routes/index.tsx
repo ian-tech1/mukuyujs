@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { SchoolLogo } from "@/components/school/logo";
 import { PortalLoadingBackdrop } from "@/components/school/portal-loading-backdrop";
 import { PublicReport } from "@/components/school/public-report";
@@ -31,12 +31,11 @@ function isChromeBrowser() {
   return /(?:Chrome|CriOS)\//.test(userAgent) && !/(?:Edg|OPR|SamsungBrowser|Vivaldi)\//.test(userAgent);
 }
 
-function OpeningIntro({ title, motto, logoSrc, durationSeconds, onComplete }: { title: string; motto: string; logoSrc?: string; durationSeconds: number; onComplete: () => void }) {
+function OpeningIntro({ title, motto, logoSrc, durationSeconds, settingsReady, onComplete }: { title: string; motto: string; logoSrc?: string; durationSeconds: number; settingsReady: boolean; onComplete: () => void }) {
   const [visible, setVisible] = useState(true);
   const [progress, setProgress] = useState(0);
   const [secondsRemaining, setSecondsRemaining] = useState(durationSeconds);
-  const startedAt = useRef(Date.now());
-  const countdownLabel = `Sign-in opens in ${secondsRemaining} ${secondsRemaining === 1 ? "second" : "seconds"}`;
+  const countdownLabel = settingsReady ? `Sign-in opens in ${secondsRemaining} ${secondsRemaining === 1 ? "second" : "seconds"}` : "Preparing sign-in options…";
 
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
@@ -45,22 +44,24 @@ function OpeningIntro({ title, motto, logoSrc, durationSeconds, onComplete }: { 
   }, []);
 
   useEffect(() => {
-    if (!visible) return;
+    if (!visible || !settingsReady) return;
     const durationMs = Math.max(1, durationSeconds * 1000);
-    const remaining = Math.max(0, durationMs - (Date.now() - startedAt.current));
+    const startedAt = Date.now();
+    setProgress(0);
+    setSecondsRemaining(durationSeconds);
     const updateProgress = () => {
-      const elapsedMs = Math.min(durationMs, Math.max(0, Date.now() - startedAt.current));
+      const elapsedMs = Math.min(durationMs, Math.max(0, Date.now() - startedAt));
       setProgress(Math.round((elapsedMs / durationMs) * 100));
       setSecondsRemaining(Math.ceil((durationMs - elapsedMs) / 1000));
     };
     updateProgress();
     const interval = window.setInterval(updateProgress, 100);
-    const timeout = window.setTimeout(() => { setVisible(false); onComplete(); }, remaining);
+    const timeout = window.setTimeout(() => { setVisible(false); onComplete(); }, durationMs);
     return () => {
       window.clearInterval(interval);
       window.clearTimeout(timeout);
     };
-  }, [durationSeconds, visible, onComplete]);
+  }, [durationSeconds, visible, settingsReady, onComplete]);
 
   function continueToSignIn() {
     setVisible(false);
@@ -74,7 +75,7 @@ function OpeningIntro({ title, motto, logoSrc, durationSeconds, onComplete }: { 
     <div className="portal-loading-card text-center">
       <p className="portal-loading-monogram" aria-label="Mukuyu Junior School initials"><span>MKJ</span></p>
       <p className="portal-loading-kicker">MUKUYU JUNIOR SCHOOL · LEARNING PORTAL</p>
-      <span className="portal-loading-orbit" aria-hidden="true"><SchoolLogo src={logoSrc} className="size-24" /></span>
+      <span className="portal-loading-orbit" aria-hidden="true"><SchoolLogo src={logoSrc} className="size-[6.5rem]" /></span>
       <h1 id="opening-intro-title" className="portal-loading-title mt-5">{title}</h1>
       <p className="portal-loading-tagline mt-2">{motto}</p>
       <p id="opening-intro-description" className="portal-loading-message mt-4 text-sm">Opening your school office and getting everything ready…</p>
@@ -118,6 +119,7 @@ function LoginPage() {
   const [parentError, setParentError] = useState("");
   const [parentNotice, setParentNotice] = useState("");
   const [welcome, setWelcome] = useState<{ title: string; subtitle: string; announcement: string; contact: string; logoData?: string; backgroundStart?: string; backgroundEnd?: string; titleSize?: number; fontFamily?: string; animationStyle?: string; animated?: boolean; highlights?: string; certification?: string; footerText?: string; paragraphColoursEnabled?: boolean; paragraphColourInterval?: number; splashDurationSeconds?: number; whatsappGroupEnabled?: boolean; whatsappGroupUrl?: string; whatsappGroupLabel?: string; display?: WelcomeDisplayOptions } | null>(null);
+  const [welcomeSettingsReady, setWelcomeSettingsReady] = useState(false);
   const [display, setDisplay] = useState<LocalDisplayPreferences>(DEFAULT_DISPLAY_PREFERENCES);
   const [paragraphColourTick, setParagraphColourTick] = useState(0);
   const [featuresOpen, setFeaturesOpen] = useState(false);
@@ -152,7 +154,7 @@ function LoginPage() {
       setWelcome(settings);
       document.documentElement.dataset.schoolAppearance = JSON.stringify(settings.appearance);
       applyDisplayPreferences(readDisplayPreferences());
-    }).catch(() => setWelcome(null));
+    }).catch(() => setWelcome(null)).finally(() => setWelcomeSettingsReady(true));
     getParentPasswordChangeStatus().then((result) => {
       if (result.required) {
         setParentPasswordChangeRequired(true);
@@ -409,7 +411,7 @@ function LoginPage() {
 
   return (
     <main className={`welcome-shell grid min-h-screen lg:grid-cols-[1.1fr_0.9fr] ${welcomeDisplay.animatedWordingPanels ? "" : "welcome-word-panels-disabled"}`} style={welcomeHeroStyle}>
-      {!openingIntroComplete ? <OpeningIntro title={welcome?.title || status?.schoolName || "Mukuyu Junior School"} motto={status?.motto || "Hard Work Pays"} logoSrc={welcome?.logoData || undefined} durationSeconds={Math.max(5, Math.min(30, welcome?.splashDurationSeconds ?? 10))} onComplete={completeOpeningIntro} /> : null}
+      {!openingIntroComplete ? <OpeningIntro title={welcome?.title || status?.schoolName || "Mukuyu Junior School"} motto={status?.motto || "Hard Work Pays"} logoSrc={welcome?.logoData || undefined} durationSeconds={Math.max(5, Math.min(30, welcome?.splashDurationSeconds ?? 10))} settingsReady={welcomeSettingsReady} onComplete={completeOpeningIntro} /> : null}
       <section className={`welcome-hero relative flex flex-col justify-between px-6 py-8 text-paper sm:px-12 ${welcome?.animated === false || welcome?.animationStyle === "none" ? "welcome-static" : `welcome-animated welcome-animation-${welcome?.animationStyle || "aurora"}`} ${welcomeDisplay.showRibbons ? "" : "welcome-no-ribbons"} ${welcomeDisplay.titleShadow ? "" : "welcome-title-shadow-disabled"} ${welcomeDisplay.contentAlignment === "center" ? "welcome-content-centered" : ""}`}>
         <div className="welcome-ribbon-field" aria-hidden="true"><span className="welcome-ribbon welcome-ribbon-one" /><span className="welcome-ribbon welcome-ribbon-two" /><span className="welcome-ribbon welcome-ribbon-three" /><span className="welcome-ribbon welcome-ribbon-four" /><span className="welcome-ribbon-orb welcome-ribbon-orb-one" /><span className="welcome-ribbon-orb welcome-ribbon-orb-two" /></div>
         <div className="relative z-10 flex items-center justify-between gap-4">
