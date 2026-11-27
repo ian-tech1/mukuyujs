@@ -289,18 +289,19 @@ function PortalPage() {
   const requestedView = pendingView ?? view;
   const current = views.includes(requestedView) ? requestedView : views[0];
   function navigateToView(item: string) {
-    setPendingView(item);
-    previousViewRef.current = item;
+    if (item === current) return;
     setOpen(false);
     setDisplaySettingsOpen(false);
     window.scrollTo(0, 0);
     if (tabOpeningTimerRef.current !== null) window.clearTimeout(tabOpeningTimerRef.current);
     setTabOpeningView(item);
     tabOpeningTimerRef.current = window.setTimeout(() => {
+      setPendingView(item);
+      previousViewRef.current = item;
       setTabOpeningView(null);
       tabOpeningTimerRef.current = null;
-    }, 420);
-    void navigate({ to: "/portal", search: { view: item } });
+      void navigate({ to: "/portal", search: { view: item } });
+    }, 4000);
   }
 
   const gate = { ws, refresh, flash, beginActivity, onWelcomeChange: (settings: { enabled: boolean; url: string }) => setStaffMusic({ ...settings, options: parseMusicSetting(settings.url || "").options }) };
