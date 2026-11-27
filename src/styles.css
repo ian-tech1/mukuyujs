@@ -1527,3 +1527,76 @@ html[data-portal-motion="reduced"] .portal-loading-opening .portal-loading-detai
   to { opacity: 1; transform: translate3d(var(--object-dx, 24px), var(--object-dy, -24px), 0) rotate(28deg) scale(1.08); }
 }
 @keyframes portal-loading-mobile-orbit { to { transform: rotate(360deg); } }
+
+
+/* Chrome-friendly shared loader colours: keep the palette stable and reserve motion for geometry. */
+.portal-loading:not(.portal-navigation-drawer) {
+  animation: none !important;
+  background-position: center !important;
+}
+.portal-loading:not(.portal-navigation-drawer)::before,
+.portal-loading:not(.portal-navigation-drawer)::after {
+  filter: none !important;
+  mix-blend-mode: normal !important;
+}
+.portal-loading:not(.portal-navigation-drawer) .portal-loading-ribbon {
+  filter: none !important;
+  mix-blend-mode: normal !important;
+  background-position: 50% 50% !important;
+}
+.portal-loading:not(.portal-navigation-drawer) .portal-loading-ribbon-one { animation-name: portal-loading-ribbon-drift-one !important; }
+.portal-loading:not(.portal-navigation-drawer) .portal-loading-ribbon-two { animation-name: portal-loading-ribbon-drift-two !important; }
+.portal-loading:not(.portal-navigation-drawer) .portal-loading-ribbon-three { animation-name: portal-loading-ribbon-drift-three !important; }
+.portal-loading:not(.portal-navigation-drawer) .portal-loading-ribbon-four { animation-name: portal-loading-ribbon-drift-one !important; }
+.portal-loading:not(.portal-navigation-drawer) .portal-loading-ribbon-orb {
+  filter: none !important;
+  animation-name: portal-loading-ribbon-orb-float !important;
+}
+.portal-loading:not(.portal-navigation-drawer) .portal-loading-rays {
+  mix-blend-mode: normal !important;
+  animation: none !important;
+  background-position: center !important;
+}
+.portal-loading:not(.portal-navigation-drawer) .portal-loading-rays::before,
+.portal-loading:not(.portal-navigation-drawer) .portal-loading-rays::after {
+  filter: none !important;
+}
+.portal-loading:not(.portal-navigation-drawer) .portal-loading-aurora {
+  filter: none !important;
+  mix-blend-mode: normal !important;
+  animation: none !important;
+  background-position: center !important;
+}
+.portal-loading:not(.portal-navigation-drawer) .portal-loading-aurora::before,
+.portal-loading:not(.portal-navigation-drawer) .portal-loading-aurora::after {
+  filter: none !important;
+}
+.portal-loading:not(.portal-navigation-drawer) .portal-loading-stars {
+  filter: none !important;
+  animation-name: portal-loading-star-drift !important;
+}
+.portal-loading:not(.portal-navigation-drawer) .portal-loading-dust {
+  filter: none !important;
+  animation: mukuyu-loader-dust-transform 48s linear infinite alternate !important;
+}
+.portal-loading:not(.portal-navigation-drawer) .portal-loading-dust::before,
+.portal-loading:not(.portal-navigation-drawer) .portal-loading-dust::after {
+  filter: none !important;
+  box-shadow: none !important;
+  animation-name: portal-loading-sparkle !important;
+}
+.portal-loading:not(.portal-navigation-drawer) .portal-loading-object {
+  filter: none !important;
+  transform-style: flat !important;
+  will-change: auto !important;
+}
+.portal-loading:not(.portal-navigation-drawer) .portal-loading-orbit {
+  animation-name: mukuyu-loader-orbit-transform !important;
+}
+@keyframes mukuyu-loader-orbit-transform {
+  to { transform: rotate(360deg); }
+}
+@keyframes mukuyu-loader-dust-transform {
+  from { transform: translate3d(-1.2%, -.8%, 0); }
+  to { transform: translate3d(1.2%, .8%, 0); }
+}
