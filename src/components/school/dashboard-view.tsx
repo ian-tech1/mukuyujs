@@ -36,7 +36,7 @@ export function DashboardView({ ws: sourceWs, refresh, flash, beginActivity }: G
       termName: selectedTerm?.name ?? sourceWs.profile.termName,
     },
   }), [sourceWs, selectedLearners, selectedMarks, period.yearId, period.termId, selectedYear?.name, selectedTerm?.name]);
-  const [selectedDashboardSection, setSelectedDashboardSection] = useState<"overview" | "performance" | "quality" | "interventions">("overview");
+  const [selectedDashboardSection, setSelectedDashboardSection] = useState<"overview" | "students-progress" | "performance" | "quality" | "interventions">("overview");
   const [focusOpen, setFocusOpen] = useState(false);
   const [focusSearch, setFocusSearch] = useState("");
   const [focusGradeFilter, setFocusGradeFilter] = useState("all");
@@ -58,6 +58,22 @@ export function DashboardView({ ws: sourceWs, refresh, flash, beginActivity }: G
   const exams = [...ws.exams].sort((a, b) => a.sort - b.sort);
   const marks = periodMarks(ws.marks, ws.profile.activeYearId, ws.profile.activeTermId);
   const boards = buildBoards(ws.learners, marks, subjects, exams, ws.bands);
+  const [progressGradeFilter, setProgressGradeFilter] = useState("all");
+  const [progressStreamFilter, setProgressStreamFilter] = useState("all");
+  const progressLearners = yearLearners.filter((learner) =>
+    (progressGradeFilter === "all" || learner.gradeId === progressGradeFilter) &&
+    (progressStreamFilter === "all" || learner.streamId === progressStreamFilter),
+  );
+  const progressLearnerIds = new Set(progressLearners.map((learner) => learner.id));
+  const progressBoards = buildBoards(progressLearners, period.marks.filter((mark) => progressLearnerIds.has(mark.learnerId)), subjects, exams, ws.bands);
+  const progressRows = progressBoards.map((board) => {
+    const values = exams.map((exam) => board.means[exam.id] ?? null);
+    const recorded = values.filter((value): value is number => value != null);
+    const first = recorded[0];
+    const last = recorded.at(-1);
+    return { board, values, change: first != null && last != null && recorded.length > 1 ? last - first : null };
+  });
+  const progressStreams = sourceWs.streams.filter((stream) => progressGradeFilter === "all" || stream.gradeId === progressGradeFilter);
   const schoolMean = meanOf(boards.map((board) => board.avgMean));
   const catMeans = exams.map((exam) => ({ exam, mean: meanOf(boards.map((board) => board.means[exam.id])) }));
 
@@ -358,8 +374,32 @@ export function DashboardView({ ws: sourceWs, refresh, flash, beginActivity }: G
     flash("Dashboard snapshot saved on this device.");
   }
 
-  function selectDashboardSection(section: "overview" | "performance" | "quality" | "interventions") {
+  function selectDashboardSection(section: "overview" | "students-progress" | "performance" | "quality" | "interventions") {
     setSelectedDashboardSection(section);
+  }
+
+  function exportProgressCsv(scope: "class" | "stream" | "grade") {
+    const scopeLearners = yearLearners.filter((learner) => {
+      if (scope === "grade") return progressGradeFilter !== "all" && learner.gradeId === progressGradeFilter;
+      if (scope === "stream") return progressStreamFilter !== "all" && learner.streamId === progressStreamFilter;
+      return progressGradeFilter !== "all" && progressStreamFilter !== "all" && learner.gradeId === progressGradeFilter && learner.streamId === progressStreamFilter;
+    });
+    const ids = new Set(scopeLearners.map((learner) => learner.id));
+    const scopeBoards = buildBoards(scopeLearners, period.marks.filter((mark) => ids.has(mark.learnerId)), subjects, exams, ws.bands);
+    const rows = scopeBoards.map((board) => {
+      const values = exams.map((exam) => board.means[exam.id] ?? "");
+      const recorded = values.filter((value): value is number => typeof value === "number");
+      const change = recorded.length > 1 ? (recorded.at(-1)! - recorded[0]!).toFixed(1) : "";
+      return [board.learner.fullName, board.learner.admissionNumber || "", ws.grades.find((grade) => grade.id === board.learner.gradeId)?.name || "", ws.streams.find((stream) => stream.id === board.learner.streamId)?.name || "", ...values.map((value) => typeof value === "number" ? value.toFixed(1) : ""), change];
+    });
+    const csv = [["Learner", "Admission number", "Grade", "Stream", ...exams.map((exam) => exam.name), "Change"], ...rows].map((row) => row.map((value) => `"${String(value).replaceAll('"', '""')}"`).join(",")).join("\n");
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    const label = scope === "grade" ? ws.grades.find((grade) => grade.id === progressGradeFilter)?.name : scope === "stream" ? ws.streams.find((stream) => stream.id === progressStreamFilter)?.name : `${ws.grades.find((grade) => grade.id === progressGradeFilter)?.name}-${ws.streams.find((stream) => stream.id === progressStreamFilter)?.name}`;
+    link.download = `mukuyu-students-progress-${scope}-${String(label || "selection").replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "").toLowerCase()}.csv`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+    flash(`Students progress downloaded for the selected ${scope}.`);
   }
 
   return (
@@ -381,6 +421,7 @@ export function DashboardView({ ws: sourceWs, refresh, flash, beginActivity }: G
       {(ws.me.role === "teacher" || (ws.me.role === "admin" && !ws.me.isDeputy)) ? <p role="status" className="rounded-xl border border-info/25 bg-info/5 px-4 py-3 text-sm text-muted">Dashboard result summaries use only marks your account is allowed to view. Teacher results follow your class/subject assignments and the Super Admin’s marks-view controls. If expected results are missing, ask the Super Admin to check your assignment and the selected year, term and CAT permissions.</p> : null}
       <nav className="sticky top-0 z-20 -mx-1 flex min-w-0 gap-2 overflow-x-auto rounded-xl border border-line bg-paper/95 p-2 shadow-sm backdrop-blur" aria-label="Dashboard sections">
         <a className={`shrink-0 rounded-full px-4 py-2.5 text-sm font-semibold ${selectedDashboardSection === "overview" ? "bg-navy text-paper shadow-sm" : "bg-paper text-navy hover:bg-info/10"}`} href="#dashboard-summary" aria-current={selectedDashboardSection === "overview" ? "location" : undefined} onClick={() => selectDashboardSection("overview")}>Overview</a>
+        {(ws.me.role === "teacher" || isAdmin(ws.me.role)) ? <a className={`shrink-0 rounded-full px-4 py-2.5 text-sm font-semibold ${selectedDashboardSection === "students-progress" ? "bg-navy text-paper shadow-sm" : "bg-paper text-navy hover:bg-info/10"}`} href="#dashboard-students-progress" aria-current={selectedDashboardSection === "students-progress" ? "location" : undefined} onClick={() => selectDashboardSection("students-progress")}>Students progress</a> : null}
         <a className={`shrink-0 rounded-full px-4 py-2.5 text-sm font-semibold ${selectedDashboardSection === "performance" ? "bg-navy text-paper shadow-sm" : "bg-paper text-navy hover:bg-info/10"}`} href="#dashboard-performance" aria-current={selectedDashboardSection === "performance" ? "location" : undefined} onClick={() => selectDashboardSection("performance")}>Performance</a>
         <a className={`shrink-0 rounded-full px-4 py-2.5 text-sm font-semibold ${selectedDashboardSection === "quality" ? "bg-navy text-paper shadow-sm" : "bg-paper text-navy hover:bg-info/10"}`} href="#dashboard-quality" aria-current={selectedDashboardSection === "quality" ? "location" : undefined} onClick={() => selectDashboardSection("quality")}>Data quality</a>
         <a className={`shrink-0 rounded-full px-4 py-2.5 text-sm font-semibold ${selectedDashboardSection === "interventions" ? "bg-navy text-paper shadow-sm" : "bg-paper text-navy hover:bg-info/10"}`} href="#dashboard-interventions" aria-current={selectedDashboardSection === "interventions" ? "location" : undefined} onClick={() => selectDashboardSection("interventions")}>Interventions</a>
@@ -454,6 +495,13 @@ export function DashboardView({ ws: sourceWs, refresh, flash, beginActivity }: G
       </div><p className="mt-2 text-xs text-muted">All ties are included. North/South awards are based on stream names containing “North” or “South”.</p></section>
       <MarkProgress ws={ws} marks={marks} subjects={subjects} exams={expectedExams} />
       </section>
+      {(ws.me.role === "teacher" || isAdmin(ws.me.role)) ? <section id="dashboard-students-progress" className="scroll-mt-24 space-y-4 rounded-2xl border border-emerald-200 bg-gradient-to-br from-card via-card to-emerald-50/60 p-4 shadow-card" aria-labelledby="dashboard-students-progress-title">
+        <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">Teacher and admin view</p><h2 id="dashboard-students-progress-title" className="font-serif text-2xl text-navy">Students progress</h2><p className="mt-1 max-w-3xl text-sm text-muted">Follow each student from one exam to the next. Positive change shows improvement from the first recorded exam to the latest recorded exam in the selected scope.</p></div><span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-800">{progressRows.length} students</span></div>
+        <div className="grid gap-3 sm:grid-cols-2"><label className="text-xs font-semibold text-navy">Grade scope<select className={`${inputClass} mt-1`} value={progressGradeFilter} onChange={(event) => { setProgressGradeFilter(event.target.value); setProgressStreamFilter("all"); }}><option value="all">All grades</option>{sourceWs.grades.map((grade) => <option key={grade.id} value={grade.id}>{grade.name}</option>)}</select></label><label className="text-xs font-semibold text-navy">Stream scope<select className={`${inputClass} mt-1`} value={progressStreamFilter} onChange={(event) => setProgressStreamFilter(event.target.value)}><option value="all">All streams</option>{progressStreams.map((stream) => <option key={stream.id} value={stream.id}>{sourceWs.grades.find((grade) => grade.id === stream.gradeId)?.name} · {stream.name}</option>)}</select></label></div>
+        <div className="flex flex-wrap gap-2"><button type="button" className={btnDownload.emerald} disabled={progressGradeFilter === "all" || progressStreamFilter === "all"} onClick={() => exportProgressCsv("class")}>Download class progress</button><button type="button" className={btnDownload.blue} disabled={progressStreamFilter === "all"} onClick={() => exportProgressCsv("stream")}>Download stream progress</button><button type="button" className={btnDownload.violet} disabled={progressGradeFilter === "all"} onClick={() => exportProgressCsv("grade")}>Download grade progress</button></div>
+        <div className="overflow-x-auto rounded-xl border border-line bg-card"><table className="w-full min-w-[760px] text-sm"><thead><tr className="border-b border-line bg-paper text-left"><th className="p-3">Student</th><th className="p-3">Grade / stream</th>{exams.map((exam) => <th key={exam.id} className="p-3 text-right">{exam.name}</th>)}<th className="p-3 text-right">Change</th></tr></thead><tbody>{progressRows.length ? progressRows.map(({ board, values, change }) => <tr key={board.learner.id} className="border-b border-line/70 last:border-0"><td className="p-3"><span className="font-semibold text-navy">{board.learner.fullName}</span><span className="block text-xs text-muted">{board.learner.admissionNumber || "No admission number"}</span></td><td className="p-3 text-xs text-muted">{sourceWs.grades.find((grade) => grade.id === board.learner.gradeId)?.name || "—"} · {sourceWs.streams.find((stream) => stream.id === board.learner.streamId)?.name || "No stream"}</td>{values.map((value, index) => <td key={exams[index]?.id || index} className="p-3 text-right font-semibold">{value == null ? "—" : value.toFixed(1)}</td>)}<td className={`p-3 text-right font-bold ${change == null ? "text-muted" : change >= 0 ? "text-good" : "text-bad"}`}>{change == null ? "—" : `${change >= 0 ? "+" : ""}${change.toFixed(1)}`}</td></tr>) : <tr><td colSpan={exams.length + 3} className="p-6 text-center text-sm text-muted">No students or recorded exam marks match this scope yet.</td></tr>}</tbody></table></div>
+        <p className="text-xs text-muted">Downloads use the selected academic year and term. Choose a grade, stream, or both to activate the matching download. Student results remain subject to the existing marks-view permissions.</p>
+      </section> : null}
       <section id="dashboard-performance-panel" role="region" aria-label="Performance dashboard" className="scroll-mt-24 space-y-6">
       <section id="dashboard-performance" className="scroll-mt-24 grid gap-4 lg:grid-cols-[1.3fr_0.7fr]">
         <article className="rounded-md border border-line bg-card p-4 shadow-card">
