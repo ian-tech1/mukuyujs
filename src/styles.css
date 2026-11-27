@@ -1722,6 +1722,7 @@ html[data-portal-motion="reduced"] .portal-loading-opening .portal-loading-detai
 .portal-loading-feedback-note { color: rgba(237, 244, 255, .78); font-size: .86rem; }
 .portal-loading-action-feedback .portal-loading-track { width: min(15rem, 72vw); height: .35rem; margin-inline: auto; overflow: hidden; }
 .portal-loading-action-feedback .portal-loading-track span { display: block; width: 28%; height: 100%; animation: mukuyu-feedback-progress 1.3s ease-in-out infinite alternate; }
+.portal-tab-opening-feedback { pointer-events: none; }
 @keyframes mukuyu-feedback-progress {
   from { transform: translateX(0); }
   to { transform: translateX(250%); }
@@ -2111,6 +2112,9 @@ html[data-portal-motion="reduced"] .welcome-animated.welcome-hero::after {
 
   .portal-loading-action-feedback {
     display: none !important;
+  }
+  .portal-tab-opening-feedback {
+    display: grid !important;
   }
 }
 

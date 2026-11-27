@@ -115,6 +115,7 @@ function PortalPage() {
   const [notice, setNotice] = useState("");
   const [open, setOpen] = useState(false);
   const [pendingView, setPendingView] = useState<string | null>(null);
+  const [tabOpeningView, setTabOpeningView] = useState<string | null>(null);
   const [staffMusic, setStaffMusic] = useState<{ enabled: boolean; url: string; options?: Partial<MusicOptions> }>({ enabled: false, url: "" });
   const [display, setDisplay] = useState<LocalDisplayPreferences>(DEFAULT_DISPLAY_PREFERENCES);
   const [dashboardPanelColorsEnabled, setDashboardPanelColorsEnabled] = useState(true);
@@ -129,6 +130,7 @@ function PortalPage() {
   const previousViewRef = useRef(view);
   const activityTokenRef = useRef(0);
   const activityTimerRef = useRef<number | null>(null);
+  const tabOpeningTimerRef = useRef<number | null>(null);
   const noticeTimerRef = useRef<number | null>(null);
 
   const refresh = useCallback(async () => {
@@ -228,6 +230,7 @@ function PortalPage() {
 
   useEffect(() => () => {
     if (activityTimerRef.current !== null) window.clearTimeout(activityTimerRef.current);
+    if (tabOpeningTimerRef.current !== null) window.clearTimeout(tabOpeningTimerRef.current);
     if (noticeTimerRef.current !== null) window.clearTimeout(noticeTimerRef.current);
   }, []);
 
@@ -291,6 +294,12 @@ function PortalPage() {
     setOpen(false);
     setDisplaySettingsOpen(false);
     window.scrollTo(0, 0);
+    if (tabOpeningTimerRef.current !== null) window.clearTimeout(tabOpeningTimerRef.current);
+    setTabOpeningView(item);
+    tabOpeningTimerRef.current = window.setTimeout(() => {
+      setTabOpeningView(null);
+      tabOpeningTimerRef.current = null;
+    }, 420);
     void navigate({ to: "/portal", search: { view: item } });
   }
 
@@ -426,6 +435,17 @@ function PortalPage() {
           <span className="portal-loading-orbit" aria-hidden="true"><SchoolLogo className="size-[6.5rem]" /></span>
           <h2 className="portal-loading-feedback-message mt-5">{activityMessage}</h2>
           <p className="portal-loading-feedback-note mt-2">{ACTIVITY_NOTES[current] ?? "Preparing this part of the school portal."}</p>
+          <div className="portal-loading-track mt-5" aria-hidden="true"><span /></div>
+        </section>
+      </div> : null}
+      {tabOpeningView ? <div className="portal-loading portal-loading-action-feedback portal-tab-opening-feedback fixed inset-0 z-[2147482999] grid min-h-[100svh] w-full place-items-center overflow-hidden px-4" data-activity-view={tabOpeningView} aria-hidden="true">
+        <PortalLoadingBackdrop />
+        <div className="portal-loading-center-shade" aria-hidden="true" />
+        <section className="portal-loading-card portal-loading-action-card text-center">
+          <p className="portal-loading-kicker">MUKUYU JUNIOR SCHOOL · LEARNING PORTAL</p>
+          <span className="portal-loading-orbit" aria-hidden="true"><SchoolLogo className="size-[6.5rem]" /></span>
+          <h2 className="portal-loading-feedback-message mt-5">Opening {LABELS[tabOpeningView] ?? tabOpeningView}</h2>
+          <p className="portal-loading-feedback-note mt-2">Preparing this part of the school portal.</p>
           <div className="portal-loading-track mt-5" aria-hidden="true"><span /></div>
         </section>
       </div> : null}
