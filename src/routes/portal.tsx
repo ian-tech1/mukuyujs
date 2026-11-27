@@ -139,6 +139,7 @@ function PortalPage() {
   const [backdropScene, setBackdropScene] = useState(0);
   const [backdropTheme, setBackdropTheme] = useState("auto-sections");
   const [portalBackgroundDurationSeconds, setPortalBackgroundDurationSeconds] = useState(30);
+  const [tabOpeningBackgroundsEnabled, setTabOpeningBackgroundsEnabled] = useState(true);
   const [systemReducedMotion, setSystemReducedMotion] = useState(false);
   const [activityMessage, setActivityMessage] = useState("");
   const displayControlsRef = useRef<HTMLDivElement>(null);
@@ -189,6 +190,7 @@ function PortalPage() {
       setDashboardPanelColorsEnabled(normalizeWelcomeDisplay(settings.display).dashboardPanelColorsEnabled);
       setPortalBackgroundDurationSeconds(Math.max(5, Math.min(60, Number(settings.portalBackgroundDurationSeconds) || 30)));
       setBackdropTheme(settings.appearance.backdropTheme || "auto-sections");
+      setTabOpeningBackgroundsEnabled(settings.appearance.tabOpeningBackgrounds !== false);
       setStaffMusic({ enabled: Boolean(settings.musicEnabled), url: settings.musicUrl || "", options: music.options });
       document.documentElement.dataset.schoolAppearance = JSON.stringify(settings.appearance);
       document.documentElement.dataset.portalTextContrast = settings.appearance.autoTextContrast === false ? "off" : "on";
@@ -228,6 +230,15 @@ function PortalPage() {
     resetScene();
     window.addEventListener("mukuyu-portal-backdrop-change", resetScene);
     return () => window.removeEventListener("mukuyu-portal-backdrop-change", resetScene);
+  }, []);
+
+  useEffect(() => {
+    const updateTabOpeningBackgrounds = (event: Event) => {
+      const enabled = (event as CustomEvent<{ enabled?: unknown }>).detail?.enabled;
+      if (typeof enabled === "boolean") setTabOpeningBackgroundsEnabled(enabled);
+    };
+    window.addEventListener("mukuyu-tab-opening-backgrounds-change", updateTabOpeningBackgrounds);
+    return () => window.removeEventListener("mukuyu-tab-opening-backgrounds-change", updateTabOpeningBackgrounds);
   }, []);
 
   useEffect(() => {
@@ -306,13 +317,14 @@ function PortalPage() {
   const current = views.includes(requestedView) ? requestedView : views[0];
   function navigateToView(item: string) {
     if (item === current) return;
-    if (MAIN_TAB_OPENING_VIEWS.has(item)) {
+    const showTabOpeningBackground = tabOpeningBackgroundsEnabled && MAIN_TAB_OPENING_VIEWS.has(item);
+    if (showTabOpeningBackground) {
       flushSync(() => setTabOpeningView(item));
     }
     setOpen(false);
     setDisplaySettingsOpen(false);
     window.scrollTo(0, 0);
-    if (!MAIN_TAB_OPENING_VIEWS.has(item)) {
+    if (!showTabOpeningBackground) {
       setPendingView(item);
       previousViewRef.current = item;
       void navigate({ to: "/portal", search: { view: item } });

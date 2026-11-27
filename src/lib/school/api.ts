@@ -2808,6 +2808,7 @@ function safeAppearance(value: unknown): AppearancePalette {
   }
   next.autoTextContrast = source.autoTextContrast !== false;
   next.textColorCycle = source.textColorCycle !== false && next.autoTextContrast;
+  next.tabOpeningBackgrounds = source.tabOpeningBackgrounds !== false;
   return next;
 }
 

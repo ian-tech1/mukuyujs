@@ -498,6 +498,20 @@ function AppearanceColorsCard({ flash }: Pick<Gate, "flash">) {
     }
   }
 
+  async function updateTabOpeningBackgrounds(value: boolean) {
+    const previous = colors;
+    const next: AppearancePalette = { ...colors, tabOpeningBackgrounds: value };
+    setColors(next);
+    try {
+      await saveAppearance({ data: { appearance: next } });
+      window.dispatchEvent(new CustomEvent("mukuyu-tab-opening-backgrounds-change", { detail: { enabled: value } }));
+      flash(`Main portal tab opening backgrounds ${value ? "enabled" : "disabled"} school-wide.`);
+    } catch (error) {
+      setColors(previous);
+      flash(errText(error), true);
+    }
+  }
+
   async function saveColors() {
     try {
       await saveAppearance({ data: { appearance: colors } });
@@ -508,7 +522,7 @@ function AppearanceColorsCard({ flash }: Pick<Gate, "flash">) {
   }
 
   async function choosePreset(preset: AppearancePalette) {
-    const next = { ...preset, autoTextContrast: colors.autoTextContrast ?? true, textColorCycle: colors.textColorCycle ?? true, backdropTheme: preset.backdropTheme ?? colors.backdropTheme ?? "auto-sections" };
+    const next = { ...preset, autoTextContrast: colors.autoTextContrast ?? true, textColorCycle: colors.textColorCycle ?? true, tabOpeningBackgrounds: colors.tabOpeningBackgrounds !== false, backdropTheme: preset.backdropTheme ?? colors.backdropTheme ?? "auto-sections" };
     setColors(next);
     applyAppearance(next);
     try {
@@ -568,6 +582,7 @@ function AppearanceColorsCard({ flash }: Pick<Gate, "flash">) {
       </div>
       <p className="text-xs text-muted">All modes are school-wide and stay behind the large inner page only; cards and tables remain unchanged. The 15 nature scenes are: {NATURE_BACKDROP_SCENE_LABELS.join(" · ")}.</p>
     </div>
+    <label className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm"><input className="mt-1" type="checkbox" checked={colors.tabOpeningBackgrounds !== false} disabled={!loaded || textSettingsSaving} onChange={(event) => void updateTabOpeningBackgrounds(event.target.checked)} /><span><span className="block font-semibold text-navy">Show loading backgrounds when opening the 12 main portal tabs</span><span className="block text-xs text-muted">Controls Overview, Learners, Enter marks, Timetable, School Services, Parents Feedback, Analysis, Report cards, Mark lists, Staff, Mail log and Settings. The setting is enabled by default and applies school-wide.</span></span></label>
     <div className="space-y-3 rounded-lg border border-cyan-200 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 p-4 text-white shadow-card">
       <div><h3 className="font-semibold text-white">Automatic text clarity &amp; colour motion</h3><p className="mt-1 text-sm text-slate-200">School-wide controls for page titles and their lead messages. The contrast guard adds a dark, soft backing and crisp outline so moving backgrounds cannot wash the words out.</p></div>
       <label className="flex items-start gap-3 rounded-md border border-white/15 bg-white/5 p-3 text-sm"><input className="mt-1" type="checkbox" checked={colors.autoTextContrast !== false} disabled={!loaded || textSettingsSaving} onChange={(event) => void updateTextOption("autoTextContrast", event.target.checked)} /><span><span className="block font-semibold">Protect page titles and lead messages</span><span className="block text-xs text-slate-300">Keeps text clear over the selected animated scene, without recolouring cards, tables, buttons, inputs, or report-card content.</span></span></label>

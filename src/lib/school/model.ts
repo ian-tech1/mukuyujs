@@ -26,6 +26,7 @@ export type AppearancePalette = {
   backdropTheme?: PortalBackdropThemeId;
   autoTextContrast?: boolean;
   textColorCycle?: boolean;
+  tabOpeningBackgrounds?: boolean;
 };
 
 export const DEFAULT_APPEARANCE: AppearancePalette = {
@@ -44,6 +45,7 @@ export const DEFAULT_APPEARANCE: AppearancePalette = {
   info: "#1d4e89",
   autoTextContrast: true,
   textColorCycle: true,
+  tabOpeningBackgrounds: true,
 };
 
 export type Profile = {
