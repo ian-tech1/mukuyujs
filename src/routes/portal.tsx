@@ -348,7 +348,12 @@ function PortalPage() {
               type="button"
               className={`portal-nav-item flex h-14 w-full items-center rounded-xl px-4 text-left text-xl font-bold ${current === item ? "portal-nav-item-active text-paper" : "text-paper/90"}`}
               aria-current={current === item ? "page" : undefined}
-              onClick={() => navigateToView(item)}
+              onPointerDown={(event) => {
+                if (event.pointerType) navigateToView(item);
+              }}
+              onClick={(event) => {
+                if (event.detail === 0) navigateToView(item);
+              }}
             >
               {LABELS[item] ?? item}
             </button>
