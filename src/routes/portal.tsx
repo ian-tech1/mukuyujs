@@ -118,6 +118,7 @@ function PortalPage() {
   const [displaySettingsOpen, setDisplaySettingsOpen] = useState(false);
   const [backdropScene, setBackdropScene] = useState(0);
   const [backdropTheme, setBackdropTheme] = useState("auto-sections");
+  const [portalBackgroundDurationSeconds, setPortalBackgroundDurationSeconds] = useState(5);
   const [systemReducedMotion, setSystemReducedMotion] = useState(false);
   const [activityMessage, setActivityMessage] = useState("");
   const displayControlsRef = useRef<HTMLDivElement>(null);
@@ -165,6 +166,7 @@ function PortalPage() {
     getWelcomePage().then((settings) => {
       const music = parseMusicSetting(settings.musicUrl || "");
       setDashboardPanelColorsEnabled(normalizeWelcomeDisplay(settings.display).dashboardPanelColorsEnabled);
+      setPortalBackgroundDurationSeconds(Math.max(2, Math.min(60, Number(settings.portalBackgroundDurationSeconds) || 5)));
       setStaffMusic({ enabled: Boolean(settings.musicEnabled), url: settings.musicUrl || "", options: music.options });
       document.documentElement.dataset.schoolAppearance = JSON.stringify(settings.appearance);
       document.documentElement.dataset.portalTextContrast = settings.appearance.autoTextContrast === false ? "off" : "on";
@@ -192,9 +194,9 @@ function PortalPage() {
     const timer = window.setInterval(() => {
       const count = document.documentElement.dataset.portalBackdropTheme === "nature-cycle" ? NATURE_BACKDROP_SCENE_LABELS.length : 18;
       setBackdropScene((scene) => (scene + 1) % count);
-    }, 5000);
+    }, portalBackgroundDurationSeconds * 1000);
     return () => window.clearInterval(timer);
-  }, [display.backgroundMode, display.motion, systemReducedMotion]);
+  }, [display.backgroundMode, display.motion, portalBackgroundDurationSeconds, systemReducedMotion]);
 
   useEffect(() => {
     const resetScene = () => {
