@@ -360,9 +360,6 @@ html[data-portal-accent-motion="off"] .portal-page-content :is(article, section,
 .portal-page-content.portal-panel-color-motion div[class~="bg-card"][class~="shadow-card"],
 .portal-page-content.portal-panel-color-motion .dashboard-panel-color-cycle,
 .portal-page-content.portal-panel-color-motion .marks-import-panel { background-color:var(--color-card); animation: mukuyu-dashboard-panel-colors 5.4s ease-in-out infinite; }
-.dashboard-section-tabs,
-.dashboard-section-tabs * { transition: none !important; animation: none !important; }
-.dashboard-section-tabs button:hover { transform: none !important; }
 .portal-page-content.portal-panel-color-motion :is(article, section, form)[class~="bg-card"]:nth-of-type(3n + 2),
 .portal-page-content.portal-panel-color-motion div[class~="bg-card"][class~="shadow-card"]:nth-of-type(3n + 2),
 .portal-page-content.portal-panel-color-motion .dashboard-panel-color-cycle:nth-of-type(3n + 2),
