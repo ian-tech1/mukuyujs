@@ -439,7 +439,7 @@ function PortalPage() {
           <div className="portal-loading-track mt-5" aria-hidden="true"><span /></div>
         </section>
       </div> : null}
-      {tabOpeningView ? <div className="portal-loading portal-loading-action-feedback portal-tab-opening-feedback fixed inset-0 z-[2147482999] grid min-h-[100svh] w-full place-items-center overflow-hidden px-4" data-activity-view={tabOpeningView} aria-hidden="true">
+      {tabOpeningView ? <div className="portal-loading portal-loading-tab-opening portal-tab-opening-feedback fixed inset-0 z-[2147482999] grid min-h-[100svh] w-full place-items-center overflow-hidden px-4" data-activity-view={tabOpeningView} aria-hidden="true">
         <PortalLoadingBackdrop />
         <div className="portal-loading-center-shade" aria-hidden="true" />
         <section className="portal-loading-card portal-loading-action-card text-center">
