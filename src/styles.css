@@ -1881,26 +1881,41 @@ html[data-portal-motion="reduced"] .welcome-hero::after,
 html[data-portal-motion="reduced"] .welcome-login-panel::after { animation: none !important; will-change: auto; }
 
 
-/* Keep the home canvas close to the refresh-screen night sky without animating gradient paints. */
+/* Give the dashboard the refresh screen's dark, glowy sky and grid without its moving paints. */
 .portal-animated-background[data-portal-section="home"] .portal-page-content {
-  background-color: rgba(244, 240, 230, .62);
-}
-@keyframes mukuyu-home-haze-shift {
-  from { transform: translate3d(-.45%, .25%, 0) scale(1.02); }
-  to { transform: translate3d(.45%, -.25%, 0) scale(1.02); }
-}
-@keyframes mukuyu-home-orbit-shift {
-  from { transform: translate3d(-.35%, .2%, 0) rotate(-.45deg); }
-  to { transform: translate3d(.35%, -.2%, 0) rotate(.45deg); }
+  background-color: rgba(244, 240, 230, .58);
 }
 .portal-animated-background[data-portal-section="home"] .portal-page-content::before {
-  animation: mukuyu-home-haze-shift 34s ease-in-out infinite alternate !important;
-  will-change: transform;
+  background-image:
+    radial-gradient(circle at 50% 42%, rgba(49, 112, 255, .27), transparent 25%),
+    radial-gradient(circle at 14% 84%, rgba(255, 63, 190, .16), transparent 24%),
+    radial-gradient(circle at 84% 12%, rgba(255, 214, 107, .13), transparent 22%),
+    radial-gradient(1.5px 1.5px at 12% 20%, rgba(255,255,255,.72) 50%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 31% 76%, rgba(117,226,255,.7) 50%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 53% 32%, rgba(255,222,161,.7) 50%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 79% 61%, rgba(219,161,255,.66) 50%, transparent 100%);
+  background-size: 100% 100%;
+  background-position: center;
+  background-repeat: no-repeat;
+  animation: none !important;
+  transform: none;
+  will-change: auto;
 }
 .portal-animated-background[data-portal-section="home"] .portal-page-content::after {
-  animation: mukuyu-home-orbit-shift 46s ease-in-out infinite alternate !important;
-  transform-origin: center;
-  will-change: transform;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, .05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, .05) 1px, transparent 1px),
+    radial-gradient(ellipse 49% 30% at 48% 48%, transparent 94.8%, rgba(83,219,255,.32) 95.1%, transparent 95.5%),
+    radial-gradient(ellipse 35% 53% at 55% 50%, transparent 95%, rgba(232,139,255,.26) 95.3%, transparent 95.7%);
+  background-size: 46px 46px, 46px 46px, 100% 100%, 100% 100%;
+  background-position: center;
+  background-repeat: repeat, repeat, no-repeat, no-repeat;
+  opacity: .2;
+  mask-image: radial-gradient(ellipse at center, #000, transparent 68%);
+  -webkit-mask-image: radial-gradient(ellipse at center, #000, transparent 68%);
+  animation: none !important;
+  transform: none;
+  will-change: auto;
 }
 html[data-portal-background-mode="original"] .portal-animated-background[data-portal-section="home"] .portal-page-content::before,
 html[data-portal-background-mode="original"] .portal-animated-background[data-portal-section="home"] .portal-page-content::after {
