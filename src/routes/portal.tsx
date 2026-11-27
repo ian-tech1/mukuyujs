@@ -118,7 +118,7 @@ function PortalPage() {
   const [displaySettingsOpen, setDisplaySettingsOpen] = useState(false);
   const [backdropScene, setBackdropScene] = useState(0);
   const [backdropTheme, setBackdropTheme] = useState("auto-sections");
-  const [portalBackgroundDurationSeconds, setPortalBackgroundDurationSeconds] = useState(5);
+  const [portalBackgroundDurationSeconds, setPortalBackgroundDurationSeconds] = useState(15);
   const [systemReducedMotion, setSystemReducedMotion] = useState(false);
   const [activityMessage, setActivityMessage] = useState("");
   const displayControlsRef = useRef<HTMLDivElement>(null);
@@ -166,7 +166,7 @@ function PortalPage() {
     getWelcomePage().then((settings) => {
       const music = parseMusicSetting(settings.musicUrl || "");
       setDashboardPanelColorsEnabled(normalizeWelcomeDisplay(settings.display).dashboardPanelColorsEnabled);
-      setPortalBackgroundDurationSeconds(Math.max(2, Math.min(60, Number(settings.portalBackgroundDurationSeconds) || 5)));
+      setPortalBackgroundDurationSeconds(Math.max(5, Math.min(60, Number(settings.portalBackgroundDurationSeconds) || 15)));
       setStaffMusic({ enabled: Boolean(settings.musicEnabled), url: settings.musicUrl || "", options: music.options });
       document.documentElement.dataset.schoolAppearance = JSON.stringify(settings.appearance);
       document.documentElement.dataset.portalTextContrast = settings.appearance.autoTextContrast === false ? "off" : "on";
@@ -213,11 +213,7 @@ function PortalPage() {
     setDisplaySettingsOpen(false);
     window.scrollTo(0, 0);
     const frame = window.requestAnimationFrame(() => window.scrollTo(0, 0));
-    if (previousViewRef.current !== view) {
-      previousViewRef.current = view;
-      const label = view === "settings" && ws?.me.role === "super_admin" ? "Welcome Page" : LABELS[view] ?? view;
-      showActivity(`Opening ${label}…`, 1400);
-    }
+    if (previousViewRef.current !== view) previousViewRef.current = view;
     return () => window.cancelAnimationFrame(frame);
   }, [view, showActivity, ws?.me.role]);
 
@@ -284,8 +280,6 @@ function PortalPage() {
   const views = visibleViews(ws.me, ws.roleAccess);
   const current = views.includes(view) ? view : views[0];
   function navigateToView(item: string) {
-    const label = item === "settings" && ws?.me.role === "super_admin" ? "Welcome Page" : LABELS[item] ?? item;
-    showActivity(`Opening ${label}…`, 1400);
     previousViewRef.current = item;
     setOpen(false);
     setDisplaySettingsOpen(false);

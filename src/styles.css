@@ -2057,6 +2057,40 @@ html[data-portal-motion="reduced"] .welcome-animated.welcome-hero::after {
   animation-delay: calc(var(--letter-index, 0) * -145ms) !important;
 }
 
+/* Mobile portal: show the selected tab immediately and avoid compositor/repaint work in Chrome. */
+@media (max-width: 1023px) {
+  .portal-animated-background,
+  .portal-page-content,
+  .portal-page-content::before,
+  .portal-page-content::after,
+  .portal-background-scene,
+  .portal-nature-scene,
+  .portal-mobile-drawer,
+  .portal-mobile-drawer * {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+    filter: none !important;
+    will-change: auto !important;
+  }
+
+  .portal-page-content::before,
+  .portal-page-content::after,
+  .portal-background-scene,
+  .portal-nature-scene {
+    display: none !important;
+  }
+
+  .portal-mobile-drawer {
+    background: #0e2a4a !important;
+    background-image: none !important;
+  }
+
+  .portal-loading-action-feedback {
+    display: none !important;
+  }
+}
+
 /* The background stays lively with compositor-friendly motion only; no gradient/filter repaint loop. */
 @keyframes mukuyu-welcome-backdrop-drift-a {
   0%, 100% { transform: translate3d(-5vw, 3vh, 0) scale(.92); opacity: .27; }
