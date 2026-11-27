@@ -32,9 +32,9 @@ export const DISPLAY_PALETTES: Array<{ id: DisplayThemeId; name: string; colors:
 ];
 
 export const PORTAL_BACKDROP_THEMES: Array<{ id: PortalBackdropThemeId; name: string; description: string }> = [
-  { id: "auto-sections", name: "Automatic section scenes", description: "Rotate 18 distinct moving background treatments every 5 seconds. Each portal section keeps its own colour identity and ornamental style." },
+  { id: "auto-sections", name: "Automatic 18-scene cycle", description: "Rotate 18 distinct moving background treatments every 30 seconds. Each portal section keeps its own colour identity and ornamental style." },
   { id: "starfall", name: "Mukuyu Starfall", description: "The original Mukuyu Starfall canvas, preserved as a steady alternative." },
-  { id: "nature-cycle", name: "Mukuyu Nature Motion", description: "Cycle through 15 real wildlife, rainfall and waterfall video scenes every 5 seconds. Natural footage only, with no illustrations, added gradients or audio." },
+  { id: "nature-cycle", name: "Mukuyu Nature Motion", description: "Cycle through 15 real wildlife, rainfall and waterfall video scenes every 30 seconds. Natural footage only, with no illustrations, added gradients or audio." },
 ];
 
 export const NATURE_BACKDROP_SCENES = [

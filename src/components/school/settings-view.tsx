@@ -556,9 +556,9 @@ function AppearanceColorsCard({ flash }: Pick<Gate, "flash">) {
           const selected = (colors.backdropTheme ?? "auto-sections") === theme.id;
           const label = theme.id === "auto-sections" ? "Automatic 18-scene cycle" : theme.id === "nature-cycle" ? "Mukuyu Nature Motion" : "Mukuyu Starfall";
           const description = theme.id === "auto-sections"
-            ? "One mode automatically rotates through all 18 moving scenes every five seconds; scenes are not selected individually."
+            ? "One mode automatically rotates through all 18 moving scenes every 30 seconds; scenes are not selected individually."
             : theme.id === "nature-cycle"
-              ? "A separate monochrome mode: 15 moving nature and wildlife scenes cycle automatically every five seconds, without colour gradients or glow layers."
+              ? "A separate nature mode: 15 moving nature and wildlife scenes cycle automatically every 30 seconds, without colour gradients or glow layers."
               : "The original Mukuyu Starfall background, preserved as an alternative.";
           return <button key={theme.id} type="button" disabled={!loaded} aria-pressed={selected} onClick={() => void chooseBackdropTheme(theme.id)} className={`rounded-md border p-3 text-left transition-colors disabled:opacity-60 ${selected ? "border-navy bg-navy text-white shadow-sm" : "border-line bg-card text-ink hover:border-navy"}`}>
             <span className="block font-semibold">{label}</span>
