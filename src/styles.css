@@ -176,6 +176,55 @@ html[data-portal-motion="reduced"] .music-playing-pulse { animation: none !impor
   .music-dock-panel { right: .5rem; width: calc(100vw - 1rem); max-height: calc(100dvh - 5.25rem); }
   .music-dock-mini-anchor { right: .75rem; }
 }
+
+/* Keep the mobile navigation immediate and still: Chrome should only paint the menu. */
+@media (max-width: 1023px) {
+  .portal-animated-background,
+  .portal-page-content,
+  .portal-page-content::before,
+  .portal-page-content::after,
+  .portal-background-scene,
+  .portal-nature-scene,
+  .portal-panel-color-motion {
+    animation: none !important;
+    transition: none !important;
+  }
+  .portal-background-scene,
+  .portal-nature-scene {
+    display: none !important;
+  }
+  .portal-mobile-drawer {
+    align-items: flex-start;
+    overscroll-behavior: contain;
+    background: var(--color-navy) !important;
+  }
+  .portal-mobile-drawer,
+  .portal-mobile-drawer * {
+    animation: none !important;
+    transition: none !important;
+  }
+  .portal-mobile-drawer button:hover,
+  .portal-mobile-drawer [role="button"]:hover {
+    transform: none !important;
+  }
+  .portal-mobile-drawer > div:first-of-type {
+    padding-top: .8rem;
+    padding-bottom: .8rem;
+  }
+  .portal-mobile-drawer nav {
+    padding-top: .35rem;
+    padding-bottom: .35rem;
+  }
+  .portal-mobile-drawer .portal-nav-item {
+    height: 2.9rem;
+    font-size: 1rem;
+  }
+  .portal-mobile-drawer > div:last-child {
+    margin-top: 1.25rem;
+    padding-top: 1rem;
+    padding-bottom: 1.25rem;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   .welcome-animated, .welcome-hero::before, .welcome-hero::after, .welcome-title-letter, .welcome-heading-rule span, .welcome-display-dot, .welcome-ribbon, .welcome-ribbon-orb, .portal-page-content::before, .portal-page-content::after, .music-dock-panel, .music-dock-mini-anchor, .music-playing-pulse { animation: none !important; }
 }

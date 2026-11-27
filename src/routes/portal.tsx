@@ -188,7 +188,7 @@ function PortalPage() {
   }, []);
 
   useEffect(() => {
-    if (!display.motion || display.backgroundMode !== "animated" || systemReducedMotion) return;
+    if (!display.motion || display.backgroundMode !== "animated" || systemReducedMotion || window.matchMedia("(max-width: 1023px)").matches) return;
     const timer = window.setInterval(() => {
       const count = document.documentElement.dataset.portalBackdropTheme === "nature-cycle" ? NATURE_BACKDROP_SCENE_LABELS.length : 18;
       setBackdropScene((scene) => (scene + 1) % count);
@@ -296,9 +296,7 @@ function PortalPage() {
   return (
     <div className="portal-animated-background min-h-screen w-full min-w-0 max-w-none overflow-x-clip bg-paper lg:grid lg:grid-cols-[16rem_minmax(0,1fr)]" data-portal-section={current}>
       <InstallAppPrompt />
-      <aside ref={navigationDrawerRef} id="portal-navigation" aria-label="Main navigation" className={`portal-navigation-drawer flex min-h-screen flex-col overflow-y-auto ${open ? "portal-loading fixed inset-0 z-20" : "hidden"} bg-navy text-paper lg:sticky lg:top-0 lg:block lg:h-screen`}>
-        {open ? <PortalLoadingBackdrop className="portal-navigation-backdrop" objectDensity="full" /> : null}
-        {open ? <PortalLoadingIdentity className="portal-navigation-refresh-card" decorative /> : null}
+      <aside ref={navigationDrawerRef} id="portal-navigation" aria-label="Main navigation" className={`portal-navigation-drawer flex min-h-screen flex-col overflow-y-auto ${open ? "portal-mobile-drawer fixed inset-0 z-20" : "hidden"} bg-navy text-paper lg:sticky lg:top-0 lg:block lg:h-screen`}>
         <div className="flex items-center justify-between border-b border-white/10 px-5 py-5 lg:border-b-0">
           <div className="flex items-center gap-2">
             <SchoolLogo className="size-12" />
