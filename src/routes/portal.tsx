@@ -15,6 +15,7 @@ import { ReportsView } from "@/components/school/reports-view";
 import { ResultsView } from "@/components/school/results-view";
 import { SettingsView } from "@/components/school/settings-view";
 import { StaffView } from "@/components/school/staff-view";
+import { StudentsProgressView } from "@/components/school/students-progress-view";
 import { TimetableView } from "@/components/school/timetable-view";
 import { SchoolServicesView } from "@/components/school/school-services-view";
 import { QrParentFeedbackInbox } from "@/components/school/qr-parent-feedback-inbox";
@@ -32,6 +33,7 @@ const LABELS: Record<string, string> = {
   analysis: "Analysis",
   reports: "Report cards",
   marklists: "Mark lists",
+  "students-progress": "Students progress",
   staff: "Staff",
   mail: "Mail log",
   timetable: "Timetable",
@@ -63,6 +65,7 @@ const ACTIVITY_NOTES: Record<string, string> = {
   analysis: "Bringing together assessment trends and insights.",
   reports: "Preparing report cards and publishing options.",
   marklists: "Opening class mark lists and assessment records.",
+  "students-progress": "Preparing exam-over-exam student progress.",
   staff: "Preparing staff accounts and teaching assignments.",
   mail: "Opening school message and mail records.",
   timetable: "Preparing class timetables and schedules.",
@@ -459,6 +462,7 @@ function PortalPage() {
           {current === "analysis" ? <AnalysisView {...gate} /> : null}
           {current === "reports" ? <ReportsView {...gate} /> : null}
           {current === "marklists" ? <MarklistsView {...gate} /> : null}
+          {current === "students-progress" ? <StudentsProgressView {...gate} /> : null}
           {current === "staff" ? <StaffView {...gate} /> : null}
           {current === "mail" ? <MailView {...gate} /> : null}
           {current === "timetable" ? <TimetableView {...gate} /> : null}

@@ -593,6 +593,7 @@ export function visibleViews(me: Me, policy: RoleAccessPolicy): string[] {
   if (canActorAccess(policy, me.role, "analysis", "view")) views.push("analysis");
   if (canActorAccess(policy, me.role, "reports", "view")) views.push("reports");
   if (canActorAccess(policy, me.role, "marklists", "view")) views.push("marklists");
+  if (me.role === "teacher" || isAdmin(me.role)) views.push("students-progress");
   if (me.role === "super_admin" || (me.isDeputy && (me.delegatedResponsibilities ?? ["settings", "staff", "import", "calendar"]).includes("staff")) || (me.role === "admin" && me.privStaff)) views.push("staff");
   if (me.role === "super_admin" || me.isDeputy) views.push("mail");
   views.push("settings");
