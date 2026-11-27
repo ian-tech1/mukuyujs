@@ -25,6 +25,7 @@ function GatePage() {
 
 const CHROME_TIP_SESSION_KEY = "mukuyu.chrome-browser-tip-seen";
 const CHROME_TIP_DURATION_MS = 15_000;
+const WELCOME_PORTAL_TITLE = "MUKUYU JUNIOR SCHOOL PORTAL";
 
 function isChromeBrowser() {
   if (typeof navigator === "undefined") return false;
@@ -433,7 +434,21 @@ function LoginPage() {
           <button type="button" aria-pressed={display.backgroundMode === "original"} onClick={() => changeBackgroundMode("original")}>Original Colours</button>
         </div>
         <div className="welcome-content relative z-10 py-12">
-          <h1 className="welcome-title welcome-word-panel welcome-word-panel-title mt-3 font-serif font-black leading-tight" style={{ letterSpacing: `${welcomeDisplay.titleLetterSpacing}em`, textShadow: welcomeDisplay.titleShadow ? "0 3px 22px rgba(4,16,35,.42)" : "none", maxWidth: "var(--welcome-content-width)" }} aria-label={welcome?.title || status?.schoolName || "Mukuyu Junior School"}>{Array.from(welcome?.title || status?.schoolName || "Mukuyu Junior School").map((letter, index) => <span key={`${letter}-${index}`} className={letter === " " ? "welcome-title-space" : "welcome-title-letter"} style={{ "--letter-index": index, color: welcomeDisplay.titleColor } as React.CSSProperties}>{letter === " " ? "\u00a0" : letter}</span>)}</h1>
+          <h1
+            className="welcome-title welcome-word-panel welcome-word-panel-title mt-3 font-serif font-black leading-tight"
+            style={{ letterSpacing: `${welcomeDisplay.titleLetterSpacing}em`, textShadow: welcomeDisplay.titleShadow ? "0 3px 22px rgba(4,16,35,.42)" : "none", maxWidth: "var(--welcome-content-width)" }}
+            aria-label={WELCOME_PORTAL_TITLE}
+          >
+            {Array.from(WELCOME_PORTAL_TITLE).map((letter, index) => (
+              <span
+                key={`${letter}-${index}`}
+                className={letter === " " ? "welcome-title-space" : "welcome-title-letter"}
+                style={{ "--letter-index": index, color: welcomeDisplay.titleColor } as React.CSSProperties}
+              >
+                {letter === " " ? "\u00a0" : letter}
+              </span>
+            ))}
+          </h1>
           <p className="welcome-subtitle welcome-word-panel welcome-word-panel-subtitle mt-3 text-sm font-semibold" style={{ color: welcomeDisplay.subtitleColor }}>{welcome?.subtitle || "Exam portal for Grade 7, Grade 8 and Grade 9"}</p>
           <div className="welcome-heading-rule" aria-hidden="true"><span style={{ backgroundColor: welcomeDisplay.accentColor }} /><span style={{ backgroundColor: welcomeDisplay.accentAltColor }} /><span style={{ backgroundColor: welcomeDisplay.titleColor }} /></div>
           <div className="mt-5 max-w-md space-y-3" aria-labelledby="welcome-overview-heading">
