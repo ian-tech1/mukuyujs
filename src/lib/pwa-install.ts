@@ -22,7 +22,7 @@ let captureInitialized = false;
 const subscribers = new Set<(state: PwaInstallState) => void>();
 
 function currentState(): PwaInstallState {
-  return { available: promptEvent !== null || supportsNativeInstall(), installed };
+  return { available: promptEvent !== null || supportsNativeInstall(), installed: installed || isStandalonePwa() };
 }
 
 function supportsNativeInstall() {
@@ -45,7 +45,7 @@ export function isStandalonePwa() {
 export function initializePwaInstallCapture() {
   if (typeof window === "undefined" || captureInitialized) return;
   captureInitialized = true;
-  installed = isStandalonePwa();
+  installed = installed || isStandalonePwa();
   const installWindow = window as WindowWithInstallPrompt;
   if (installWindow.__mukuyuBeforeInstallPrompt) {
     promptEvent = installWindow.__mukuyuBeforeInstallPrompt;

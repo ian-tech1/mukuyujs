@@ -37,6 +37,9 @@ test("captures the native install event and records an accepted install", async 
   let latest = getPwaInstallState();
   const unsubscribe = subscribePwaInstallState((state) => { latest = state; });
   assert.equal(isStandalonePwa(), false);
+  testNavigator.standalone = true;
+  assert.deepEqual(getPwaInstallState(), { available: false, installed: true });
+  testNavigator.standalone = false;
   initializePwaInstallCapture();
   assert.deepEqual(getPwaInstallState(), { available: true, installed: false });
   assert.deepEqual(latest, { available: true, installed: false });

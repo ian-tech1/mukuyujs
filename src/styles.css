@@ -1881,3 +1881,78 @@ html[data-portal-motion="reduced"] .portal-opening-link .portal-loading-card::af
 html[data-portal-motion="reduced"] .welcome-hero::before,
 html[data-portal-motion="reduced"] .welcome-hero::after,
 html[data-portal-motion="reduced"] .welcome-login-panel::after { animation: none !important; will-change: auto; }
+
+
+/* Keep the home canvas close to the refresh-screen night sky without animating gradient paints. */
+.portal-animated-background[data-portal-section="home"] .portal-page-content {
+  background-color: rgba(244, 240, 230, .62);
+}
+@keyframes mukuyu-home-haze-shift {
+  from { transform: translate3d(-.45%, .25%, 0) scale(1.02); }
+  to { transform: translate3d(.45%, -.25%, 0) scale(1.02); }
+}
+@keyframes mukuyu-home-orbit-shift {
+  from { transform: translate3d(-.35%, .2%, 0) rotate(-.45deg); }
+  to { transform: translate3d(.35%, -.2%, 0) rotate(.45deg); }
+}
+.portal-animated-background[data-portal-section="home"] .portal-page-content::before {
+  animation: mukuyu-home-haze-shift 34s ease-in-out infinite alternate !important;
+  will-change: transform;
+}
+.portal-animated-background[data-portal-section="home"] .portal-page-content::after {
+  animation: mukuyu-home-orbit-shift 46s ease-in-out infinite alternate !important;
+  transform-origin: center;
+  will-change: transform;
+}
+html[data-portal-background-mode="original"] .portal-animated-background[data-portal-section="home"] .portal-page-content::before,
+html[data-portal-background-mode="original"] .portal-animated-background[data-portal-section="home"] .portal-page-content::after {
+  animation: none !important;
+  will-change: auto;
+  transform: none;
+}
+
+/* Keep the historical per-line hue cycle visible even when panel styles set inherited text colours. */
+.welcome-copy-line {
+  color: var(--welcome-line-colour, #f7f8ff) !important;
+}
+@keyframes mukuyu-welcome-glow-a {
+  from { transform: translate3d(-1.5%, 1%, 0) scale(.98); opacity: .24; }
+  to { transform: translate3d(1.5%, -1%, 0) scale(1.04); opacity: .38; }
+}
+@keyframes mukuyu-welcome-glow-b {
+  from { transform: translate3d(1.5%, -1%, 0) scale(1.03); opacity: .22; }
+  to { transform: translate3d(-1.5%, 1%, 0) scale(.97); opacity: .36; }
+}
+.welcome-animated.welcome-hero::before {
+  animation: mukuyu-welcome-glow-a 24s ease-in-out infinite alternate !important;
+  filter: blur(20px) !important;
+  will-change: transform, opacity !important;
+}
+.welcome-animated.welcome-hero::after {
+  animation: mukuyu-welcome-glow-b 29s ease-in-out infinite alternate !important;
+  filter: blur(20px) !important;
+  will-change: transform, opacity !important;
+}
+.welcome-static.welcome-hero::before,
+.welcome-static.welcome-hero::after {
+  animation: none !important;
+  will-change: auto !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  html .portal-animated-background[data-portal-section="home"] .portal-page-content::before,
+  html .portal-animated-background[data-portal-section="home"] .portal-page-content::after,
+  html .welcome-animated.welcome-hero::before,
+  html .welcome-animated.welcome-hero::after {
+    animation: none !important;
+    will-change: auto !important;
+    transform: none;
+  }
+}
+html[data-portal-motion="reduced"] .portal-animated-background[data-portal-section="home"] .portal-page-content::before,
+html[data-portal-motion="reduced"] .portal-animated-background[data-portal-section="home"] .portal-page-content::after,
+html[data-portal-motion="reduced"] .welcome-animated.welcome-hero::before,
+html[data-portal-motion="reduced"] .welcome-animated.welcome-hero::after {
+  animation: none !important;
+  will-change: auto !important;
+  transform: none;
+}

@@ -223,7 +223,7 @@ function LoginPage() {
 
   function colouredLines(text: string, sectionOffset: number, fontSize?: string) {
     return text.split(/\r?\n/).map((line, lineIndex) => (
-      <span key={`${sectionOffset}-${lineIndex}`} className="block transition-colors duration-1000" style={{ color: paragraphColour(sectionOffset + lineIndex * 47), fontSize }}>
+      <span key={`${sectionOffset}-${lineIndex}`} className="welcome-copy-line block transition-colors duration-1000" style={{ "--welcome-line-colour": paragraphColour(sectionOffset + lineIndex * 47), fontSize } as React.CSSProperties}>
         {line || "\u00a0"}
       </span>
     ));

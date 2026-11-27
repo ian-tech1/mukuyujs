@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from "react";
 import { Check, Download, RefreshCw, X } from "lucide-react";
 import {
   getPwaInstallState,
+  initializePwaInstallCapture,
+  isStandalonePwa,
   requestPwaInstall,
   subscribePwaInstallState,
   type PwaInstallState,
@@ -42,6 +44,7 @@ function installActionLabel() {
 
 export function InstallAppPrompt() {
   const [installState, setInstallState] = useState<PwaInstallState>(() => getPwaInstallState());
+  const inInstalledApp = isStandalonePwa();
   const [ready, setReady] = useState(false);
   const [installPromptDismissed, setInstallPromptDismissed] = useState(false);
   const [shortcutDialogOpen, setShortcutDialogOpen] = useState(false);
@@ -54,9 +57,11 @@ export function InstallAppPrompt() {
   const [installMessage, setInstallMessage] = useState("");
 
   useEffect(() => {
+    initializePwaInstallCapture();
     setDismissedUpdateBuildId(readDismissedUpdateBuildId());
+    const unsubscribe = subscribePwaInstallState(setInstallState);
     setReady(true);
-    return subscribePwaInstallState(setInstallState);
+    return unsubscribe;
   }, []);
 
   const checkForUpdate = useCallback(async () => {
@@ -74,14 +79,14 @@ export function InstallAppPrompt() {
       setLatestBuildId(serverBuildId);
       const available = isAppUpdateAvailable(getAppBuildId(), serverBuildId);
       setUpdateStatus(available ? "available" : "current");
-      if (available && installState.installed) setActiveTab("update");
+      if (available && inInstalledApp) setActiveTab("update");
     } catch {
       setUpdateStatus("unavailable");
     }
-  }, [installState.installed]);
+  }, [inInstalledApp]);
 
   useEffect(() => {
-    if (!ready) return;
+    if (!ready || !inInstalledApp) return;
     void checkForUpdate();
     const interval = window.setInterval(() => void checkForUpdate(), UPDATE_CHECK_INTERVAL_MS);
     const handleFocus = () => void checkForUpdate();
@@ -95,10 +100,10 @@ export function InstallAppPrompt() {
       window.removeEventListener("focus", handleFocus);
       document.removeEventListener("visibilitychange", handleVisibility);
     };
-  }, [checkForUpdate, ready]);
+  }, [checkForUpdate, inInstalledApp, ready]);
 
   const updateAvailable = updateStatus === "available" && isAppUpdateAvailable(getAppBuildId(), latestBuildId);
-  const showUpdatePopup = installState.installed && updateAvailable && latestBuildId !== dismissedUpdateBuildId;
+  const showUpdatePopup = inInstalledApp && updateAvailable && latestBuildId !== dismissedUpdateBuildId;
   const showInstallPopup = !installState.installed && !installPromptDismissed;
   const shouldShow = ready && (showUpdatePopup || (!installState.installed && (showInstallPopup || shortcutDialogOpen)));
   const showShortcutLauncher = ready && !installState.installed && !showUpdatePopup && !showInstallPopup && !shortcutDialogOpen;
@@ -168,17 +173,17 @@ export function InstallAppPrompt() {
         </div>
 
         <div className="px-4 sm:px-5">
-          <div role="tablist" aria-label="App actions" className="grid grid-cols-2 rounded-xl bg-slate-100 p-1">
+          <div role="tablist" aria-label="App actions" className={`${installState.installed ? "grid-cols-2" : "grid-cols-1"} grid rounded-xl bg-slate-100 p-1`}>
             <button type="button" role="tab" id="app-install-tab" aria-selected={activeTab === "install"} aria-controls="app-install-panel" onClick={() => setActiveTab("install")} className={`min-h-10 rounded-lg px-3 text-sm font-bold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-700 ${activeTab === "install" ? "bg-white text-emerald-900 shadow-sm" : "text-slate-600 hover:text-slate-900"}`}>
               <Download className="mr-1.5 inline-block" size={16} aria-hidden="true" />Install app
             </button>
-            <button type="button" role="tab" id="app-update-tab" aria-selected={activeTab === "update"} aria-controls="app-update-panel" onClick={() => setActiveTab("update")} className={`min-h-10 rounded-lg px-3 text-sm font-bold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-700 ${activeTab === "update" ? "bg-white text-emerald-900 shadow-sm" : "text-slate-600 hover:text-slate-900"}`}>
+            {inInstalledApp ? <button type="button" role="tab" id="app-update-tab" aria-selected={activeTab === "update"} aria-controls="app-update-panel" onClick={() => setActiveTab("update")} className={`min-h-10 rounded-lg px-3 text-sm font-bold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-700 ${activeTab === "update" ? "bg-white text-emerald-900 shadow-sm" : "text-slate-600 hover:text-slate-900"}`}>
               <RefreshCw className="mr-1.5 inline-block" size={15} aria-hidden="true" />Update app
-            </button>
+            </button> : null}
           </div>
         </div>
 
-        {activeTab === "install" ? (
+        {activeTab === "install" || !inInstalledApp ? (
           <div role="tabpanel" id="app-install-panel" aria-labelledby="app-install-tab" className="p-4 pt-3 sm:p-5 sm:pt-4">
             {installState.installed ? (
               <p className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900"><Check className="mr-1.5 inline" size={16} aria-hidden="true" />This device is already using the installed app.</p>
