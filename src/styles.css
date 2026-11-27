@@ -2078,7 +2078,30 @@ html[data-portal-motion="reduced"] .welcome-animated.welcome-hero::after {
   .portal-page-content::after,
   .portal-background-scene,
   .portal-nature-scene {
+    display: block !important;
+  }
+
+  .portal-page-content::before,
+  .portal-page-content::after {
+    opacity: .72 !important;
+  }
+
+  .portal-background-scene {
     display: none !important;
+  }
+
+  .portal-background-scene[data-active="true"] {
+    display: block !important;
+    opacity: .58 !important;
+  }
+
+  .portal-nature-scene {
+    display: none !important;
+  }
+
+  .portal-nature-scene[data-active="true"] {
+    display: block !important;
+    opacity: .34 !important;
   }
 
   .portal-mobile-drawer {

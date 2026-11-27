@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Menu, Palette, SlidersHorizontal, X } from "lucide-react";
+import { Menu, Palette, SlidersHorizontal } from "lucide-react";
 import { SchoolLogo } from "@/components/school/logo";
 import { PortalLoadingBackdrop } from "@/components/school/portal-loading-backdrop";
 import { InstallAppPrompt } from "@/components/school/install-app-prompt";
@@ -81,7 +81,9 @@ function PortalLoadingIdentity({ className = "", status = false, decorative = fa
 function NatureBackdropVideo({ scene, visible, motionEnabled }: { scene: number; visible: boolean; motionEnabled: boolean }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const source = NATURE_BACKDROP_SCENES[scene]?.src ?? NATURE_BACKDROP_SCENES[0].src;
-  const shouldLoad = visible && motionEnabled && typeof window !== "undefined" && !window.matchMedia("(max-width: 1023px)").matches;
+  const isMobile = typeof window !== "undefined" && window.matchMedia("(max-width: 1023px)").matches;
+  const shouldLoad = visible && motionEnabled;
+  const shouldPlay = shouldLoad && !isMobile;
 
   useEffect(() => {
     const video = videoRef.current;
@@ -90,7 +92,7 @@ function NatureBackdropVideo({ scene, visible, motionEnabled }: { scene: number;
     if (!shouldLoad) return;
     video.load();
     const playWhenReady = () => {
-      if (shouldLoad) void video.play().catch(() => undefined);
+      if (shouldPlay) void video.play().catch(() => undefined);
     };
     if (video.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) playWhenReady();
     else video.addEventListener("canplay", playWhenReady, { once: true });
@@ -98,7 +100,7 @@ function NatureBackdropVideo({ scene, visible, motionEnabled }: { scene: number;
       video.removeEventListener("canplay", playWhenReady);
       video.pause();
     };
-  }, [source, shouldLoad]);
+  }, [source, shouldLoad, shouldPlay]);
 
   return <div className="portal-nature-scene" data-active={visible} aria-hidden="true">
     <video ref={videoRef} className="portal-nature-video" src={shouldLoad ? source : undefined} muted loop playsInline preload={shouldLoad ? "auto" : "none"} />
@@ -168,6 +170,7 @@ function PortalPage() {
       const music = parseMusicSetting(settings.musicUrl || "");
       setDashboardPanelColorsEnabled(normalizeWelcomeDisplay(settings.display).dashboardPanelColorsEnabled);
       setPortalBackgroundDurationSeconds(Math.max(5, Math.min(60, Number(settings.portalBackgroundDurationSeconds) || 30)));
+      setBackdropTheme(settings.appearance.backdropTheme || "auto-sections");
       setStaffMusic({ enabled: Boolean(settings.musicEnabled), url: settings.musicUrl || "", options: music.options });
       document.documentElement.dataset.schoolAppearance = JSON.stringify(settings.appearance);
       document.documentElement.dataset.portalTextContrast = settings.appearance.autoTextContrast === false ? "off" : "on";
@@ -306,9 +309,6 @@ function PortalPage() {
               <p className="text-base text-brass-soft">Exam portal</p>
             </div>
           </div>
-          <button className="lg:hidden" type="button" onClick={() => setOpen(false)} aria-label="Close menu">
-            <X />
-          </button>
         </div>
         <nav className="space-y-2 px-4 py-4">
           {views.map((item) => (
