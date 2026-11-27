@@ -1600,3 +1600,58 @@ html[data-portal-motion="reduced"] .portal-loading-opening .portal-loading-detai
   from { transform: translate3d(-1.2%, -.8%, 0); }
   to { transform: translate3d(1.2%, .8%, 0); }
 }
+
+
+/* ZIP-inspired opening/loading scene: fixed midnight base, restrained radial light, and a masked grid. */
+.portal-loading:not(.portal-navigation-drawer) {
+  background-color: #050916 !important;
+  background-image: none !important;
+  background-size: 100% 100% !important;
+  background-position: 50% 50% !important;
+}
+.portal-loading:not(.portal-navigation-drawer)::before {
+  inset: -20% !important;
+  border-radius: 0 !important;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(49, 112, 255, .27), transparent 25%),
+    radial-gradient(circle at 14% 84%, rgba(255, 63, 190, .16), transparent 24%),
+    radial-gradient(circle at 84% 12%, rgba(255, 214, 107, .13), transparent 22%) !important;
+  filter: none !important;
+  mix-blend-mode: normal !important;
+  opacity: .88 !important;
+  animation: mukuyu-loader-glow-breathe 7s ease-in-out infinite alternate !important;
+}
+.portal-loading:not(.portal-navigation-drawer)::after {
+  inset: 0 !important;
+  border-radius: 0 !important;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, .05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, .05) 1px, transparent 1px) !important;
+  background-size: 46px 46px !important;
+  filter: none !important;
+  mix-blend-mode: normal !important;
+  opacity: .28 !important;
+  mask-image: radial-gradient(ellipse at center, #000, transparent 68%);
+  -webkit-mask-image: radial-gradient(ellipse at center, #000, transparent 68%);
+  animation: none !important;
+}
+/* The radial glow above now carries the color; omit the old full-width washes. */
+.portal-loading:not(.portal-navigation-drawer) .portal-loading-ribbon-field,
+.portal-loading:not(.portal-navigation-drawer) .portal-loading-aurora,
+.portal-loading:not(.portal-navigation-drawer) .portal-loading-rays {
+  display: none !important;
+}
+.portal-loading:not(.portal-navigation-drawer) .portal-loading-center-shade {
+  filter: none !important;
+  opacity: .34 !important;
+}
+@keyframes mukuyu-loader-glow-breathe {
+  from { transform: scale(.92) rotate(0deg); opacity: .72; }
+  to { transform: scale(1.08) rotate(8deg); opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .portal-loading:not(.portal-navigation-drawer)::before { animation: none !important; }
+}
+html[data-portal-motion="reduced"] .portal-loading:not(.portal-navigation-drawer)::before {
+  animation: none !important;
+}
