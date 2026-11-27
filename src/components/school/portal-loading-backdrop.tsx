@@ -1,3 +1,28 @@
+const PORTAL_ORBITALS = [
+  { name: "one", shape: "diamond" },
+  { name: "two", shape: "diamond" },
+  { name: "three", shape: "diamond" },
+  { name: "four", shape: "diamond" },
+  { name: "five", shape: "ring" },
+  { name: "six", shape: "ring" },
+  { name: "seven", shape: "ring" },
+  { name: "eight", shape: "ring" },
+  { name: "nine", shape: "star" },
+  { name: "ten", shape: "star" },
+  { name: "eleven", shape: "hex" },
+  { name: "twelve", shape: "hex" },
+  { name: "thirteen", shape: "diamond" },
+  { name: "fourteen", shape: "ring" },
+  { name: "fifteen", shape: "star" },
+  { name: "sixteen", shape: "hex" },
+  { name: "seventeen", shape: "diamond" },
+  { name: "eighteen", shape: "ring" },
+  { name: "nineteen", shape: "star" },
+  { name: "twenty", shape: "hex" },
+] as const;
+
+const COMPACT_ORBITAL_NAMES = new Set(["one", "five", "nine", "eleven", "fourteen", "fifteen"]);
+
 const OPENING_EXTRA_ORBITALS = [
   { name: "twenty-one", shape: "diamond" },
   { name: "twenty-two", shape: "ring" },
@@ -13,7 +38,23 @@ const OPENING_EXTRA_ORBITALS = [
   { name: "thirty-two", shape: "hex" },
 ] as const;
 
-export function PortalLoadingBackdrop({ className = "", openingOrbitals = false }: { className?: string; openingOrbitals?: boolean }) {
+export function PortalLoadingBackdrop({
+  className = "",
+  openingOrbitals = false,
+  objectDensity = "full",
+}: {
+  className?: string;
+  openingOrbitals?: boolean;
+  objectDensity?: "full" | "compact";
+}) {
+  const baseOrbitals = objectDensity === "compact"
+    ? PORTAL_ORBITALS.filter(({ name }) => COMPACT_ORBITAL_NAMES.has(name))
+    : PORTAL_ORBITALS;
+  const orbitals = [
+    ...baseOrbitals.map((orbital) => ({ ...orbital, openingExtra: false })),
+    ...(openingOrbitals ? OPENING_EXTRA_ORBITALS.map((orbital) => ({ ...orbital, openingExtra: true })) : []),
+  ];
+
   return (
     <div className={`portal-loading-backdrop ${className}`} aria-hidden="true">
       <div className="portal-loading-aurora" />
@@ -44,29 +85,12 @@ export function PortalLoadingBackdrop({ className = "", openingOrbitals = false 
         <span className="portal-loading-comet portal-loading-comet-three" />
       </div>
       <div className="portal-loading-orbiting-objects">
-        <span className="portal-loading-object portal-loading-object-diamond portal-loading-object-one" />
-        <span className="portal-loading-object portal-loading-object-diamond portal-loading-object-two" />
-        <span className="portal-loading-object portal-loading-object-diamond portal-loading-object-three" />
-        <span className="portal-loading-object portal-loading-object-diamond portal-loading-object-four" />
-        <span className="portal-loading-object portal-loading-object-ring portal-loading-object-five" />
-        <span className="portal-loading-object portal-loading-object-ring portal-loading-object-six" />
-        <span className="portal-loading-object portal-loading-object-ring portal-loading-object-seven" />
-        <span className="portal-loading-object portal-loading-object-ring portal-loading-object-eight" />
-        <span className="portal-loading-object portal-loading-object-star portal-loading-object-nine" />
-        <span className="portal-loading-object portal-loading-object-star portal-loading-object-ten" />
-        <span className="portal-loading-object portal-loading-object-hex portal-loading-object-eleven" />
-        <span className="portal-loading-object portal-loading-object-hex portal-loading-object-twelve" />
-        <span className="portal-loading-object portal-loading-object-diamond portal-loading-object-thirteen" />
-        <span className="portal-loading-object portal-loading-object-ring portal-loading-object-fourteen" />
-        <span className="portal-loading-object portal-loading-object-star portal-loading-object-fifteen" />
-        <span className="portal-loading-object portal-loading-object-hex portal-loading-object-sixteen" />
-        <span className="portal-loading-object portal-loading-object-diamond portal-loading-object-seventeen" />
-        <span className="portal-loading-object portal-loading-object-ring portal-loading-object-eighteen" />
-        <span className="portal-loading-object portal-loading-object-star portal-loading-object-nineteen" />
-        <span className="portal-loading-object portal-loading-object-hex portal-loading-object-twenty" />
-        {openingOrbitals ? OPENING_EXTRA_ORBITALS.map(({ name, shape }) => (
-          <span key={name} className={`portal-loading-object portal-loading-object-${shape} portal-loading-object-${name} portal-loading-object-opening-extra`} />
-        )) : null}
+        {orbitals.map(({ name, shape, openingExtra }) => (
+          <span
+            key={name}
+            className={`portal-loading-object portal-loading-object-${shape} portal-loading-object-${name}${openingExtra ? " portal-loading-object-opening-extra" : ""}`}
+          />
+        ))}
       </div>
     </div>
   );

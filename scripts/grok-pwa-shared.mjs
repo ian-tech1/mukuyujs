@@ -3,6 +3,7 @@
  * shared by the Vite plugin and Nitro middleware. Plain ESM so `node --test`
  * and the Nitro bundler can both consume it.
  */
+import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -153,6 +154,11 @@ export function stripInstallParams(url) {
   return rest ? `${path}?${rest}` : path;
 }
 
+export function versionedSchoolAppIconUrl(bytes) {
+  const version = createHash("sha256").update(bytes).digest("hex").slice(0, 16);
+  return `/__grok/school-app-icon.png?v=${version}`;
+}
+
 export function renderInstallPageHtml(template, { host, url, appName } = {}) {
   const displayName = String(appName ?? "").trim() || appNameFromHost(host);
   return String(template)
@@ -162,17 +168,19 @@ export function renderInstallPageHtml(template, { host, url, appName } = {}) {
 
 export function renderWebManifest(hostHeader, appNameOverride, iconPath) {
   const name = String(appNameOverride ?? "").trim().replace(/\s+/g, " ").slice(0, 100) || appNameFromHost(hostHeader);
-  const icons = iconPath === "/icons/mukuyu-app-192.png"
+  const icons = String(iconPath ?? "").startsWith("/__grok/school-app-icon.png")
+    ? [{ src: iconPath, sizes: "512x512", type: "image/png", purpose: "any" }]
+    : iconPath === "/icons/mukuyu-app-192.png"
     ? [
-        { src: "/icons/mukuyu-app-192.png?v=4", sizes: "192x192", type: "image/png", purpose: "any" },
-        { src: "/icons/mukuyu-app-512.png?v=4", sizes: "512x512", type: "image/png", purpose: "any maskable" },
+        { src: "/icons/mukuyu-app-192.png?v=5", sizes: "192x192", type: "image/png", purpose: "any" },
+        { src: "/icons/mukuyu-app-512.png?v=5", sizes: "512x512", type: "image/png", purpose: "any maskable" },
       ]
     : iconPath === "/__grok/school-icon.svg"
       ? [
           { src: iconPath, sizes: "any", type: "image/svg+xml", purpose: "any maskable" },
-          { src: "/__grok/icon-180.png", sizes: "180x180", type: "image/png" },
+          { src: "/__grok/icon-180.png?v=5", sizes: "180x180", type: "image/png" },
         ]
-      : [{ src: "/__grok/icon-180.png", sizes: "180x180", type: "image/png" }];
+      : [{ src: "/__grok/icon-180.png?v=5", sizes: "180x180", type: "image/png" }];
   return JSON.stringify(
     {
       name,
@@ -193,8 +201,30 @@ export function renderWebManifest(hostHeader, appNameOverride, iconPath) {
 export function renderSchoolIconSvg(schoolName = "Mukuyu Junior School") {
   const safeName = String(schoolName ?? "").trim().replace(/\s+/g, " ").slice(0, 100) || "Mukuyu Junior School";
   const initials = /^Mukuyu Junior School$/i.test(safeName) ? "MKJ" : safeName.split(/[^A-Za-z0-9]+/).filter(Boolean).slice(0, 3).map((part) => part[0]).join("").toUpperCase() || "M";
-  const fontSize = initials.length === 1 ? 76 : initials.length === 2 ? 62 : 48;
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" role="img" aria-label="${escapeHtml(safeName)} school app icon"><defs><linearGradient id="school" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#123b70"/><stop offset=".48" stop-color="#4379b7"/><stop offset="1" stop-color="#be8d36"/></linearGradient><linearGradient id="shine" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff" stop-opacity=".36"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient></defs><rect width="192" height="192" rx="44" fill="url(#school)"/><circle cx="150" cy="39" r="39" fill="#f2a8cf" fill-opacity=".28"/><circle cx="38" cy="158" r="46" fill="#7de0e6" fill-opacity=".24"/><path d="M22 69c21-30 57-47 94-43 22 2 39 11 54 24-29-17-63-20-92-9-21 8-39 21-56 42z" fill="url(#shine)"/><path d="M47 118c17-11 29-16 49-16s32 5 49 16v34c-16-9-31-13-49-13s-33 4-49 13z" fill="#fff" fill-opacity=".18" stroke="#fff" stroke-opacity=".83" stroke-width="4" stroke-linejoin="round"/><path d="M96 103v35" stroke="#fff" stroke-opacity=".82" stroke-width="3"/><text x="96" y="92" text-anchor="middle" font-family="Georgia,serif" font-size="${fontSize}" font-weight="700" letter-spacing="-3" fill="#fffdf4" stroke="#15375e" stroke-opacity=".22" stroke-width="2" paint-order="stroke">${escapeHtml(initials)}</text><path d="M68 161h56" stroke="#f5d58a" stroke-width="5" stroke-linecap="round"/></svg>`;
+  const fontSize = initials.length === 1 ? 70 : initials.length === 2 ? 61 : 53;
+  const colors = ["#ffd34f", "#5af0d2", "#ff8bbd"];
+  const coloredInitials = Array.from(initials, (letter, index) => `<tspan fill="${colors[index % colors.length]}">${escapeHtml(letter)}</tspan>`).join("");
+  const title = escapeHtml(safeName);
+  const schoolLabel = escapeHtml(safeName.toUpperCase());
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" role="img" aria-label="${title} app icon">
+  <title>${title} — multicolour initials — developed by IAN TECH</title>
+  <defs>
+    <linearGradient id="tile" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#0868b7"/><stop offset=".47" stop-color="#4e3ac5"/><stop offset="1" stop-color="#d23891"/></linearGradient>
+    <linearGradient id="edge" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#70f5ec"/><stop offset=".5" stop-color="#fff3a8"/><stop offset="1" stop-color="#ff9bc7"/></linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#fff3a4"/><stop offset=".52" stop-color="#ffd24a"/><stop offset="1" stop-color="#ffac39"/></linearGradient>
+  </defs>
+  <rect width="192" height="192" rx="44" fill="#06152d"/>
+  <rect x="5" y="5" width="182" height="182" rx="39" fill="url(#tile)" stroke="url(#edge)" stroke-width="4"/>
+  <circle cx="35" cy="142" r="60" fill="#24e2c5" fill-opacity=".2"/><circle cx="163" cy="52" r="56" fill="#ffcf52" fill-opacity=".18"/>
+  <rect x="15" y="13" width="162" height="27" rx="8" fill="#06152d" fill-opacity=".88" stroke="#a9fff2" stroke-opacity=".62" stroke-width="1"/>
+  <text x="96" y="31" text-anchor="middle" textLength="150" lengthAdjust="spacingAndGlyphs" font-family="Arial, Liberation Sans, sans-serif" font-size="11" font-weight="900" letter-spacing=".2" fill="#fff">${schoolLabel}</text>
+  <text x="96" y="108" text-anchor="middle" textLength="119" lengthAdjust="spacingAndGlyphs" font-family="Arial Black, Arial, Liberation Sans, sans-serif" font-size="${fontSize}" font-weight="900" stroke="#06152d" stroke-width="7" stroke-linejoin="round" paint-order="stroke">${coloredInitials}</text>
+  <path d="M49 124c13-8 24-12 47-12s34 4 47 12v24c-13-7-29-10-47-10s-34 3-47 10z" fill="#06152d" fill-opacity=".58" stroke="#fff" stroke-opacity=".92" stroke-width="2" stroke-linejoin="round"/>
+  <path d="M96 113v32" stroke="#fff" stroke-opacity=".9" stroke-width="2"/>
+  <rect x="27" y="150" width="138" height="34" rx="10" fill="#06152d" fill-opacity=".92" stroke="#7af1df" stroke-opacity=".92" stroke-width="1.6"/>
+  <text x="96" y="164" text-anchor="middle" textLength="99" lengthAdjust="spacingAndGlyphs" font-family="Arial, Liberation Sans, sans-serif" font-size="9" font-weight="900" letter-spacing=".4" fill="#8ff4e5">DEVELOPED BY</text>
+  <text x="96" y="179" text-anchor="middle" textLength="77" lengthAdjust="spacingAndGlyphs" font-family="Arial, Liberation Sans, sans-serif" font-size="14" font-weight="900" letter-spacing=".5" fill="url(#gold)">IAN TECH</text>
+</svg>`;
 }
 
 export function grokPwaHeadTags(appName = DEFAULT_APP_NAME) {
@@ -202,7 +232,7 @@ export function grokPwaHeadTags(appName = DEFAULT_APP_NAME) {
     // Standalone display comes from the manifest ("display": "standalone");
     // the legacy *-web-app-capable metas it replaces are deliberately absent.
     ["manifest", '<link rel="manifest" href="/__grok/manifest.webmanifest">'],
-    ["apple-touch-icon", '<link rel="apple-touch-icon" href="/icons/mukuyu-app-180.png?v=4">'],
+    ["apple-touch-icon", '<link rel="apple-touch-icon" href="/__grok/school-app-icon.png">'],
     [
       "apple-mobile-web-app-title",
       `<meta name="apple-mobile-web-app-title" content="${escapeHtml(appName)}">`,
@@ -466,7 +496,7 @@ export function injectGrokPwaHead(html, ctx = {}) {
   const missing = grokPwaHeadTags(appName)
     .filter(([key]) => {
       if (key === "manifest") return !next.includes('href="/__grok/manifest.webmanifest"');
-      if (key === "apple-touch-icon") return !next.includes('href="/icons/mukuyu-app-180.png?v=4"');
+      if (key === "apple-touch-icon") return !next.includes('href="/__grok/school-app-icon.png"');
       return !next.includes(`name="${key}"`);
     })
     .map(([, tag]) => tag);

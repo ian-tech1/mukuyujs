@@ -22,6 +22,7 @@ import { isValidParentEmail, matchLearnerName, normalizeLearnerName, normalizePa
 import { resolveSubjectHeader } from "@/lib/school/subject-header";
 import { sendSchoolBackupEmail } from "@/lib/school/backup-email";
 import { MAX_EXPANDED_BACKUP_JSON_BYTES, MAX_GZIPPED_BACKUP_BASE64_CHARS, MAX_GZIPPED_BACKUP_BYTES, MAX_WEB_BACKUP_JSON_BYTES } from "@/lib/school/backup-format";
+import { isValidSchoolAppIconDataUrl } from "@/lib/school/app-icon";
 
 type SessionData = { userId: string; v: number };
 let spotifyTokenCache: { accessToken: string; expiresAt: number } | null = null;
@@ -2858,6 +2859,28 @@ export const saveAppearance = createServerFn({ method: "POST" })
     const appearance = safeAppearance(data.appearance);
     await sql`update welcome_page set appearance_json = ${JSON.stringify(appearance)}, updated_at = now() where id = 1`;
     return { ok: true, appearance };
+  });
+
+export const getSuperAdminAppIcon = createServerFn({ method: "GET" })
+  .handler(async () => {
+    const me = await requireActor();
+    if (me.role !== "super_admin") throw new Error("Only the super admin can manage the app icon.");
+    const sql = await getSql();
+    const rows = await sql<{ appIconData: string }>`select app_icon_data as "appIconData" from welcome_page where id = 1`;
+    return { appIconData: rows[0]?.appIconData ?? "" };
+  });
+
+export const saveSuperAdminAppIcon = createServerFn({ method: "POST" })
+  .validator((input: { appIconData: string }) => input)
+  .handler(async ({ data }) => {
+    const me = await requireActor();
+    if (me.role !== "super_admin") throw new Error("Only the super admin can manage the app icon.");
+    if (!isValidSchoolAppIconDataUrl(data.appIconData)) {
+      throw new Error("Upload a valid 512 × 512 PNG app icon no larger than 250 KB.");
+    }
+    const sql = await getSql();
+    await sql`update welcome_page set app_icon_data = ${data.appIconData}, updated_at = now() where id = 1`;
+    return { ok: true };
   });
 
 export const saveWelcomePage = createServerFn({ method: "POST" })

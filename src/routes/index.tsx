@@ -7,6 +7,7 @@ import { btnClass, errText, inputClass } from "@/components/school/gate";
 import { completeParentFirstLoginPasswordChange, getParentPasswordChangeStatus, getWorkspace, getWelcomePage, login, loginParent, logout, portalStatus, requestParentLoginCode, requestParentPasswordResetCode, resetParentPassword, verifyParentLoginCode } from "@/lib/school/api";
 import { applyDisplayPreferences, DEFAULT_DISPLAY_PREFERENCES, DISPLAY_PALETTES, readDisplayPreferences, saveDisplayPreferences, type LocalDisplayPreferences } from "@/lib/school/display";
 import { DEFAULT_WELCOME_DISPLAY, hexToRgba, normalizeWelcomeDisplay, type WelcomeDisplayOptions } from "@/lib/school/welcome-display";
+import { splitWelcomeParagraphs, welcomeCopyColour } from "@/lib/welcome-copy";
 
 export const Route = createFileRoute("/")({
   validateSearch: (search: Record<string, unknown>) => {
@@ -127,6 +128,8 @@ function LoginPage() {
   const [chromeTipOpen, setChromeTipOpen] = useState(false);
   const completeOpeningIntro = useCallback(() => setOpeningIntroComplete(true), []);
   const welcomeDisplay = normalizeWelcomeDisplay(welcome?.display ?? DEFAULT_WELCOME_DISPLAY);
+  const announcementParagraphs = splitWelcomeParagraphs(welcome?.announcement || "Marks, streams, merit lists and report cards stay in one office.");
+  const highlightParagraphs = splitWelcomeParagraphs(welcome?.highlights || "");
   const selectedPalette = display.theme ? DISPLAY_PALETTES.find((palette) => palette.id === display.theme) : undefined;
   const welcomeHeroStyle = {
     "--welcome-start": selectedPalette?.colors.navy || welcome?.backgroundStart || "#0e2a4a",
@@ -205,21 +208,22 @@ function LoginPage() {
   }, [featuresOpen]);
 
   useEffect(() => {
-    if (welcome?.paragraphColoursEnabled === false) return;
+    if (!welcomeSettingsReady || welcome?.paragraphColoursEnabled === false) return;
     const interval = Math.max(2, Math.min(30, welcome?.paragraphColourInterval ?? 4)) * 1000;
-    const timer = window.setInterval(() => setParagraphColourTick((tick) => tick + 1), interval);
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === "visible") setParagraphColourTick((tick) => tick + 1);
+    }, interval);
     return () => window.clearInterval(timer);
-  }, [welcome?.paragraphColoursEnabled, welcome?.paragraphColourInterval]);
+  }, [welcomeSettingsReady, welcome?.paragraphColoursEnabled, welcome?.paragraphColourInterval]);
 
-  function paragraphColour(index: number, sectionOffset: number) {
-    if (welcome?.paragraphColoursEnabled === false) return welcomeDisplay.animatedWordingPanels ? "#f7f8ff" : welcomeDisplay.bodyTextColor;
-    const hue = (sectionOffset + index * 47 + paragraphColourTick * 31) % 360;
-    return `hsl(${hue}, 72%, 86%)`;
+  function paragraphColour(index: number) {
+    const fallback = welcomeDisplay.animatedWordingPanels ? "#f7f8ff" : welcomeDisplay.bodyTextColor;
+    return welcomeCopyColour(index, paragraphColourTick, welcome?.paragraphColoursEnabled !== false, fallback);
   }
 
   function colouredLines(text: string, sectionOffset: number, fontSize?: string) {
     return text.split(/\r?\n/).map((line, lineIndex) => (
-      <span key={`${sectionOffset}-${lineIndex}`} className="block transition-colors duration-1000" style={{ color: paragraphColour(lineIndex, sectionOffset), fontSize }}>
+      <span key={`${sectionOffset}-${lineIndex}`} className="block transition-colors duration-1000" style={{ color: paragraphColour(sectionOffset + lineIndex * 47), fontSize }}>
         {line || "\u00a0"}
       </span>
     ));
@@ -435,14 +439,14 @@ function LoginPage() {
           <div className="mt-5 max-w-md space-y-3" aria-labelledby="welcome-overview-heading">
             <h2 id="welcome-overview-heading" className="welcome-section-heading welcome-word-panel welcome-word-panel-heading" style={{ color: welcomeDisplay.accentColor }}>A brighter school day starts here</h2>
             <div className="mt-4 max-w-md space-y-3">
-            {(welcome?.announcement || "Marks, streams, merit lists and report cards stay in one office.").split(/\n\n+/).map((para, i) => (
+            {announcementParagraphs.map((para, i) => (
               <p key={i} className="welcome-copy welcome-word-panel welcome-word-panel-copy text-base" style={{ fontFamily: welcome?.fontFamily || "inherit", maxWidth: "var(--welcome-content-width)" }}>{colouredLines(para, 40 + i * 17, welcome?.titleSize ? `${Math.max(14, Math.min(welcome.titleSize * 0.4, 22))}px` : undefined)}</p>
             ))}
             </div>
             <button type="button" className="welcome-features-button" onClick={() => setFeaturesOpen(true)} aria-haspopup="dialog">Explore portal features</button>
           </div>
           {welcome?.contact ? <p className="mt-4 whitespace-pre-wrap text-sm" style={{ color: welcomeDisplay.bodyTextColor }}>{welcome.contact}</p> : null}
-          {welcome?.highlights ? <div className="welcome-highlights welcome-word-panel welcome-word-panel-highlights mt-6 space-y-2" style={{ borderColor: hexToRgba(welcomeDisplay.accentAltColor, 0.45) }} aria-labelledby="welcome-highlights-heading"><h2 id="welcome-highlights-heading" className="welcome-section-heading welcome-word-panel welcome-word-panel-heading" style={{ color: welcomeDisplay.accentAltColor }}>What your school office can see</h2>{welcome.highlights.split(/\n\n+/).map((para, i) => <p key={i} className="welcome-copy welcome-word-panel welcome-word-panel-copy text-sm" style={{ fontFamily: welcome?.fontFamily || "inherit" }}>{colouredLines(para, 180 + i * 17)}</p>)}</div> : null}
+          {welcome?.highlights ? <div className="welcome-highlights welcome-word-panel welcome-word-panel-highlights mt-6 space-y-2" style={{ borderColor: hexToRgba(welcomeDisplay.accentAltColor, 0.45) }} aria-labelledby="welcome-highlights-heading"><h2 id="welcome-highlights-heading" className="welcome-section-heading welcome-word-panel welcome-word-panel-heading" style={{ color: welcomeDisplay.accentAltColor }}>What your school office can see</h2>{highlightParagraphs.map((para, i) => <p key={i} className="welcome-copy welcome-word-panel welcome-word-panel-copy text-sm" style={{ fontFamily: welcome?.fontFamily || "inherit" }}>{colouredLines(para, 180 + i * 17)}</p>)}</div> : null}
           <p className="mt-8 font-serif text-lg" style={{ color: welcomeDisplay.accentColor }}>Motto · {status?.motto || "Hard Work Pays"}</p>
           {status?.poBox ? <p className="mt-2 text-sm text-paper/70">P.O. Box {status.poBox}</p> : null}
           {welcome?.footerText ? <p className="mt-3 whitespace-pre-wrap text-xs" style={{ color: welcomeDisplay.bodyTextColor }}>{welcome.footerText}</p> : null}
@@ -583,5 +587,6 @@ function applyPublicSchoolIdentity(rawName: string) {
   const schoolName = rawName.trim().replace(/\s+/g, " ").slice(0, 100) || "Mukuyu Junior School";
   document.title = `${schoolName} · School Portal`;
   document.querySelector('meta[name="apple-mobile-web-app-title"]')?.setAttribute("content", schoolName);
-  document.querySelector<HTMLLinkElement>('link[rel="icon"]')?.setAttribute("href", "/icons/mukuyu-app-192.png?v=4");
+  document.querySelector<HTMLLinkElement>('link[rel="icon"]')?.setAttribute("href", "/__grok/school-app-icon.png");
+  document.querySelector<HTMLLinkElement>('link[rel="apple-touch-icon"]')?.setAttribute("href", "/__grok/school-app-icon.png");
 }

@@ -17,6 +17,7 @@ import {
   renderSchoolIconSvg,
   renderWebManifest,
   snapshotOgIdentity,
+  versionedSchoolAppIconUrl,
 } from "./grok-pwa-shared.mjs";
 
 export const GROK_OG_IDENTITY_ID = "virtual:grok-og-identity";
@@ -55,7 +56,20 @@ async function viteSchoolName(server) {
   }
 }
 
-function serveGrokPwa(middlewares, getSchoolName) {
+async function viteSchoolAppIcon(server) {
+  try {
+    if (typeof server.ssrLoadModule !== "function") return null;
+    const database = await server.ssrLoadModule("/src/lib/db.ts");
+    const sql = await database.getSql();
+    const rows = await sql`select app_icon_data from welcome_page where id = 1`;
+    const appIcon = await server.ssrLoadModule("/src/lib/school/app-icon.ts");
+    return appIcon.decodeSchoolAppIconDataUrl(rows[0]?.app_icon_data) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function serveGrokPwa(middlewares, getSchoolName, getSchoolAppIcon) {
   middlewares.use((req, res, next) => {
     const rawUrl = req.url ?? "";
     const pathOnly = rawUrl.split("?", 1)[0] ?? "";
@@ -66,11 +80,37 @@ function serveGrokPwa(middlewares, getSchoolName) {
     }
 
     if (pathOnly === "/__grok/manifest.webmanifest" || pathOnly === "/__grok/manifest.json") {
-      void getSchoolName().then((schoolName) => {
-        const body = Buffer.from(renderWebManifest(requestHost(req), schoolName, "/icons/mukuyu-app-192.png"), "utf8");
+      void Promise.all([getSchoolName(), getSchoolAppIcon()]).then(([schoolName, iconBytes]) => {
+        const iconPath = iconBytes ? versionedSchoolAppIconUrl(iconBytes) : "/icons/mukuyu-app-192.png";
+        const body = Buffer.from(renderWebManifest(requestHost(req), schoolName, iconPath), "utf8");
         res.statusCode = 200;
         res.setHeader("content-type", "application/manifest+json; charset=utf-8");
         res.setHeader("cache-control", "no-cache");
+        res.setHeader("content-length", String(body.byteLength));
+        res.end(body);
+      }).catch(next);
+      return;
+    }
+
+    if (pathOnly === "/__grok/school-app-icon.png") {
+      void getSchoolAppIcon().then((iconBytes) => {
+        if (!iconBytes) {
+          res.statusCode = 302;
+          res.setHeader("location", "/icons/mukuyu-app-512.png?v=5");
+          res.setHeader("cache-control", "no-cache");
+          res.end();
+          return;
+        }
+        const versionedUrl = versionedSchoolAppIconUrl(iconBytes);
+        const expectedVersion = versionedUrl.split("v=")[1] ?? "";
+        const requestedVersion = new URL(rawUrl, "http://localhost").searchParams.get("v");
+        const body = Buffer.from(iconBytes);
+        res.statusCode = 200;
+        res.setHeader("content-type", "image/png");
+        const cacheControl = requestedVersion === expectedVersion
+          ? "public, max-age=31536000, immutable"
+          : requestedVersion ? "no-cache" : "public, max-age=300";
+        res.setHeader("cache-control", cacheControl);
         res.setHeader("content-length", String(body.byteLength));
         res.end(body);
       }).catch(next);
@@ -201,11 +241,11 @@ export function grokPwaPlugin() {
     configureServer(server) {
       // Registered directly (not in a returned post-hook) so both run BEFORE
       // TanStack Start's SSR middleware, like the auth-popup plugin.
-      serveGrokPwa(server.middlewares, () => viteSchoolName(server));
+      serveGrokPwa(server.middlewares, () => viteSchoolName(server), () => viteSchoolAppIcon(server));
       wrapHtmlResponses(server.middlewares, root);
     },
     configurePreviewServer(server) {
-      serveGrokPwa(server.middlewares, () => viteSchoolName(server));
+      serveGrokPwa(server.middlewares, () => viteSchoolName(server), () => viteSchoolAppIcon(server));
       // Post-hook: preview registers compression between the direct hooks and
       // the post-hooks, and the injector must wrap AFTER compression so it
       // sees plaintext HTML (compression then compresses the injected output).

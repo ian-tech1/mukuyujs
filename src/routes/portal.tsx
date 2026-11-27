@@ -40,6 +40,22 @@ const LABELS: Record<string, string> = {
   results: "My results",
 };
 
+const ACTIVITY_NOTES: Record<string, string> = {
+  home: "Gathering schoolwide results, learner counts and progress.",
+  learners: "Opening learner registers and class records.",
+  marks: "Preparing the marks-entry workspace.",
+  analysis: "Bringing together assessment trends and insights.",
+  reports: "Preparing report cards and publishing options.",
+  marklists: "Opening class mark lists and assessment records.",
+  staff: "Preparing staff accounts and teaching assignments.",
+  mail: "Opening school message and mail records.",
+  timetable: "Preparing class timetables and schedules.",
+  services: "Opening school services and support information.",
+  "parent-feedback": "Loading feedback submitted by parents.",
+  settings: "Opening school settings and the welcome-page designer.",
+  results: "Loading your results and report information.",
+};
+
 export const Route = createFileRoute("/portal")({
   validateSearch: (search: Record<string, unknown>) => ({
     view: typeof search.view === "string" ? search.view : "home",
@@ -182,7 +198,7 @@ function PortalPage() {
     if (previousViewRef.current !== view) {
       previousViewRef.current = view;
       const label = view === "settings" && ws?.me.role === "super_admin" ? "Welcome Page" : LABELS[view] ?? view;
-      showActivity(`Opening ${label}…`, 700);
+      showActivity(`Opening ${label}…`, 900);
     }
     return () => window.cancelAnimationFrame(frame);
   }, [view, showActivity, ws?.me.role]);
@@ -256,7 +272,7 @@ function PortalPage() {
   const current = views.includes(view) ? view : views[0];
   function navigateToView(item: string) {
     const label = item === "settings" && ws?.me.role === "super_admin" ? "Welcome Page" : LABELS[item] ?? item;
-    showActivity(`Opening ${label}…`, 700);
+    showActivity(`Opening ${label}…`, 900);
     previousViewRef.current = item;
     setOpen(false);
     setDisplaySettingsOpen(false);
@@ -392,14 +408,14 @@ function PortalPage() {
         </div>
       </div>
       {ws.me.active ? <StaffMusicDock url={staffMusic.enabled ? staffMusic.url : ""} options={staffMusic.options || {}} /> : null}
-      {activityMessage ? <div className="portal-loading portal-loading-action-feedback fixed inset-0 z-[2147483000] grid min-h-[100svh] w-full place-items-center overflow-hidden px-4" role="status" aria-live="polite" aria-atomic="true">
+      {activityMessage ? <div className="portal-loading portal-loading-action-feedback fixed inset-0 z-[2147483000] grid min-h-[100svh] w-full place-items-center overflow-hidden px-4" data-activity-view={current} role="status" aria-live="polite" aria-atomic="true">
         <PortalLoadingBackdrop />
         <div className="portal-loading-center-shade" aria-hidden="true" />
         <section className="portal-loading-card portal-loading-action-card text-center">
           <p className="portal-loading-kicker">MUKUYU JUNIOR SCHOOL · LEARNING PORTAL</p>
           <span className="portal-loading-orbit" aria-hidden="true"><SchoolLogo className="size-[6.5rem]" /></span>
           <h2 className="portal-loading-feedback-message mt-5">{activityMessage}</h2>
-          <p className="portal-loading-feedback-note mt-2">Please wait a moment…</p>
+          <p className="portal-loading-feedback-note mt-2">{ACTIVITY_NOTES[current] ?? "Preparing this part of the school portal."}</p>
           <div className="portal-loading-track mt-5" aria-hidden="true"><span /></div>
         </section>
       </div> : null}

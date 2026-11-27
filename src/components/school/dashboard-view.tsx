@@ -7,7 +7,7 @@ import { inputClass } from "@/components/school/gate";
 import { btnDownload } from "@/components/school/download-button";
 import { buildBoards, decorate, fmt, isAdmin, learnersForYear, meanOf, periodMarks } from "@/lib/school/model";
 
-export function DashboardView({ ws: sourceWs, refresh, flash }: Gate) {
+export function DashboardView({ ws: sourceWs, refresh, flash, beginActivity }: Gate) {
   const period = useSchoolPeriod(sourceWs);
   const [gradeFilter, setGradeFilter] = useState("all");
   const [streamFilter, setStreamFilter] = useState("all");
@@ -358,6 +358,12 @@ export function DashboardView({ ws: sourceWs, refresh, flash }: Gate) {
     flash("Dashboard snapshot saved on this device.");
   }
 
+  function selectDashboardSection(section: "overview" | "performance" | "quality" | "interventions", label: string) {
+    setSelectedDashboardSection(section);
+    const finishActivity = beginActivity?.(`Opening ${label}…`);
+    if (finishActivity) window.setTimeout(() => finishActivity(), 700);
+  }
+
   return (
     <div className="space-y-6">
       <header>
@@ -376,10 +382,10 @@ export function DashboardView({ ws: sourceWs, refresh, flash }: Gate) {
       </header>
       {(ws.me.role === "teacher" || (ws.me.role === "admin" && !ws.me.isDeputy)) ? <p role="status" className="rounded-xl border border-info/25 bg-info/5 px-4 py-3 text-sm text-muted">Dashboard result summaries use only marks your account is allowed to view. Teacher results follow your class/subject assignments and the Super Admin’s marks-view controls. If expected results are missing, ask the Super Admin to check your assignment and the selected year, term and CAT permissions.</p> : null}
       <nav className="sticky top-0 z-20 -mx-1 flex min-w-0 gap-2 overflow-x-auto rounded-xl border border-line bg-paper/95 p-2 shadow-sm backdrop-blur" aria-label="Dashboard sections">
-        <a className={`shrink-0 rounded-full px-4 py-2.5 text-sm font-semibold ${selectedDashboardSection === "overview" ? "bg-navy text-paper shadow-sm" : "bg-paper text-navy hover:bg-info/10"}`} href="#dashboard-summary" aria-current={selectedDashboardSection === "overview" ? "location" : undefined} onClick={() => setSelectedDashboardSection("overview")}>Overview</a>
-        <a className={`shrink-0 rounded-full px-4 py-2.5 text-sm font-semibold ${selectedDashboardSection === "performance" ? "bg-navy text-paper shadow-sm" : "bg-paper text-navy hover:bg-info/10"}`} href="#dashboard-performance" aria-current={selectedDashboardSection === "performance" ? "location" : undefined} onClick={() => setSelectedDashboardSection("performance")}>Performance</a>
-        <a className={`shrink-0 rounded-full px-4 py-2.5 text-sm font-semibold ${selectedDashboardSection === "quality" ? "bg-navy text-paper shadow-sm" : "bg-paper text-navy hover:bg-info/10"}`} href="#dashboard-quality" aria-current={selectedDashboardSection === "quality" ? "location" : undefined} onClick={() => setSelectedDashboardSection("quality")}>Data quality</a>
-        <a className={`shrink-0 rounded-full px-4 py-2.5 text-sm font-semibold ${selectedDashboardSection === "interventions" ? "bg-navy text-paper shadow-sm" : "bg-paper text-navy hover:bg-info/10"}`} href="#dashboard-interventions" aria-current={selectedDashboardSection === "interventions" ? "location" : undefined} onClick={() => setSelectedDashboardSection("interventions")}>Interventions</a>
+        <a className={`shrink-0 rounded-full px-4 py-2.5 text-sm font-semibold ${selectedDashboardSection === "overview" ? "bg-navy text-paper shadow-sm" : "bg-paper text-navy hover:bg-info/10"}`} href="#dashboard-summary" aria-current={selectedDashboardSection === "overview" ? "location" : undefined} onClick={() => selectDashboardSection("overview", "Overview")}>Overview</a>
+        <a className={`shrink-0 rounded-full px-4 py-2.5 text-sm font-semibold ${selectedDashboardSection === "performance" ? "bg-navy text-paper shadow-sm" : "bg-paper text-navy hover:bg-info/10"}`} href="#dashboard-performance" aria-current={selectedDashboardSection === "performance" ? "location" : undefined} onClick={() => selectDashboardSection("performance", "Performance")}>Performance</a>
+        <a className={`shrink-0 rounded-full px-4 py-2.5 text-sm font-semibold ${selectedDashboardSection === "quality" ? "bg-navy text-paper shadow-sm" : "bg-paper text-navy hover:bg-info/10"}`} href="#dashboard-quality" aria-current={selectedDashboardSection === "quality" ? "location" : undefined} onClick={() => selectDashboardSection("quality", "Data quality")}>Data quality</a>
+        <a className={`shrink-0 rounded-full px-4 py-2.5 text-sm font-semibold ${selectedDashboardSection === "interventions" ? "bg-navy text-paper shadow-sm" : "bg-paper text-navy hover:bg-info/10"}`} href="#dashboard-interventions" aria-current={selectedDashboardSection === "interventions" ? "location" : undefined} onClick={() => selectDashboardSection("interventions", "Interventions")}>Interventions</a>
       </nav>
       <section className="dashboard-command-center rounded-2xl border border-line bg-card p-4 shadow-card" aria-labelledby="dashboard-command-title">
         <div className="flex flex-wrap items-center justify-between gap-3">

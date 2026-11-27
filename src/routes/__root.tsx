@@ -19,7 +19,7 @@ export const Route = createRootRoute({
       { name: "theme-color", content: "#030914" },
     ],
     links: [
-      { rel: "icon", type: "image/png", href: "/icons/mukuyu-app-192.png?v=4" },
+      { rel: "icon", type: "image/png", href: "/__grok/school-app-icon.png" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       {
         rel: "stylesheet",
@@ -27,7 +27,7 @@ export const Route = createRootRoute({
       },
       { rel: "stylesheet", href: appCss },
       { rel: "manifest", href: "/__grok/manifest.webmanifest" },
-      { rel: "apple-touch-icon", href: "/icons/mukuyu-app-180.png?v=4" },
+      { rel: "apple-touch-icon", href: "/__grok/school-app-icon.png" },
     ],
   }),
   component: () => (

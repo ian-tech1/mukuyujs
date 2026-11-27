@@ -17,6 +17,7 @@ import {
   resolveOgCardAsset,
   snapshotOgIdentity,
   stripInstallParams,
+  versionedSchoolAppIconUrl,
 } from "./grok-pwa-shared.mjs";
 import { renderInstallPage } from "./grok-pwa-plugin.mjs";
 
@@ -516,7 +517,7 @@ test("renders the manifest with the per-app name", () => {
   const manifest = JSON.parse(renderWebManifest("wild-race.grok.me"));
   assert.equal(manifest.name, "Wild Race");
   assert.equal(manifest.short_name, "Wild Race");
-  assert.equal(manifest.icons[0].src, "/__grok/icon-180.png");
+  assert.equal(manifest.icons[0].src, "/__grok/icon-180.png?v=5");
 });
 
 test("renders a school-branded manifest and initials icon when runtime identity is supplied", () => {
@@ -526,7 +527,9 @@ test("renders a school-branded manifest and initials icon when runtime identity 
   assert.equal(manifest.short_name, "Mukuyu Junior School");
   assert.equal(manifest.icons[0].src, "/__grok/school-icon.svg");
   assert.equal(manifest.icons[0].purpose, "any maskable");
-  assert.match(icon, /<text[^>]*>MKJ<\/text>/);
+  assert.match(icon, /<tspan[^>]*>M<\/tspan><tspan[^>]*>K<\/tspan><tspan[^>]*>J<\/tspan>/);
+  assert.match(icon, /DEVELOPED BY/);
+  assert.match(icon, /IAN TECH/);
   assert.match(icon, /linearGradient/);
   assert.equal(icon.includes("<script>"), false);
 });
@@ -534,11 +537,29 @@ test("renders a school-branded manifest and initials icon when runtime identity 
 test("renders square MKJ app-icon artwork in the install manifest", () => {
   const manifest = JSON.parse(renderWebManifest("preview.local", "Mukuyu Junior School", "/icons/mukuyu-app-192.png"));
   assert.deepEqual(manifest.icons, [
-    { src: "/icons/mukuyu-app-192.png?v=4", sizes: "192x192", type: "image/png", purpose: "any" },
-    { src: "/icons/mukuyu-app-512.png?v=4", sizes: "512x512", type: "image/png", purpose: "any maskable" },
+    { src: "/icons/mukuyu-app-192.png?v=5", sizes: "192x192", type: "image/png", purpose: "any" },
+    { src: "/icons/mukuyu-app-512.png?v=5", sizes: "512x512", type: "image/png", purpose: "any maskable" },
   ]);
   assert.equal(manifest.background_color, "#030914");
   assert.equal(manifest.theme_color, "#030914");
+});
+
+test("uses a content-versioned uploaded PNG in the PWA manifest", () => {
+  const bytes = Buffer.from("custom school app icon");
+  const iconPath = versionedSchoolAppIconUrl(bytes);
+  const manifest = JSON.parse(renderWebManifest("preview.local", "Mukuyu Junior School", iconPath));
+  assert.match(iconPath, /^\/__grok\/school-app-icon\.png\?v=[a-f0-9]{16}$/);
+  assert.deepEqual(manifest.icons, [
+    { src: iconPath, sizes: "512x512", type: "image/png", purpose: "any" },
+  ]);
+});
+
+test("ships the colourful Mukuyu app-icon source with the school name and IAN TECH credit", () => {
+  const icon = readFileSync(join(TEMPLATE_ROOT, "public/icons/mukuyu-app-icon.svg"), "utf8");
+  assert.match(icon, /MUKUYU JUNIOR SCHOOL/);
+  assert.match(icon, /<tspan fill="#ffd34f">M<\/tspan><tspan fill="#5af0d2">K<\/tspan><tspan fill="#ff8bbd">J<\/tspan>/);
+  assert.match(icon, /DEVELOPED BY/);
+  assert.match(icon, /IAN TECH/);
 });
 
 test("school name overrides are HTML-escaped in the install tutorial", () => {

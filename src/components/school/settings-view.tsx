@@ -7,13 +7,14 @@ import { ACCESS_AREAS, ACCESS_GROUPS, canActorAccess, type AccessArea, type Acce
 import { DEFAULT_APPEARANCE, can, isAdmin } from "@/lib/school/model";
 import { DEFAULT_WELCOME_DISPLAY, hexToRgba, normalizeWelcomeDisplay, type WelcomeDisplayOptions } from "@/lib/school/welcome-display";
 import { applyPortalBackdropColors, DISPLAY_PALETTES, NATURE_BACKDROP_SCENE_LABELS, PORTAL_BACKDROP_THEMES } from "@/lib/school/display";
-import { addExam, addSubject, deleteSubject, addYear, changePassword, deleteStream, deleteExam, deleteYear, exportParentContacts, exportSchoolBackup, getWelcomePage, listBackupSnapshots, restoreSchoolBackup, saveAppearance, saveBands, saveExams, saveProfile, saveReportOptions, saveStream, saveSubjects, saveTermAssessments, saveTermDate, saveWelcomePage, setActivePeriod, getMarkAuditHistory, saveMarkControl, saveRoleAccessPolicy, getParentLoginAudit, getPortalColorTypes, savePortalColorType } from "@/lib/school/api";
+import { addExam, addSubject, deleteSubject, addYear, changePassword, deleteStream, deleteExam, deleteYear, exportParentContacts, exportSchoolBackup, getWelcomePage, getSuperAdminAppIcon, listBackupSnapshots, restoreSchoolBackup, saveAppearance, saveBands, saveExams, saveProfile, saveReportOptions, saveStream, saveSubjects, saveTermAssessments, saveTermDate, saveWelcomePage, saveSuperAdminAppIcon, setActivePeriod, getMarkAuditHistory, saveMarkControl, saveRoleAccessPolicy, getParentLoginAudit, getPortalColorTypes, savePortalColorType } from "@/lib/school/api";
 import { DEFAULT_MUSIC_OPTIONS, formatPlaylistText, normalizeMusicOptions, parseMusicSetting, parsePlaylistText, type MusicOptions } from "@/lib/school/music";
 import { MusicStudioCard } from "@/components/school/music-studio";
 import { AdminAutomationCards } from "@/components/school/admin-automation-cards";
 import { DEFAULT_ADMISSION_NUMBER_SETTINGS, formatAdmissionNumberExample, type AdmissionNumberSettings } from "@/lib/school/admission-number";
 import { getAdmissionNumberSettings, saveAdmissionNumberSettings } from "@/lib/school/api";
 import { MAX_GZIPPED_BACKUP_BYTES, MAX_WEB_BACKUP_JSON_BYTES } from "@/lib/school/backup-format";
+import { isValidSchoolAppIconDataUrl, MAX_SCHOOL_APP_ICON_BYTES } from "@/lib/school/app-icon";
 
 export function SettingsView({ ws, refresh, flash, beginActivity, onWelcomeChange }: Gate) {
   const canDownloadParentDetails = canActorAccess(ws.roleAccess, ws.me.role, "parentDetails", "download");
@@ -48,6 +49,7 @@ export function SettingsView({ ws, refresh, flash, beginActivity, onWelcomeChang
       {ws.me.role === "super_admin" ? <ParentLoginAuditCard flash={flash} /> : null}
       {ws.me.role === "super_admin" ? <AdmissionNumberFormatCard flash={flash} /> : null}
       {ws.me.role === "super_admin" ? <WelcomePageCard flash={flash} refresh={refresh} beginActivity={beginActivity} onWelcomeChange={onWelcomeChange} /> : null}
+      {ws.me.role === "super_admin" ? <AppIconCard flash={flash} /> : null}
       {ws.me.role === "super_admin" ? <AppearanceColorsCard flash={flash} /> : null}
       {ws.me.role === "super_admin" ? <AdminAutomationCards flash={flash} /> : null}
       {ws.me.role === "super_admin" ? <WhatsAppGroupCard profile={ws.profile} flash={flash} refresh={refresh} /> : null}
@@ -226,6 +228,99 @@ function AdmissionNumberFormatCard({ flash }: Pick<Gate, "flash">) {
       <p className="mt-1 text-xs text-muted">The final number is randomly generated and checked for uniqueness; it is not a sequential count.</p>
     </div>
     <button className={btnClass} type="submit" disabled={!loaded}>Save admission-number format</button>
+  </form>;
+}
+
+function AppIconCard({ flash }: Pick<Gate, "flash">) {
+  const [iconData, setIconData] = useState("");
+  const [savedIconData, setSavedIconData] = useState("");
+  const [loaded, setLoaded] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    getSuperAdminAppIcon()
+      .then(({ appIconData }) => {
+        if (!active) return;
+        setIconData(appIconData);
+        setSavedIconData(appIconData);
+      })
+      .catch((error) => {
+        if (active) flash(errText(error), true);
+      })
+      .finally(() => {
+        if (active) setLoaded(true);
+      });
+    return () => { active = false; };
+  }, [flash]);
+
+  function uploadAppIcon(file?: File) {
+    if (!file) return;
+    if (file.type !== "image/png") {
+      flash("Choose a PNG file for the school app icon.", true);
+      return;
+    }
+    if (file.size > MAX_SCHOOL_APP_ICON_BYTES) {
+      flash("Use an app icon no larger than 250 KB.", true);
+      return;
+    }
+    const reader = new FileReader();
+    reader.onerror = () => flash("The selected app icon could not be read.", true);
+    reader.onload = () => {
+      const dataUrl = String(reader.result ?? "");
+      if (!isValidSchoolAppIconDataUrl(dataUrl)) {
+        flash("Choose a valid square 512 × 512 PNG app icon no larger than 250 KB.", true);
+        return;
+      }
+      const image = new Image();
+      image.onerror = () => flash("The selected PNG could not be decoded as an image.", true);
+      image.onload = () => {
+        if (image.naturalWidth !== 512 || image.naturalHeight !== 512) {
+          flash("App icons must be exactly 512 × 512 pixels.", true);
+          return;
+        }
+        setIconData(dataUrl);
+      };
+      image.src = dataUrl;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  async function saveAppIcon(event: React.FormEvent) {
+    event.preventDefault();
+    if (!isValidSchoolAppIconDataUrl(iconData)) {
+      flash("Choose a valid 512 × 512 PNG app icon no larger than 250 KB.", true);
+      return;
+    }
+    setSaving(true);
+    try {
+      await saveSuperAdminAppIcon({ data: { appIconData: iconData } });
+      setSavedIconData(iconData);
+      const iconUrl = `/__grok/school-app-icon.png?v=${Date.now()}`;
+      document.querySelectorAll<HTMLLinkElement>('link[rel="icon"], link[rel="apple-touch-icon"]').forEach((link) => {
+        link.href = iconUrl;
+      });
+      flash(iconData ? "School app icon saved. New installs will use it." : "Redesigned default app icon restored.");
+    } catch (error) {
+      flash(errText(error), true);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return <form className="space-y-3 rounded-md border border-line bg-card p-4" onSubmit={saveAppIcon}>
+    <h2 className="font-serif text-xl text-navy">School app icon</h2>
+    <p className="text-sm text-muted">Super Admin only. This icon is separate from the welcome-page and school-profile logos. It is used for the browser tab and app install; the redesigned default icon stays active until you save a custom one.</p>
+    <div className="flex flex-wrap items-center gap-4 rounded-lg border border-line bg-paper p-3">
+      <img src={iconData || "/icons/mukuyu-app-512.png?v=5"} alt={iconData ? "Custom school app icon preview" : "Redesigned default school app icon preview"} width={112} height={112} className="size-28 rounded-2xl border border-line bg-white object-contain shadow-sm" />
+      <div className="min-w-0 flex-1">
+        <p className="font-semibold text-navy">{iconData ? "Custom app icon preview" : "Redesigned default icon"}</p>
+        <p className="mt-1 text-xs text-muted">Upload a square 512 × 512 PNG, up to 250 KB. Your selection is only published when you save.</p>
+        {iconData ? <button className={btnGhost + " mt-2"} type="button" onClick={() => setIconData("")}>Use redesigned default icon</button> : null}
+      </div>
+    </div>
+    <label className="block text-sm">Upload custom app icon<input className="mt-2 block w-full text-sm" type="file" accept="image/png,.png" onChange={(event) => { uploadAppIcon(event.currentTarget.files?.[0]); event.currentTarget.value = ""; }} /></label>
+    <button className={btnClass} type="submit" disabled={!loaded || saving || iconData === savedIconData}>{saving ? "Saving app icon…" : "Save app icon"}</button>
   </form>;
 }
 

@@ -17,6 +17,7 @@
 import installPageTemplate from "../../scripts/install-page.html?raw";
 import { grokOgIdentity } from "virtual:grok-og-identity";
 import { getSql } from "../../src/lib/db";
+import { decodeSchoolAppIconDataUrl } from "../../src/lib/school/app-icon";
 import {
   acceptsHtml,
   createHeadInjector,
@@ -25,6 +26,7 @@ import {
   renderInstallPageHtml,
   renderSchoolIconSvg,
   renderWebManifest,
+  versionedSchoolAppIconUrl,
 } from "../../scripts/grok-pwa-shared.mjs";
 
 interface GrokPwaEvent {
@@ -46,6 +48,16 @@ async function schoolBrandName(): Promise<string> {
     return name || "Mukuyu Junior School";
   } catch {
     return "Mukuyu Junior School";
+  }
+}
+
+async function schoolAppIconBytes(): Promise<Uint8Array | null> {
+  try {
+    const sql = await getSql();
+    const rows = await sql<{ app_icon_data: string | null }>`select app_icon_data from welcome_page where id = 1`;
+    return decodeSchoolAppIconDataUrl(rows[0]?.app_icon_data) ?? null;
+  } catch {
+    return null;
   }
 }
 
@@ -84,11 +96,37 @@ export default async function grokPwaMiddleware(
   const urlWithQuery = path + event.url.search;
 
   if (path === "/__grok/manifest.webmanifest" || path === "/__grok/manifest.json") {
-    const schoolName = await schoolBrandName();
-    return new Response(renderWebManifest(requestHost(event), schoolName, "/icons/mukuyu-app-192.png"), {
+    const [schoolName, iconBytes] = await Promise.all([schoolBrandName(), schoolAppIconBytes()]);
+    const iconPath = iconBytes ? versionedSchoolAppIconUrl(iconBytes) : "/icons/mukuyu-app-192.png";
+    return new Response(renderWebManifest(requestHost(event), schoolName, iconPath), {
       headers: {
         "content-type": "application/manifest+json; charset=utf-8",
         "cache-control": "no-cache",
+      },
+    });
+  }
+
+  if (path === "/__grok/school-app-icon.png") {
+    const iconBytes = await schoolAppIconBytes();
+    if (!iconBytes) {
+      return new Response(null, {
+        status: 302,
+        headers: {
+          location: "/icons/mukuyu-app-512.png?v=5",
+          "cache-control": "no-cache",
+        },
+      });
+    }
+    const versionedUrl = versionedSchoolAppIconUrl(iconBytes);
+    const expectedVersion = versionedUrl.split("v=")[1] ?? "";
+    const requestedVersion = event.url.searchParams.get("v");
+    const cacheControl = requestedVersion === expectedVersion
+      ? "public, max-age=31536000, immutable"
+      : requestedVersion ? "no-cache" : "public, max-age=300";
+    return new Response(Buffer.from(iconBytes), {
+      headers: {
+        "content-type": "image/png",
+        "cache-control": cacheControl,
       },
     });
   }

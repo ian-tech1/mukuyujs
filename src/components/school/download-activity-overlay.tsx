@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { SchoolLogo } from "@/components/school/logo";
+import { PortalLoadingBackdrop } from "@/components/school/portal-loading-backdrop";
 
 const DOWNLOAD_LABEL = /\b(download|export)\b/i;
 
@@ -66,41 +67,7 @@ export function DownloadActivityOverlay() {
 
   return (
     <div className="portal-loading pointer-events-none fixed inset-0 z-[200] grid min-h-[100svh] w-full place-items-center overflow-hidden px-6" role="status" aria-live="polite" aria-label="Preparing download">
-      <div className="portal-loading-aurora" aria-hidden="true" />
-      <div className="portal-loading-ribbon-field" aria-hidden="true">
-        <span className="portal-loading-ribbon portal-loading-ribbon-one" />
-        <span className="portal-loading-ribbon portal-loading-ribbon-two" />
-        <span className="portal-loading-ribbon portal-loading-ribbon-three" />
-        <span className="portal-loading-ribbon portal-loading-ribbon-four" />
-        <span className="portal-loading-ribbon-orb portal-loading-ribbon-orb-one" />
-        <span className="portal-loading-ribbon-orb portal-loading-ribbon-orb-two" />
-      </div>
-      <div className="portal-loading-rays" aria-hidden="true" />
-      <div className="portal-loading-atom" aria-hidden="true" />
-      <div className="portal-loading-orbit-glints" aria-hidden="true" />
-      <div className="portal-loading-stars" aria-hidden="true" />
-      <div className="portal-loading-dust" aria-hidden="true" />
-      <div className="portal-loading-motes" aria-hidden="true">
-        <span className="portal-loading-mote portal-loading-mote-one" />
-        <span className="portal-loading-mote portal-loading-mote-two" />
-        <span className="portal-loading-mote portal-loading-mote-three" />
-        <span className="portal-loading-mote portal-loading-mote-four" />
-        <span className="portal-loading-mote portal-loading-mote-five" />
-        <span className="portal-loading-mote portal-loading-mote-six" />
-      </div>
-      <div className="portal-loading-comets" aria-hidden="true">
-        <span className="portal-loading-comet portal-loading-comet-one" />
-        <span className="portal-loading-comet portal-loading-comet-two" />
-        <span className="portal-loading-comet portal-loading-comet-three" />
-      </div>
-      <div className="portal-loading-orbiting-objects" aria-hidden="true">
-        <span className="portal-loading-object portal-loading-object-diamond portal-loading-object-one" />
-        <span className="portal-loading-object portal-loading-object-ring portal-loading-object-five" />
-        <span className="portal-loading-object portal-loading-object-star portal-loading-object-nine" />
-        <span className="portal-loading-object portal-loading-object-hex portal-loading-object-eleven" />
-        <span className="portal-loading-object portal-loading-object-ring portal-loading-object-fourteen" />
-        <span className="portal-loading-object portal-loading-object-star portal-loading-object-fifteen" />
-      </div>
+      <PortalLoadingBackdrop objectDensity="compact" />
       <div className="portal-loading-center-shade" aria-hidden="true" />
       <div className="portal-loading-card text-center">
         <p className="portal-loading-monogram" aria-hidden="true"><span>MKJ</span></p>

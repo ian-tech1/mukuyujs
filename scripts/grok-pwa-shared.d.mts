@@ -9,6 +9,7 @@ export declare function isInstallQuery(url: string | null | undefined): boolean;
 export declare function isDocumentPath(pathname: string | null | undefined): boolean;
 export declare function acceptsHtml(accept: string | null | undefined): boolean;
 export declare function stripInstallParams(url: string | null | undefined): string;
+export declare function versionedSchoolAppIconUrl(bytes: Uint8Array): string;
 export declare function renderInstallPageHtml(
   template: string,
   context?: { host?: string | null; url?: string | null; appName?: string | null },
