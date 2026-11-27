@@ -63,6 +63,21 @@ export const Route = createFileRoute("/portal")({
   component: PortalPage,
 });
 
+function PortalLoadingIdentity({ className = "", status = false }: { className?: string; status?: boolean }) {
+  return (
+    <div className={`portal-loading-card text-center ${className}`} role={status ? "status" : undefined} aria-live={status ? "polite" : undefined}>
+      <p className="portal-loading-monogram" aria-label="Mukuyu Junior School initials"><span>MKJ</span></p>
+      <p className="portal-loading-kicker portal-loading-box portal-loading-box-kicker">MUKUYU JUNIOR SCHOOL · LEARNING PORTAL</p>
+      <span className="portal-loading-orbit" aria-hidden="true"><SchoolLogo className="size-[6.5rem]" /></span>
+      <h1 className="portal-loading-title portal-loading-box portal-loading-box-title mt-5">Mukuyu Junior School</h1>
+      <p className="portal-loading-tagline portal-loading-box portal-loading-box-tagline mt-2">Learn with purpose. Grow with confidence.</p>
+      <p className="portal-loading-message portal-loading-box portal-loading-box-message mt-4 text-sm">Opening your school office and getting everything ready…</p>
+      <div className="portal-loading-track mt-6" aria-hidden="true"><span /></div>
+      <div className="portal-loading-footnote portal-loading-box portal-loading-box-footnote mt-3"><span>Preparing your learning space</span><span className="portal-loading-live"><i aria-hidden="true" /> IN MOTION</span></div>
+    </div>
+  );
+}
+
 function NatureBackdropVideo({ scene, visible, motionEnabled }: { scene: number; visible: boolean; motionEnabled: boolean }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const source = NATURE_BACKDROP_SCENES[scene]?.src ?? NATURE_BACKDROP_SCENES[0].src;
@@ -254,16 +269,7 @@ function PortalPage() {
     return (
       <main className="portal-loading grid min-h-screen place-items-center bg-paper px-6">
         <PortalLoadingBackdrop />
-        <div className="portal-loading-card text-center" role="status" aria-live="polite">
-          <p className="portal-loading-monogram" aria-label="Mukuyu Junior School initials"><span>MKJ</span></p>
-          <p className="portal-loading-kicker portal-loading-box portal-loading-box-kicker">MUKUYU JUNIOR SCHOOL · LEARNING PORTAL</p>
-          <span className="portal-loading-orbit" aria-hidden="true"><SchoolLogo className="size-[6.5rem]" /></span>
-          <h1 className="portal-loading-title portal-loading-box portal-loading-box-title mt-5">Mukuyu Junior School</h1>
-          <p className="portal-loading-tagline portal-loading-box portal-loading-box-tagline mt-2">Learn with purpose. Grow with confidence.</p>
-          <p className="portal-loading-message portal-loading-box portal-loading-box-message mt-4 text-sm">Opening your school office and getting everything ready…</p>
-          <div className="portal-loading-track mt-6" aria-hidden="true"><span /></div>
-          <div className="portal-loading-footnote portal-loading-box portal-loading-box-footnote mt-3"><span>Preparing your learning space</span><span className="portal-loading-live"><i aria-hidden="true" /> IN MOTION</span></div>
-        </div>
+        <PortalLoadingIdentity status />
       </main>
     );
   }
@@ -287,19 +293,12 @@ function PortalPage() {
       <InstallAppPrompt />
       <aside id="portal-navigation" aria-label="Main navigation" className={`portal-navigation-drawer flex min-h-screen flex-col overflow-y-auto ${open ? "portal-loading fixed inset-0 z-20" : "hidden"} bg-navy text-paper lg:sticky lg:top-0 lg:block lg:h-screen`}>
         {open ? <PortalLoadingBackdrop className="portal-navigation-backdrop" objectDensity="full" /> : null}
-        <div className="flex items-center justify-between border-b border-white/10 px-5 py-5 lg:border-b-0">
-          <div className="flex items-center gap-2">
-            <SchoolLogo className="size-12" />
-            <div>
-              <span className="portal-nav-monogram" aria-label="Mukuyu Junior School initials">MKJ</span>
-              <p className="font-serif text-xl leading-tight">Mukuyu JSS</p>
-              <p className="text-base text-brass-soft">Exam portal</p>
-            </div>
-          </div>
+        <div className="flex justify-end px-5 pt-3">
           <button className="lg:hidden" type="button" onClick={() => setOpen(false)} aria-label="Close menu">
             <X />
           </button>
         </div>
+        {open ? <PortalLoadingIdentity className="portal-navigation-refresh-card" /> : null}
         <nav className="space-y-2 px-4 py-4">
           {views.map((item) => (
             <button

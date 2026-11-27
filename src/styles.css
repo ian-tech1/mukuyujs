@@ -1701,17 +1701,7 @@ html[data-portal-motion="reduced"] .portal-loading:not(.portal-navigation-drawer
 /* Only the open hamburger drawer gets the refresh artwork; dashboard tabs keep their original backgrounds. */
 @media (max-width: 1023px) {
   .portal-navigation-drawer.portal-loading {
-    background-color: #071225 !important;
-    background-image: none !important;
-    animation: none !important;
-  }
-
-  .portal-navigation-drawer.portal-loading::before,
-  .portal-navigation-drawer.portal-loading::after {
-    display: none !important;
-    animation: none !important;
-    filter: none !important;
-    mix-blend-mode: normal !important;
+    overflow-y: auto;
   }
 
   .portal-navigation-backdrop {
@@ -1728,45 +1718,68 @@ html[data-portal-motion="reduced"] .portal-loading:not(.portal-navigation-drawer
     z-index: 1;
   }
 
-  .portal-navigation-backdrop .portal-loading-aurora,
-  .portal-navigation-backdrop .portal-loading-aurora::before,
-  .portal-navigation-backdrop .portal-loading-aurora::after,
-  .portal-navigation-backdrop .portal-loading-ribbon,
-  .portal-navigation-backdrop .portal-loading-ribbon-orb,
-  .portal-navigation-backdrop .portal-loading-rays,
-  .portal-navigation-backdrop .portal-loading-rays::before,
-  .portal-navigation-backdrop .portal-loading-rays::after,
-  .portal-navigation-backdrop .portal-loading-atom::before,
-  .portal-navigation-backdrop .portal-loading-atom::after,
-  .portal-navigation-backdrop .portal-loading-orbit-glints,
-  .portal-navigation-backdrop .portal-loading-stars,
-  .portal-navigation-backdrop .portal-loading-dust,
-  .portal-navigation-backdrop .portal-loading-dust::before,
-  .portal-navigation-backdrop .portal-loading-dust::after,
-  .portal-navigation-backdrop .portal-loading-mote {
-    animation: none !important;
-    will-change: auto;
+  .portal-navigation-refresh-card {
+    width: min(34rem, calc(100% - 1.5rem));
+    flex: 0 0 auto;
+    margin: -.25rem auto .25rem;
+    padding: .65rem .85rem .9rem;
   }
 
-  .portal-navigation-backdrop .portal-loading-aurora,
-  .portal-navigation-backdrop .portal-loading-rays {
-    filter: none !important;
-    mix-blend-mode: normal !important;
+  .portal-navigation-refresh-card .portal-loading-monogram {
+    margin-bottom: .15rem;
+    font-size: clamp(3.4rem, 12vw, 4.2rem);
   }
 
-  .portal-navigation-backdrop .portal-loading-ribbon-orb {
-    filter: blur(16px) !important;
+  .portal-navigation-refresh-card .portal-loading-kicker {
+    margin-bottom: .45rem;
+    font-size: .58rem;
+    letter-spacing: .1em;
   }
 
-  .portal-navigation-backdrop .portal-loading-comets {
-    display: none !important;
+  .portal-navigation-refresh-card .portal-loading-orbit {
+    width: 4.5rem;
+    height: 4.5rem;
+    border-width: 3px;
   }
 
-  .portal-navigation-backdrop .portal-loading-object {
-    filter: none !important;
-    mix-blend-mode: normal !important;
-    animation-name: portal-loading-object-orbit;
-    will-change: transform, opacity;
+  .portal-navigation-refresh-card .portal-loading-orbit > img {
+    width: 2.8rem;
+    height: 2.8rem;
+  }
+
+  .portal-navigation-refresh-card .portal-loading-title {
+    margin-top: .45rem !important;
+    font-size: 1.45rem;
+  }
+
+  .portal-navigation-refresh-card .portal-loading-tagline {
+    margin-top: .25rem !important;
+    font-size: .82rem;
+  }
+
+  .portal-navigation-refresh-card .portal-loading-message {
+    margin-top: .45rem !important;
+    font-size: .72rem;
+  }
+
+  .portal-navigation-refresh-card .portal-loading-track {
+    width: min(15rem, 72vw);
+    height: .32rem;
+    margin: .65rem auto 0 !important;
+    overflow: hidden;
+  }
+
+  .portal-navigation-refresh-card .portal-loading-track span {
+    display: block;
+    width: 28%;
+    height: 100%;
+    animation: mukuyu-feedback-progress 1.3s ease-in-out infinite alternate;
+  }
+
+  .portal-navigation-refresh-card .portal-loading-footnote {
+    margin-top: .5rem !important;
+    padding-top: .45rem;
+    font-size: .53rem;
   }
 }
 
