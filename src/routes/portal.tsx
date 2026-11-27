@@ -319,12 +319,12 @@ function PortalPage() {
       return;
     }
     if (tabOpeningTimerRef.current !== null) window.clearTimeout(tabOpeningTimerRef.current);
+    setPendingView(item);
+    previousViewRef.current = item;
+    void navigate({ to: "/portal", search: { view: item } });
     tabOpeningTimerRef.current = window.setTimeout(() => {
-      setPendingView(item);
-      previousViewRef.current = item;
       setTabOpeningView(null);
       tabOpeningTimerRef.current = null;
-      void navigate({ to: "/portal", search: { view: item } });
     }, 4000);
   }
 
