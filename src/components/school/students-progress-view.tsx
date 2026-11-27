@@ -17,6 +17,7 @@ export function StudentsProgressView({ ws: sourceWs, flash }: Gate) {
   const [gradeFilter, setGradeFilter] = useState("all");
   const [streamFilter, setStreamFilter] = useState("all");
   const [subjectFilter, setSubjectFilter] = useState(orderedSubjects[0]?.id ?? "all");
+  const [pdfBusy, setPdfBusy] = useState(false);
 
   const selectedPeriods = useMemo(() => yearIds.flatMap((yearId) => termIds.map((termId) => ({ yearId, termId }))), [yearIds, termIds]);
   const selectedPeriodKeys = useMemo(() => new Set(selectedPeriods.map(({ yearId, termId }) => `${yearId}|${termId}`)), [selectedPeriods]);
@@ -46,11 +47,7 @@ export function StudentsProgressView({ ws: sourceWs, flash }: Gate) {
   const progressStreams = sourceWs.streams.filter((stream) => gradeFilter === "all" || stream.gradeId === gradeFilter);
 
   function exportCsv(scope: "class" | "stream" | "grade") {
-    const scopeLearners = yearLearners.filter((learner) => {
-      if (scope === "grade") return gradeFilter !== "all" && learner.gradeId === gradeFilter;
-      if (scope === "stream") return streamFilter !== "all" && learner.streamId === streamFilter;
-      return gradeFilter !== "all" && streamFilter !== "all" && learner.gradeId === gradeFilter && learner.streamId === streamFilter;
-    });
+    const scopeLearners = getScopeLearners(scope);
     const rows = scopeLearners.map((learner) => {
       const values = columns.map(({ yearId, termId, exam }) => valueFor(learner, yearId, termId, exam, selectedSubject, selectedMarks));
       const recorded = values.filter((value): value is number => value != null);
@@ -68,11 +65,74 @@ export function StudentsProgressView({ ws: sourceWs, flash }: Gate) {
     flash(`Students progress downloaded for the selected ${scope}.`);
   }
 
+  async function exportPdf(scope: "class" | "stream" | "grade") {
+    const scopeLearners = getScopeLearners(scope);
+    if (!scopeLearners.length || !columns.length) return;
+    setPdfBusy(true);
+    try {
+      const { jsPDF } = await import("jspdf");
+      const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const margin = 10;
+      const title = `Mukuyu Junior School · Students progress · ${selectedSubject?.name ?? "All subjects (overall)"}`;
+      const subtitle = `${scope === "class" ? "Class" : scope === "stream" ? "Stream" : "Grade"} report · ${scopeLearners.length} students · ${columns.length} selected exams`;
+      const firstWidth = 47;
+      const secondWidth = 34;
+      const changeWidth = 18;
+      const examWidth = Math.max(13, (pageWidth - margin * 2 - firstWidth - secondWidth - changeWidth) / columns.length);
+      const headers = ["Student", "Grade / stream", ...columns.map(({ yearId, termId, exam }) => columnLabel(sourceWs, yearId, termId, exam)), "Change"];
+      const rows = scopeLearners.map((learner) => {
+        const values = columns.map(({ yearId, termId, exam }) => valueFor(learner, yearId, termId, exam, selectedSubject, selectedMarks));
+        const recorded = values.filter((value): value is number => value != null);
+        const change = recorded.length > 1 ? recorded.at(-1)! - recorded[0]! : null;
+        return [learner.fullName, `${sourceWs.grades.find((grade) => grade.id === learner.gradeId)?.name ?? "—"} / ${sourceWs.streams.find((stream) => stream.id === learner.streamId)?.name ?? "—"}`, ...values, change];
+      });
+      let y = 30;
+      let page = 1;
+      const drawHeader = () => {
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(13);
+        doc.text(title, margin, 12);
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8);
+        doc.text(subtitle, margin, 18);
+        doc.text(`Generated ${new Date().toLocaleString()}`, pageWidth - margin, 18, { align: "right" });
+        doc.setFontSize(6);
+        let x = margin;
+        headers.forEach((header, index) => { const width = index === 0 ? firstWidth : index === 1 ? secondWidth : index === headers.length - 1 ? changeWidth : examWidth; doc.setFillColor(232, 241, 237); doc.rect(x, y - 5, width, 9, "F"); doc.text(shorten(header, width < 20 ? 16 : 30), x + 1, y, { angle: width < 20 ? 90 : 0 }); x += width; });
+        y += 9;
+      };
+      drawHeader();
+      for (const row of rows) {
+        if (y > pageHeight - 12) { doc.setFontSize(7); doc.text(`Page ${page}`, pageWidth - margin, pageHeight - 5, { align: "right" }); doc.addPage(); page += 1; y = 18; drawHeader(); }
+        let x = margin;
+        row.forEach((value, index) => { const width = index === 0 ? firstWidth : index === 1 ? secondWidth : index === row.length - 1 ? changeWidth : examWidth; doc.setDrawColor(220, 220, 220); doc.rect(x, y - 5, width, 7); doc.setFont("helvetica", index === 0 ? "bold" : "normal"); doc.setFontSize(6); const text = typeof value === "number" ? value.toFixed(1) : value == null ? "—" : String(value); doc.text(shorten(text, width < 20 ? 12 : Math.max(12, Math.floor(width * 2.2))), index > 1 ? x + width - 1 : x + 1, y, { align: index > 1 ? "right" : "left" }); x += width; });
+        y += 7;
+      }
+      doc.setFontSize(7);
+      doc.text(`Page ${page}`, pageWidth - margin, pageHeight - 5, { align: "right" });
+      const label = scope === "grade" ? sourceWs.grades.find((grade) => grade.id === gradeFilter)?.name : scope === "stream" ? sourceWs.streams.find((stream) => stream.id === streamFilter)?.name : `${sourceWs.grades.find((grade) => grade.id === gradeFilter)?.name}-${sourceWs.streams.find((stream) => stream.id === streamFilter)?.name}`;
+      doc.save(`mukuyu-students-progress-${scope}-${String(label || "selection").replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "").toLowerCase()}.pdf`);
+      flash(`Students progress PDF downloaded for the selected ${scope}.`);
+    } finally {
+      setPdfBusy(false);
+    }
+  }
+
+  function getScopeLearners(scope: "class" | "stream" | "grade") {
+    return yearLearners.filter((learner) => {
+      if (scope === "grade") return gradeFilter !== "all" && learner.gradeId === gradeFilter;
+      if (scope === "stream") return streamFilter !== "all" && learner.streamId === streamFilter;
+      return gradeFilter !== "all" && streamFilter !== "all" && learner.gradeId === gradeFilter && learner.streamId === streamFilter;
+    });
+  }
+
   if (sourceWs.me.role !== "teacher" && !isAdmin(sourceWs.me.role)) return null;
 
   return <div className="space-y-6">
     <header className="flex flex-wrap items-start justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">Teacher and admin view</p><h1 className="mt-1 font-serif text-3xl text-navy">Students progress</h1><p className="mt-1 max-w-3xl text-sm text-muted">Compare students across any combination of academic years, terms, exams, subjects, grades, and streams. Positive change compares the first selected exam with the latest selected exam.</p></div><span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-800">{progressRows.length} students</span></header>
-    <section className="rounded-2xl border border-line bg-card p-4 shadow-card" aria-label="Students progress filters"><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"><MultiChoiceDropdown label="Academic years" options={orderedYears.map((year) => ({ id: year.id, label: year.name }))} selected={yearIds} onChange={setYearIds} /><MultiChoiceDropdown label="Terms" options={orderedTerms.map((term) => ({ id: term.id, label: term.name }))} selected={termIds} onChange={setTermIds} /><MultiChoiceDropdown label="Exams" options={orderedExams.map((exam) => ({ id: exam.id, label: exam.name }))} selected={examIds} onChange={setExamIds} /><label className="text-xs font-semibold text-navy">Subject<select className={`${inputClass} mt-1`} value={subjectFilter} onChange={(event) => setSubjectFilter(event.target.value)}><option value="all">All subjects (overall)</option>{orderedSubjects.map((subject) => <option key={subject.id} value={subject.id}>{subject.name}</option>)}</select></label></div><p className="mt-2 text-xs text-muted">Tap a selector to check or uncheck as many years, terms, and exams as needed.</p><div className="mt-4 grid gap-3 sm:grid-cols-2"><label className="text-xs font-semibold text-navy">Grade scope<select className={`${inputClass} mt-1`} value={gradeFilter} onChange={(event) => { setGradeFilter(event.target.value); setStreamFilter("all"); }}><option value="all">All grades</option>{sourceWs.grades.map((grade) => <option key={grade.id} value={grade.id}>{grade.name}</option>)}</select></label><label className="text-xs font-semibold text-navy">Stream scope<select className={`${inputClass} mt-1`} value={streamFilter} onChange={(event) => setStreamFilter(event.target.value)}><option value="all">All streams</option>{progressStreams.map((stream) => <option key={stream.id} value={stream.id}>{sourceWs.grades.find((grade) => grade.id === stream.gradeId)?.name} · {stream.name}</option>)}</select></label></div><div className="mt-4 flex flex-wrap gap-2"><button type="button" className={btnDownload.emerald} disabled={gradeFilter === "all" || streamFilter === "all" || !columns.length} onClick={() => exportCsv("class")}>Download class progress</button><button type="button" className={btnDownload.blue} disabled={streamFilter === "all" || !columns.length} onClick={() => exportCsv("stream")}>Download stream progress</button><button type="button" className={btnDownload.violet} disabled={gradeFilter === "all" || !columns.length} onClick={() => exportCsv("grade")}>Download grade progress</button></div></section>
+    <section className="rounded-2xl border border-line bg-card p-4 shadow-card" aria-label="Students progress filters"><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"><MultiChoiceDropdown label="Academic years" options={orderedYears.map((year) => ({ id: year.id, label: year.name }))} selected={yearIds} onChange={setYearIds} /><MultiChoiceDropdown label="Terms" options={orderedTerms.map((term) => ({ id: term.id, label: term.name }))} selected={termIds} onChange={setTermIds} /><MultiChoiceDropdown label="Exams" options={orderedExams.map((exam) => ({ id: exam.id, label: exam.name }))} selected={examIds} onChange={setExamIds} /><label className="text-xs font-semibold text-navy">Subject<select className={`${inputClass} mt-1`} value={subjectFilter} onChange={(event) => setSubjectFilter(event.target.value)}><option value="all">All subjects (overall)</option>{orderedSubjects.map((subject) => <option key={subject.id} value={subject.id}>{subject.name}</option>)}</select></label></div><p className="mt-2 text-xs text-muted">Tap a selector to check or uncheck as many years, terms, and exams as needed.</p><div className="mt-4 grid gap-3 sm:grid-cols-2"><label className="text-xs font-semibold text-navy">Grade scope<select className={`${inputClass} mt-1`} value={gradeFilter} onChange={(event) => { setGradeFilter(event.target.value); setStreamFilter("all"); }}><option value="all">All grades</option>{sourceWs.grades.map((grade) => <option key={grade.id} value={grade.id}>{grade.name}</option>)}</select></label><label className="text-xs font-semibold text-navy">Stream scope<select className={`${inputClass} mt-1`} value={streamFilter} onChange={(event) => setStreamFilter(event.target.value)}><option value="all">All streams</option>{progressStreams.map((stream) => <option key={stream.id} value={stream.id}>{sourceWs.grades.find((grade) => grade.id === stream.gradeId)?.name} · {stream.name}</option>)}</select></label></div><div className="mt-4 flex flex-wrap gap-2"><button type="button" className={btnDownload.emerald} disabled={gradeFilter === "all" || streamFilter === "all" || !columns.length || pdfBusy} onClick={() => exportCsv("class")}>Download class progress CSV</button><button type="button" className={btnDownload.blue} disabled={streamFilter === "all" || !columns.length || pdfBusy} onClick={() => exportCsv("stream")}>Download stream progress CSV</button><button type="button" className={btnDownload.violet} disabled={gradeFilter === "all" || !columns.length || pdfBusy} onClick={() => exportCsv("grade")}>Download grade progress CSV</button><button type="button" className={btnDownload.rose} disabled={gradeFilter === "all" || streamFilter === "all" || !columns.length || pdfBusy} onClick={() => exportPdf("class")}>{pdfBusy ? "Preparing PDF…" : "Download class progress PDF"}</button><button type="button" className={btnDownload.rose} disabled={streamFilter === "all" || !columns.length || pdfBusy} onClick={() => exportPdf("stream")}>{pdfBusy ? "Preparing PDF…" : "Download stream progress PDF"}</button><button type="button" className={btnDownload.rose} disabled={gradeFilter === "all" || !columns.length || pdfBusy} onClick={() => exportPdf("grade")}>{pdfBusy ? "Preparing PDF…" : "Download grade progress PDF"}</button></div></section>
     <section className="overflow-x-auto rounded-xl border border-line bg-card" aria-label="Exam-over-exam student progress"><div className="border-b border-line bg-emerald-50/60 px-3 py-2 text-xs font-semibold text-emerald-800">Showing {selectedSubject?.name ?? "all subjects (overall)"} across {columns.length} selected exam{columns.length === 1 ? "" : "s"}</div><table className="w-full min-w-[980px] text-sm"><thead><tr className="border-b border-line bg-paper text-left"><th className="sticky left-0 bg-paper p-3">Student</th><th className="p-3">Grade / stream</th>{columns.map(({ yearId, termId, exam }) => <th key={`${yearId}|${termId}|${exam.id}`} className="p-3 text-right">{columnLabel(sourceWs, yearId, termId, exam)}</th>)}<th className="p-3 text-right">Change</th></tr></thead><tbody>{progressRows.length && columns.length ? progressRows.map(({ board, values, change }) => <tr key={board.learner.id} className="border-b border-line/70 last:border-0"><td className="sticky left-0 bg-card p-3"><span className="font-semibold text-navy">{board.learner.fullName}</span><span className="block text-xs text-muted">{board.learner.admissionNumber || "No admission number"}</span></td><td className="p-3 text-xs text-muted">{sourceWs.grades.find((grade) => grade.id === board.learner.gradeId)?.name || "—"} · {sourceWs.streams.find((stream) => stream.id === board.learner.streamId)?.name || "No stream"}</td>{values.map((value, index) => <td key={columns[index] ? `${columns[index].yearId}|${columns[index].termId}|${columns[index].exam.id}` : index} className="p-3 text-right font-semibold">{value == null ? "—" : value.toFixed(1)}</td>)}<td className={`p-3 text-right font-bold ${change == null ? "text-muted" : change >= 0 ? "text-good" : "text-bad"}`}>{change == null ? "—" : `${change >= 0 ? "+" : ""}${change.toFixed(1)}`}</td></tr>) : <tr><td colSpan={columns.length + 3} className="p-6 text-center text-sm text-muted">{columns.length ? "No students or recorded exam marks match this scope yet." : "Select at least one academic year, term, and exam."}</td></tr>}</tbody></table></section>
     <p className="text-xs text-muted">Progress and downloads use every selected year–term–exam combination. Student results remain subject to the existing marks-view permissions.</p>
   </div>;
@@ -86,6 +146,10 @@ function valueFor(learner: Learner, yearId: string, termId: string, exam: Exam, 
 
 function columnLabel(ws: Gate["ws"], yearId: string, termId: string, exam: Exam) {
   return `${ws.years.find((year) => year.id === yearId)?.name ?? yearId} · ${ws.terms.find((term) => term.id === termId)?.name ?? termId} · ${exam.name}`;
+}
+
+function shorten(value: string, max: number) {
+  return value.length > max ? `${value.slice(0, Math.max(1, max - 1))}…` : value;
 }
 
 function MultiChoiceDropdown({ label, options, selected, onChange }: { label: string; options: Array<{ id: string; label: string }>; selected: string[]; onChange: (value: string[]) => void }) {
