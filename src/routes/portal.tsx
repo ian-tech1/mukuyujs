@@ -286,11 +286,16 @@ function PortalPage() {
   const requestedView = pendingView ?? view;
   const current = views.includes(requestedView) ? requestedView : views[0];
   function navigateToView(item: string) {
+    if (item === current) {
+      setOpen(false);
+      return;
+    }
     setPendingView(item);
     previousViewRef.current = item;
     setOpen(false);
     setDisplaySettingsOpen(false);
     window.scrollTo(0, 0);
+    showActivity(`Opening ${LABELS[item] ?? item}…`, 280);
     void navigate({ to: "/portal", search: { view: item } });
   }
 
