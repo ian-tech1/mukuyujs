@@ -1762,6 +1762,18 @@ html[data-portal-motion="reduced"] .portal-loading-opening .portal-loading-detai
 .portal-loading-tab-opening .portal-loading-motes {
   opacity: .72;
 }
+.portal-tab-opening-active .portal-page-content::before,
+.portal-tab-opening-active .portal-page-content::after,
+.portal-tab-opening-active .portal-background-scene,
+.portal-tab-opening-active .portal-panel-color-motion,
+.portal-tab-opening-active .portal-page-content * {
+  animation-play-state: paused !important;
+  transition: none !important;
+}
+.portal-tab-opening-active .portal-nature-scene,
+.portal-tab-opening-active .portal-nature-video {
+  visibility: hidden !important;
+}
 @keyframes mukuyu-feedback-progress {
   from { transform: translateX(0); }
   to { transform: translateX(250%); }
