@@ -1905,6 +1905,53 @@ html[data-portal-motion="reduced"] .portal-opening-link .portal-loading-card::af
 
 /* The dashboard overview used to animate multiple full-page gradient images simultaneously.
    Keep its school-colour canvas and scene changes, but stop background-position/filter repaints. */
+.dashboard-tab-surface {
+  isolation: isolate;
+  padding: .15rem;
+}
+.dashboard-tab-surface::before,
+.dashboard-tab-surface::after {
+  content: "";
+  position: absolute;
+  inset: -.75rem -1rem;
+  z-index: -1;
+  pointer-events: none;
+  border-radius: 1.5rem;
+}
+.dashboard-tab-surface::before {
+  background:
+    radial-gradient(circle at 14% 17%, rgba(91, 213, 255, .28) 0 1px, transparent 3px),
+    radial-gradient(circle at 42% 21%, rgba(255, 222, 148, .82) 0 2px, transparent 4px),
+    radial-gradient(circle at 81% 28%, rgba(117, 226, 255, .35) 0 1px, transparent 3px),
+    radial-gradient(circle at 76% 72%, rgba(232, 139, 255, .34) 0 2px, transparent 4px),
+    radial-gradient(ellipse at 50% 52%, rgba(40, 105, 190, .48), transparent 58%),
+    linear-gradient(145deg, #071225 0%, #17264e 48%, #302347 100%);
+  opacity: .96;
+  animation: dashboard-cosmic-breathe 18s ease-in-out infinite alternate;
+}
+.dashboard-tab-surface::after {
+  background:
+    linear-gradient(168deg, transparent 21%, rgba(111, 213, 255, .18) 23% 27%, transparent 29%),
+    linear-gradient(164deg, transparent 64%, rgba(255, 155, 220, .14) 66% 70%, transparent 72%),
+    radial-gradient(ellipse 35% 55% at 52% 48%, transparent 58%, rgba(83, 219, 255, .2) 59%, transparent 60%),
+    radial-gradient(ellipse 46% 30% at 52% 50%, transparent 68%, rgba(232, 139, 255, .17) 69%, transparent 70%);
+  background-size: 100% 100%;
+  mix-blend-mode: screen;
+  opacity: .72;
+  animation: dashboard-cosmic-drift 26s ease-in-out infinite alternate;
+}
+.dashboard-tab-surface > * { position: relative; z-index: 1; }
+.dashboard-tab-surface[data-dashboard-section="performance"]::before { filter: hue-rotate(28deg); }
+.dashboard-tab-surface[data-dashboard-section="quality"]::before { filter: hue-rotate(70deg); }
+.dashboard-tab-surface[data-dashboard-section="interventions"]::before { filter: hue-rotate(315deg); }
+@keyframes dashboard-cosmic-breathe {
+  from { transform: scale(1) translate3d(-.5%, .3%, 0); }
+  to { transform: scale(1.04) translate3d(.8%, -.6%, 0); }
+}
+@keyframes dashboard-cosmic-drift {
+  from { background-position: 0% 0%; transform: translate3d(-.7%, .5%, 0); }
+  to { background-position: 100% 100%; transform: translate3d(.8%, -.6%, 0); }
+}
 .portal-animated-background[data-portal-section="home"] {
   background-size: 100% 100%;
   animation: none !important;
@@ -2059,6 +2106,10 @@ html[data-portal-motion="reduced"] .welcome-animated.welcome-hero::after {
 
 /* Mobile portal: show the selected tab immediately and avoid compositor/repaint work in Chrome. */
 @media (max-width: 1023px) {
+  .dashboard-tab-surface::before,
+  .dashboard-tab-surface::after {
+    animation: none !important;
+  }
   .portal-animated-background,
   .portal-page-content,
   .portal-page-content::before,
