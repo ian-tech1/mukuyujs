@@ -1499,7 +1499,7 @@ html[data-portal-motion="reduced"] .portal-loading-opening .portal-loading-detai
     filter: none !important;
     will-change: auto !important;
     transform-style: flat !important;
-    animation-name: portal-loading-mobile-object-drift !important;
+    animation-name: portal-loading-mobile-object-spin !important;
   }
   .portal-loading-opening.portal-opening-link .portal-loading-orbit {
     filter: none !important;
@@ -1519,9 +1519,9 @@ html[data-portal-motion="reduced"] .portal-loading-opening .portal-loading-detai
   .portal-loading-opening.portal-opening-link .portal-loading-center-shade { filter: none !important; }
 }
 
-@keyframes portal-loading-mobile-object-drift {
-  from { opacity: .76; transform: translate3d(0, 0, 0) rotate(0deg) scale(.92); }
-  to { opacity: 1; transform: translate3d(var(--object-dx, 24px), var(--object-dy, -24px), 0) rotate(28deg) scale(1.08); }
+@keyframes portal-loading-mobile-object-spin {
+  from { opacity: .82; transform: translate3d(0, 0, 0) rotate(0deg) scale(.92); }
+  to { opacity: 1; transform: translate3d(var(--object-dx, 24px), var(--object-dy, -24px), 0) rotate(360deg) scale(1.12); }
 }
 @keyframes portal-loading-mobile-orbit { to { transform: rotate(360deg); } }
 
@@ -1674,12 +1674,14 @@ html[data-portal-motion="reduced"] .portal-loading-opening .portal-loading-detai
 @media (prefers-reduced-motion: reduce) {
   .portal-loading:not(.portal-navigation-drawer)::before { animation: none !important; }
   .portal-loading:not(.portal-navigation-drawer) .portal-loading-backdrop::before,
+  .portal-loading:not(.portal-navigation-drawer) .portal-loading-object,
   .portal-loading:not(.portal-navigation-drawer).portal-loading-action-feedback .portal-loading-track span { animation: none !important; }
 }
 html[data-portal-motion="reduced"] .portal-loading:not(.portal-navigation-drawer)::before {
   animation: none !important;
 }
 html[data-portal-motion="reduced"] .portal-loading:not(.portal-navigation-drawer) .portal-loading-backdrop::before,
+html[data-portal-motion="reduced"] .portal-loading:not(.portal-navigation-drawer) .portal-loading-object,
 html[data-portal-motion="reduced"] .portal-loading:not(.portal-navigation-drawer).portal-loading-action-feedback .portal-loading-track span {
   animation: none !important;
 }
