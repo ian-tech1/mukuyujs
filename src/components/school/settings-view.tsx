@@ -545,7 +545,7 @@ function AppearanceColorsCard({ flash }: Pick<Gate, "flash">) {
   return <section className="rounded-md border border-line bg-card p-4 space-y-4">
     <div>
       <h2 className="font-serif text-xl text-navy">Portal backdrop scenes</h2>
-      <p className="mt-1 text-sm text-muted">Super Admin only. This school-wide control selects the static background treatment behind the full signed-in portal shell; cards, tables, forms and controls remain readable.</p>
+      <p className="mt-1 text-sm text-muted">Super Admin only. This single school-wide control changes the large inner page background—not the cards, tables, forms, controls, navigation or report cards.</p>
     </div>
     <div className="flex flex-wrap gap-2">{DISPLAY_PALETTES.map((preset) => <button key={preset.id} type="button" className={btnGhost} onClick={() => choosePreset(preset.colors)}>{preset.name}</button>)}</div>
     <div className="space-y-3 rounded-lg border border-line bg-paper p-3">
@@ -553,23 +553,23 @@ function AppearanceColorsCard({ flash }: Pick<Gate, "flash">) {
       <div className="grid gap-2 sm:grid-cols-3" role="group" aria-label="School-wide background mode">
         {PORTAL_BACKDROP_THEMES.map((theme) => {
           const selected = (colors.backdropTheme ?? "auto-sections") === theme.id;
-          const label = theme.id === "auto-sections" ? "Static purpose accents" : theme.id === "nature-cycle" ? "Static nature palette" : "Mukuyu Starfall";
+          const label = theme.id === "auto-sections" ? "Automatic 18-scene cycle" : theme.id === "nature-cycle" ? "Mukuyu Nature Motion" : "Mukuyu Starfall";
           const description = theme.id === "auto-sections"
-            ? "A static orbital sky with section-specific colour accents for each portal tab."
+            ? "One mode automatically rotates through all 18 moving scenes every five seconds; scenes are not selected individually."
             : theme.id === "nature-cycle"
-              ? "A static nature-tinted variant; nature videos are not loaded in the signed-in portal."
-              : "The original Mukuyu Starfall background, preserved as a static alternative.";
+              ? "A separate monochrome mode: 15 moving nature and wildlife scenes cycle automatically every five seconds, without colour gradients or glow layers."
+              : "The original Mukuyu Starfall background, preserved as an alternative.";
           return <button key={theme.id} type="button" disabled={!loaded} aria-pressed={selected} onClick={() => void chooseBackdropTheme(theme.id)} className={`rounded-md border p-3 text-left transition-colors disabled:opacity-60 ${selected ? "border-navy bg-navy text-white shadow-sm" : "border-line bg-card text-ink hover:border-navy"}`}>
             <span className="block font-semibold">{label}</span>
             <span className={`mt-1 block text-xs ${selected ? "text-white/85" : "text-muted"}`}>{description}</span>
           </button>;
         })}
       </div>
-      <p className="text-xs text-muted">These modes apply behind the full signed-in portal. Its wallpaper stays static for Chrome. Nature video assets are not downloaded or played in the portal; the scene catalogue is: {NATURE_BACKDROP_SCENE_LABELS.join(" · ")}.</p>
+      <p className="text-xs text-muted">All modes are school-wide and stay behind the large inner page only; cards and tables remain unchanged. The 15 nature scenes are: {NATURE_BACKDROP_SCENE_LABELS.join(" · ")}.</p>
     </div>
     <div className="space-y-3 rounded-lg border border-cyan-200 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 p-4 text-white shadow-card">
-      <div><h3 className="font-semibold text-white">Automatic text clarity &amp; colour motion</h3><p className="mt-1 text-sm text-slate-200">School-wide controls for page titles and their lead messages. The contrast guard adds a dark, soft backing and crisp outline so backgrounds cannot wash the words out.</p></div>
-      <label className="flex items-start gap-3 rounded-md border border-white/15 bg-white/5 p-3 text-sm"><input className="mt-1" type="checkbox" checked={colors.autoTextContrast !== false} disabled={!loaded || textSettingsSaving} onChange={(event) => void updateTextOption("autoTextContrast", event.target.checked)} /><span><span className="block font-semibold">Protect page titles and lead messages</span><span className="block text-xs text-slate-300">Keeps text clear over the selected static backdrop, without recolouring cards, tables, buttons, inputs, or report-card content.</span></span></label>
+      <div><h3 className="font-semibold text-white">Automatic text clarity &amp; colour motion</h3><p className="mt-1 text-sm text-slate-200">School-wide controls for page titles and their lead messages. The contrast guard adds a dark, soft backing and crisp outline so moving backgrounds cannot wash the words out.</p></div>
+      <label className="flex items-start gap-3 rounded-md border border-white/15 bg-white/5 p-3 text-sm"><input className="mt-1" type="checkbox" checked={colors.autoTextContrast !== false} disabled={!loaded || textSettingsSaving} onChange={(event) => void updateTextOption("autoTextContrast", event.target.checked)} /><span><span className="block font-semibold">Protect page titles and lead messages</span><span className="block text-xs text-slate-300">Keeps text clear over the selected animated scene, without recolouring cards, tables, buttons, inputs, or report-card content.</span></span></label>
       <label className="flex items-start gap-3 rounded-md border border-white/15 bg-white/5 p-3 text-sm"><input className="mt-1" type="checkbox" checked={colors.textColorCycle !== false} disabled={!loaded || textSettingsSaving || colors.autoTextContrast === false} onChange={(event) => void updateTextOption("textColorCycle", event.target.checked)} /><span><span className="block font-semibold">Rotate title and message colours every second</span><span className="block text-xs text-slate-300">Titles and lead messages use separate high-contrast colour sequences. The animation pauses when reduced motion is requested.</span></span></label>
       <p className="text-xs text-slate-300">This uses the existing secure appearance settings service and CSS contrast guard—no external AI, extra server, or database migration is required. Changes save centrally for the whole school.</p>
     </div>

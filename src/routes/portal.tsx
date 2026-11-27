@@ -21,7 +21,8 @@ import { StaffMusicDock } from "@/components/school/music-dock";
 import { getWorkspace, getWelcomePage, logout } from "@/lib/school/api";
 import { visibleViews, type Workspace } from "@/lib/school/model";
 import { parseMusicSetting, type MusicOptions } from "@/lib/school/music";
-import { applyDisplayPreferences, DEFAULT_DISPLAY_PREFERENCES, DISPLAY_PALETTES, readDisplayPreferences, saveDisplayPreferences, type LocalDisplayPreferences } from "@/lib/school/display";
+import { normalizeWelcomeDisplay } from "@/lib/school/welcome-display";
+import { applyDisplayPreferences, DEFAULT_DISPLAY_PREFERENCES, DISPLAY_PALETTES, NATURE_BACKDROP_SCENES, NATURE_BACKDROP_SCENE_LABELS, readDisplayPreferences, saveDisplayPreferences, type LocalDisplayPreferences } from "@/lib/school/display";
 
 const LABELS: Record<string, string> = {
   home: "Overview",
@@ -62,6 +63,33 @@ export const Route = createFileRoute("/portal")({
   component: PortalPage,
 });
 
+function NatureBackdropVideo({ scene, visible, motionEnabled }: { scene: number; visible: boolean; motionEnabled: boolean }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const source = NATURE_BACKDROP_SCENES[scene]?.src ?? NATURE_BACKDROP_SCENES[0].src;
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    video.pause();
+    if (!visible) return;
+    video.load();
+    if (!motionEnabled) return;
+    const playWhenReady = () => {
+      if (visible && motionEnabled) void video.play().catch(() => undefined);
+    };
+    if (video.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) playWhenReady();
+    else video.addEventListener("canplay", playWhenReady, { once: true });
+    return () => {
+      video.removeEventListener("canplay", playWhenReady);
+      video.pause();
+    };
+  }, [source, visible, motionEnabled]);
+
+  return <div className="portal-nature-scene" data-active={visible} aria-hidden="true">
+    <video ref={videoRef} className="portal-nature-video" src={visible ? source : undefined} muted loop playsInline preload={visible ? "auto" : "none"} />
+  </div>;
+}
+
 function PortalPage() {
   const navigate = useNavigate();
   const { view } = Route.useSearch();
@@ -71,7 +99,11 @@ function PortalPage() {
   const [open, setOpen] = useState(false);
   const [staffMusic, setStaffMusic] = useState<{ enabled: boolean; url: string; options?: Partial<MusicOptions> }>({ enabled: false, url: "" });
   const [display, setDisplay] = useState<LocalDisplayPreferences>(DEFAULT_DISPLAY_PREFERENCES);
+  const [dashboardPanelColorsEnabled, setDashboardPanelColorsEnabled] = useState(true);
   const [displaySettingsOpen, setDisplaySettingsOpen] = useState(false);
+  const [backdropScene, setBackdropScene] = useState(0);
+  const [backdropTheme, setBackdropTheme] = useState("auto-sections");
+  const [systemReducedMotion, setSystemReducedMotion] = useState(false);
   const [activityMessage, setActivityMessage] = useState("");
   const displayControlsRef = useRef<HTMLDivElement>(null);
   const previousViewRef = useRef(view);
@@ -116,6 +148,7 @@ function PortalPage() {
     refresh().catch(() => navigate({ to: "/", search: { c: undefined } }));
     getWelcomePage().then((settings) => {
       const music = parseMusicSetting(settings.musicUrl || "");
+      setDashboardPanelColorsEnabled(normalizeWelcomeDisplay(settings.display).dashboardPanelColorsEnabled);
       setStaffMusic({ enabled: Boolean(settings.musicEnabled), url: settings.musicUrl || "", options: music.options });
       document.documentElement.dataset.schoolAppearance = JSON.stringify(settings.appearance);
       document.documentElement.dataset.portalTextContrast = settings.appearance.autoTextContrast === false ? "off" : "on";
@@ -128,6 +161,33 @@ function PortalPage() {
     const preferences = readDisplayPreferences();
     setDisplay(preferences);
     applyDisplayPreferences(preferences);
+  }, []);
+
+  useEffect(() => {
+    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const update = () => setSystemReducedMotion(media.matches);
+    update();
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
+
+  useEffect(() => {
+    if (view === "home" || !display.motion || display.backgroundMode !== "animated" || systemReducedMotion) return;
+    const timer = window.setInterval(() => {
+      const count = document.documentElement.dataset.portalBackdropTheme === "nature-cycle" ? NATURE_BACKDROP_SCENE_LABELS.length : 18;
+      setBackdropScene((scene) => (scene + 1) % count);
+    }, 5000);
+    return () => window.clearInterval(timer);
+  }, [display.backgroundMode, display.motion, systemReducedMotion, view]);
+
+  useEffect(() => {
+    const resetScene = () => {
+      setBackdropScene(0);
+      setBackdropTheme(document.documentElement.dataset.portalBackdropTheme || "auto-sections");
+    };
+    resetScene();
+    window.addEventListener("mukuyu-portal-backdrop-change", resetScene);
+    return () => window.removeEventListener("mukuyu-portal-backdrop-change", resetScene);
   }, []);
 
   useEffect(() => {
@@ -223,7 +283,7 @@ function PortalPage() {
   const gate = { ws, refresh, flash, beginActivity, onWelcomeChange: (settings: { enabled: boolean; url: string }) => setStaffMusic({ ...settings, options: parseMusicSetting(settings.url || "").options }) };
 
   return (
-    <div className="portal-animated-background min-h-screen w-full min-w-0 max-w-none overflow-x-clip bg-paper lg:grid lg:grid-cols-[16rem_minmax(0,1fr)]" data-portal-section={current}>
+    <div className="portal-animated-background portal-dashboard-shell min-h-screen w-full min-w-0 max-w-none overflow-x-clip bg-paper lg:grid lg:grid-cols-[16rem_minmax(0,1fr)]" data-portal-section={current}>
       <InstallAppPrompt />
       {display.backgroundMode === "animated" ? <PortalLoadingBackdrop className="portal-dashboard-backdrop" objectDensity="full" /> : null}
       <aside id="portal-navigation" aria-label="Main navigation" className={`portal-navigation-drawer flex min-h-screen flex-col overflow-y-auto ${open ? "portal-loading fixed inset-0 z-20" : "hidden"} bg-navy text-paper lg:sticky lg:top-0 lg:block lg:h-screen`}>
@@ -270,7 +330,7 @@ function PortalPage() {
         </div>
       </aside>
       <div>
-        <header className="relative flex items-center justify-between border-b border-line bg-card/85 px-4 py-3 lg:px-8">
+        <header className="relative flex items-center justify-between border-b border-line bg-card px-4 py-3 lg:px-8">
           <button className="lg:hidden" type="button" onClick={() => { setDisplaySettingsOpen(false); setOpen(true); }} aria-label="Open menu" aria-expanded={open} aria-controls="portal-navigation">
             <Menu />
           </button>
@@ -307,7 +367,6 @@ function PortalPage() {
                   <button type="button" className={`rounded-lg border px-2 py-2 text-xs font-semibold ${display.backgroundMode === "animated" ? "border-navy bg-navy/5 text-navy" : "border-line hover:bg-paper"}`} aria-pressed={display.backgroundMode === "animated"} onClick={() => updateDisplay({ backgroundMode: "animated" })}>Animated Colours</button>
                   <button type="button" className={`rounded-lg border px-2 py-2 text-xs font-semibold ${display.backgroundMode === "original" ? "border-navy bg-navy/5 text-navy" : "border-line hover:bg-paper"}`} aria-pressed={display.backgroundMode === "original"} onClick={() => updateDisplay({ backgroundMode: "original" })}>Original Colours</button>
                 </div>
-                <p className="mt-2 text-[11px] leading-snug text-muted">Portal wallpaper stays static for Chrome; this colour mode also applies to the welcome page.</p>
               </div>
               <div className="space-y-2" role="group" aria-label="Choose a colour theme">
                 <button type="button" className={`flex w-full items-center gap-3 rounded-xl border px-3 py-2 text-left text-sm ${display.theme === null ? "border-navy bg-navy/5 font-semibold text-navy" : "border-line hover:bg-paper"}`} aria-pressed={display.theme === null} onClick={() => { updateDisplay({ theme: null }); setDisplaySettingsOpen(false); }}>
@@ -323,13 +382,15 @@ function PortalPage() {
               </div>
               <div className="mt-3 grid grid-cols-2 gap-2"><label className="rounded-xl border border-line px-3 py-2 text-xs font-semibold">Font<select className="mt-1 w-full bg-transparent text-xs" value={display.fontFamily} onChange={(event) => updateDisplay({ fontFamily: event.target.value as LocalDisplayPreferences["fontFamily"] })}><option value="sans">Source Sans</option><option value="serif">Serif</option><option value="system">System</option><option value="mono">Mono</option></select></label><label className="rounded-xl border border-line px-3 py-2 text-xs font-semibold">Text size<select className="mt-1 w-full bg-transparent text-xs" value={display.fontScale} onChange={(event) => updateDisplay({ fontScale: event.target.value as LocalDisplayPreferences["fontScale"] })}><option value="small">Small</option><option value="normal">Normal</option><option value="large">Large</option></select></label>
                 <button type="button" className="rounded-xl border border-line px-3 py-2 text-left text-xs font-semibold" aria-pressed={display.density === "compact"} onClick={() => updateDisplay({ density: display.density === "compact" ? "comfortable" : "compact" })}>{display.density === "compact" ? "Compact spacing ✓" : "Comfortable spacing"}</button>
-                <button type="button" className="rounded-xl border border-line px-3 py-2 text-left text-xs font-semibold" aria-pressed={display.accentMotion} onClick={() => updateDisplay({ accentMotion: !display.accentMotion })}>{display.accentMotion ? "Panel colour effect: paused in portal" : "Panel colour effect: off"}</button><button type="button" className="rounded-xl border border-line px-3 py-2 text-left text-xs font-semibold" aria-pressed={display.motion} onClick={() => updateDisplay({ motion: !display.motion })}>{display.motion ? "Other motion: on" : "Other motion: off"}</button>
+                <button type="button" className="rounded-xl border border-line px-3 py-2 text-left text-xs font-semibold" aria-pressed={display.accentMotion} onClick={() => updateDisplay({ accentMotion: !display.accentMotion })}>{display.accentMotion ? current === "home" ? "Panel colour effect: paused on overview" : "Panel colour effect: on" : "Panel colour effect: off"}</button><button type="button" className="rounded-xl border border-line px-3 py-2 text-left text-xs font-semibold" aria-pressed={display.motion} onClick={() => updateDisplay({ motion: !display.motion })}>{display.motion ? "Other motion: on" : "Other motion: off"}</button>
               </div>
               <div className="mt-4 border-t border-line pt-3"><h3 className="text-xs font-bold uppercase tracking-wide text-navy">Welcome page design</h3><p className="mt-1 text-xs text-muted">The 16 shared welcome and dashboard display controls are saved centrally by the Super Admin.</p>{ws.me.role === "super_admin" ? <button type="button" className="mt-2 w-full rounded-xl border border-line px-3 py-2 text-xs font-semibold text-navy" onClick={() => navigateToView("settings")}>Open welcome screen designer</button> : <p className="mt-2 text-xs text-muted">Your colour, font, size and spacing choices above remain private to this device.</p>}</div><button type="button" className="mt-3 w-full rounded-xl border border-line px-3 py-2 text-xs font-semibold text-navy" onClick={() => updateDisplay(DEFAULT_DISPLAY_PREFERENCES)}>Reset display and follow school defaults</button>
             </section> : null}
           </div>
         </header>
-        <div className="portal-page-content w-full min-w-0 max-w-none px-4 py-6 lg:px-8">
+        <div className={`portal-page-content w-full min-w-0 max-w-none px-4 py-6 lg:px-8 ${current !== "home" && dashboardPanelColorsEnabled && display.motion && display.accentMotion ? "portal-panel-color-motion" : ""}`}>
+          {current !== "home" ? Array.from({ length: 18 }, (_, scene) => <span key={scene} className="portal-background-scene" data-background-scene={scene} data-active={backdropScene === scene} aria-hidden="true" />) : null}
+          <NatureBackdropVideo scene={backdropScene % NATURE_BACKDROP_SCENES.length} visible={current !== "home" && backdropTheme === "nature-cycle" && display.backgroundMode === "animated"} motionEnabled={display.motion && !systemReducedMotion} />
           {error ? <p className="mb-4 rounded-md border border-bad/30 bg-card px-3 py-2 text-sm text-bad">{error}</p> : null}
           {notice ? <p className="mb-4 rounded-md border border-good/30 bg-card px-3 py-2 text-sm text-good">{notice}</p> : null}
           {current === "home" ? <DashboardView {...gate} /> : null}
