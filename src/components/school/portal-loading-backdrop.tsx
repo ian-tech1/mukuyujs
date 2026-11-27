@@ -1,4 +1,19 @@
-export function PortalLoadingBackdrop({ className = "" }: { className?: string }) {
+const OPENING_EXTRA_ORBITALS = [
+  { name: "twenty-one", shape: "diamond" },
+  { name: "twenty-two", shape: "ring" },
+  { name: "twenty-three", shape: "star" },
+  { name: "twenty-four", shape: "hex" },
+  { name: "twenty-five", shape: "diamond" },
+  { name: "twenty-six", shape: "ring" },
+  { name: "twenty-seven", shape: "star" },
+  { name: "twenty-eight", shape: "hex" },
+  { name: "twenty-nine", shape: "diamond" },
+  { name: "thirty", shape: "ring" },
+  { name: "thirty-one", shape: "star" },
+  { name: "thirty-two", shape: "hex" },
+] as const;
+
+export function PortalLoadingBackdrop({ className = "", openingOrbitals = false }: { className?: string; openingOrbitals?: boolean }) {
   return (
     <div className={`portal-loading-backdrop ${className}`} aria-hidden="true">
       <div className="portal-loading-aurora" />
@@ -49,6 +64,9 @@ export function PortalLoadingBackdrop({ className = "" }: { className?: string }
         <span className="portal-loading-object portal-loading-object-ring portal-loading-object-eighteen" />
         <span className="portal-loading-object portal-loading-object-star portal-loading-object-nineteen" />
         <span className="portal-loading-object portal-loading-object-hex portal-loading-object-twenty" />
+        {openingOrbitals ? OPENING_EXTRA_ORBITALS.map(({ name, shape }) => (
+          <span key={name} className={`portal-loading-object portal-loading-object-${shape} portal-loading-object-${name} portal-loading-object-opening-extra`} />
+        )) : null}
       </div>
     </div>
   );

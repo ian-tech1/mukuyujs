@@ -70,12 +70,12 @@ function OpeningIntro({ title, motto, logoSrc, durationSeconds, settingsReady, o
 
   if (!visible) return null;
   return <div className="portal-loading portal-loading-opening portal-opening-link fixed inset-0 z-[2147483000] grid min-h-[100svh] w-full place-items-center overflow-hidden px-6" role="dialog" aria-modal="true" aria-labelledby="opening-intro-title" aria-describedby="opening-intro-description" onKeyDown={(event) => { if (event.key === "Escape") continueToSignIn(); }}>
-    <PortalLoadingBackdrop className="portal-opening-backdrop" />
+    <PortalLoadingBackdrop className="portal-opening-backdrop" openingOrbitals />
     <div className="portal-loading-center-shade" aria-hidden="true" />
     <div className="portal-loading-card text-center">
       <p className="portal-loading-monogram" aria-label="Mukuyu Junior School initials"><span>MKJ</span></p>
       <p className="portal-loading-kicker">MUKUYU JUNIOR SCHOOL · LEARNING PORTAL</p>
-      <span className="portal-loading-orbit" aria-hidden="true"><SchoolLogo src={logoSrc} className="size-[6.5rem]" /></span>
+      <span className="portal-loading-orbit" aria-hidden="true"><SchoolLogo src={logoSrc} className="size-[5.3rem]" /></span>
       <h1 id="opening-intro-title" className="portal-loading-title mt-5">{title}</h1>
       <p className="portal-loading-tagline mt-2">{motto}</p>
       <p id="opening-intro-description" className="portal-loading-message mt-4 text-sm">Opening your school office and getting everything ready…</p>
