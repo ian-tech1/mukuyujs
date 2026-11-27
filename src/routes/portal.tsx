@@ -112,13 +112,14 @@ function PortalPage() {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [open, setOpen] = useState(false);
+  const [pendingView, setPendingView] = useState<string | null>(null);
   const [staffMusic, setStaffMusic] = useState<{ enabled: boolean; url: string; options?: Partial<MusicOptions> }>({ enabled: false, url: "" });
   const [display, setDisplay] = useState<LocalDisplayPreferences>(DEFAULT_DISPLAY_PREFERENCES);
   const [dashboardPanelColorsEnabled, setDashboardPanelColorsEnabled] = useState(true);
   const [displaySettingsOpen, setDisplaySettingsOpen] = useState(false);
   const [backdropScene, setBackdropScene] = useState(0);
   const [backdropTheme, setBackdropTheme] = useState("auto-sections");
-  const [portalBackgroundDurationSeconds, setPortalBackgroundDurationSeconds] = useState(15);
+  const [portalBackgroundDurationSeconds, setPortalBackgroundDurationSeconds] = useState(30);
   const [systemReducedMotion, setSystemReducedMotion] = useState(false);
   const [activityMessage, setActivityMessage] = useState("");
   const displayControlsRef = useRef<HTMLDivElement>(null);
@@ -166,7 +167,7 @@ function PortalPage() {
     getWelcomePage().then((settings) => {
       const music = parseMusicSetting(settings.musicUrl || "");
       setDashboardPanelColorsEnabled(normalizeWelcomeDisplay(settings.display).dashboardPanelColorsEnabled);
-      setPortalBackgroundDurationSeconds(Math.max(5, Math.min(60, Number(settings.portalBackgroundDurationSeconds) || 15)));
+      setPortalBackgroundDurationSeconds(Math.max(5, Math.min(60, Number(settings.portalBackgroundDurationSeconds) || 30)));
       setStaffMusic({ enabled: Boolean(settings.musicEnabled), url: settings.musicUrl || "", options: music.options });
       document.documentElement.dataset.schoolAppearance = JSON.stringify(settings.appearance);
       document.documentElement.dataset.portalTextContrast = settings.appearance.autoTextContrast === false ? "off" : "on";
@@ -214,6 +215,7 @@ function PortalPage() {
     window.scrollTo(0, 0);
     const frame = window.requestAnimationFrame(() => window.scrollTo(0, 0));
     if (previousViewRef.current !== view) previousViewRef.current = view;
+    setPendingView((current) => current === view ? null : current);
     return () => window.cancelAnimationFrame(frame);
   }, [view, showActivity, ws?.me.role]);
 
@@ -278,8 +280,10 @@ function PortalPage() {
   }
 
   const views = visibleViews(ws.me, ws.roleAccess);
-  const current = views.includes(view) ? view : views[0];
+  const requestedView = pendingView ?? view;
+  const current = views.includes(requestedView) ? requestedView : views[0];
   function navigateToView(item: string) {
+    setPendingView(item);
     previousViewRef.current = item;
     setOpen(false);
     setDisplaySettingsOpen(false);
