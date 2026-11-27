@@ -172,13 +172,13 @@ function PortalPage() {
   }, []);
 
   useEffect(() => {
-    if (!display.motion || display.backgroundMode !== "animated" || systemReducedMotion) return;
+    if (view === "home" || !display.motion || display.backgroundMode !== "animated" || systemReducedMotion) return;
     const timer = window.setInterval(() => {
       const count = document.documentElement.dataset.portalBackdropTheme === "nature-cycle" ? NATURE_BACKDROP_SCENE_LABELS.length : 18;
       setBackdropScene((scene) => (scene + 1) % count);
     }, 5000);
     return () => window.clearInterval(timer);
-  }, [display.backgroundMode, display.motion, systemReducedMotion]);
+  }, [display.backgroundMode, display.motion, systemReducedMotion, view]);
 
   useEffect(() => {
     const resetScene = () => {
@@ -381,15 +381,16 @@ function PortalPage() {
               </div>
               <div className="mt-3 grid grid-cols-2 gap-2"><label className="rounded-xl border border-line px-3 py-2 text-xs font-semibold">Font<select className="mt-1 w-full bg-transparent text-xs" value={display.fontFamily} onChange={(event) => updateDisplay({ fontFamily: event.target.value as LocalDisplayPreferences["fontFamily"] })}><option value="sans">Source Sans</option><option value="serif">Serif</option><option value="system">System</option><option value="mono">Mono</option></select></label><label className="rounded-xl border border-line px-3 py-2 text-xs font-semibold">Text size<select className="mt-1 w-full bg-transparent text-xs" value={display.fontScale} onChange={(event) => updateDisplay({ fontScale: event.target.value as LocalDisplayPreferences["fontScale"] })}><option value="small">Small</option><option value="normal">Normal</option><option value="large">Large</option></select></label>
                 <button type="button" className="rounded-xl border border-line px-3 py-2 text-left text-xs font-semibold" aria-pressed={display.density === "compact"} onClick={() => updateDisplay({ density: display.density === "compact" ? "comfortable" : "compact" })}>{display.density === "compact" ? "Compact spacing ✓" : "Comfortable spacing"}</button>
-                <button type="button" className="rounded-xl border border-line px-3 py-2 text-left text-xs font-semibold" aria-pressed={display.accentMotion} onClick={() => updateDisplay({ accentMotion: !display.accentMotion })}>{display.accentMotion ? "Panel colour effect: on" : "Panel colour effect: off"}</button><button type="button" className="rounded-xl border border-line px-3 py-2 text-left text-xs font-semibold" aria-pressed={display.motion} onClick={() => updateDisplay({ motion: !display.motion })}>{display.motion ? "Other motion: on" : "Other motion: off"}</button>
+                <button type="button" className="rounded-xl border border-line px-3 py-2 text-left text-xs font-semibold" aria-pressed={display.accentMotion} onClick={() => updateDisplay({ accentMotion: !display.accentMotion })}>{display.accentMotion ? current === "home" ? "Panel colour effect: paused on overview" : "Panel colour effect: on" : "Panel colour effect: off"}</button><button type="button" className="rounded-xl border border-line px-3 py-2 text-left text-xs font-semibold" aria-pressed={display.motion} onClick={() => updateDisplay({ motion: !display.motion })}>{display.motion ? "Other motion: on" : "Other motion: off"}</button>
               </div>
               <div className="mt-4 border-t border-line pt-3"><h3 className="text-xs font-bold uppercase tracking-wide text-navy">Welcome page design</h3><p className="mt-1 text-xs text-muted">The 16 shared welcome and dashboard display controls are saved centrally by the Super Admin.</p>{ws.me.role === "super_admin" ? <button type="button" className="mt-2 w-full rounded-xl border border-line px-3 py-2 text-xs font-semibold text-navy" onClick={() => navigateToView("settings")}>Open welcome screen designer</button> : <p className="mt-2 text-xs text-muted">Your colour, font, size and spacing choices above remain private to this device.</p>}</div><button type="button" className="mt-3 w-full rounded-xl border border-line px-3 py-2 text-xs font-semibold text-navy" onClick={() => updateDisplay(DEFAULT_DISPLAY_PREFERENCES)}>Reset display and follow school defaults</button>
             </section> : null}
           </div>
         </header>
-        <div className={`portal-page-content w-full min-w-0 max-w-none px-4 py-6 lg:px-8 ${dashboardPanelColorsEnabled && display.motion && display.accentMotion ? "portal-panel-color-motion" : ""}`}>
-          {Array.from({ length: 18 }, (_, scene) => <span key={scene} className="portal-background-scene" data-background-scene={scene} data-active={backdropScene === scene} aria-hidden="true" />)}
-          <NatureBackdropVideo scene={backdropScene % NATURE_BACKDROP_SCENES.length} visible={backdropTheme === "nature-cycle" && display.backgroundMode === "animated"} motionEnabled={display.motion && !systemReducedMotion} />
+        <div className={`portal-page-content w-full min-w-0 max-w-none px-4 py-6 lg:px-8 ${current !== "home" && dashboardPanelColorsEnabled && display.motion && display.accentMotion ? "portal-panel-color-motion" : ""}`}>
+          {current === "home" ? <PortalLoadingBackdrop className="portal-dashboard-backdrop" objectDensity="full" /> : null}
+          {current !== "home" ? Array.from({ length: 18 }, (_, scene) => <span key={scene} className="portal-background-scene" data-background-scene={scene} data-active={backdropScene === scene} aria-hidden="true" />) : null}
+          <NatureBackdropVideo scene={backdropScene % NATURE_BACKDROP_SCENES.length} visible={current !== "home" && backdropTheme === "nature-cycle" && display.backgroundMode === "animated"} motionEnabled={display.motion && !systemReducedMotion} />
           {error ? <p className="mb-4 rounded-md border border-bad/30 bg-card px-3 py-2 text-sm text-bad">{error}</p> : null}
           {notice ? <p className="mb-4 rounded-md border border-good/30 bg-card px-3 py-2 text-sm text-good">{notice}</p> : null}
           {current === "home" ? <DashboardView {...gate} /> : null}
