@@ -40,6 +40,21 @@ const LABELS: Record<string, string> = {
   results: "My results",
 };
 
+const MAIN_TAB_OPENING_VIEWS = new Set([
+  "home",
+  "learners",
+  "marks",
+  "timetable",
+  "services",
+  "parent-feedback",
+  "analysis",
+  "reports",
+  "marklists",
+  "staff",
+  "mail",
+  "settings",
+]);
+
 const ACTIVITY_NOTES: Record<string, string> = {
   home: "Gathering schoolwide results, learner counts and progress.",
   learners: "Opening learner registers and class records.",
@@ -293,6 +308,12 @@ function PortalPage() {
     setOpen(false);
     setDisplaySettingsOpen(false);
     window.scrollTo(0, 0);
+    if (!MAIN_TAB_OPENING_VIEWS.has(item)) {
+      setPendingView(item);
+      previousViewRef.current = item;
+      void navigate({ to: "/portal", search: { view: item } });
+      return;
+    }
     if (tabOpeningTimerRef.current !== null) window.clearTimeout(tabOpeningTimerRef.current);
     setTabOpeningView(item);
     tabOpeningTimerRef.current = window.setTimeout(() => {
