@@ -2110,7 +2110,7 @@ html[data-portal-motion="reduced"] .welcome-animated.welcome-hero::after {
   }
 
   .portal-loading-action-feedback {
-    display: grid !important;
+    display: none !important;
   }
 }
 
