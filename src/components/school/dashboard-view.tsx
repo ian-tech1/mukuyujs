@@ -365,7 +365,7 @@ export function DashboardView({ ws: sourceWs, refresh, flash, beginActivity }: G
   }
 
   return (
-    <div className="dashboard-home-view space-y-6">
+    <div className="space-y-6">
       <header>
         <p className="text-xs font-semibold tracking-[0.18em] text-brass">Viewing {selectedTerm?.name ?? ws.profile.termName} · {selectedYear?.name ?? ws.profile.academicYear} · {scopeLabel}</p>
         <h1 className="mt-1 font-serif text-3xl text-navy">{(() => {

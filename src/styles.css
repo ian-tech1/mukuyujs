@@ -1698,16 +1698,11 @@ html[data-portal-motion="reduced"] .portal-loading:not(.portal-navigation-drawer
 .portal-loading-object-opening-extra { width: clamp(1rem, calc(var(--object-size, .8rem) * 1.55), 1.65rem); }
 
 
-/* The mobile navigation drawer uses a calm, static loader-inspired canvas.
-   Keep all other loader backgrounds and orbital animation settings unchanged. */
+/* Only the open hamburger drawer gets the refresh artwork; dashboard tabs keep their original backgrounds. */
 @media (max-width: 1023px) {
   .portal-navigation-drawer.portal-loading {
-    background-color: #050916 !important;
-    background-image:
-      radial-gradient(ellipse 94% 62% at 8% 12%, rgba(32, 201, 232, .22), transparent 68%),
-      radial-gradient(ellipse 80% 58% at 100% 37%, rgba(214, 76, 187, .18), transparent 70%),
-      radial-gradient(ellipse 95% 68% at 48% 100%, rgba(55, 204, 174, .14), transparent 68%),
-      linear-gradient(140deg, #050d1c 0%, #0b1530 45%, #081a26 76%, #090f21 100%) !important;
+    background-color: #071225 !important;
+    background-image: none !important;
     animation: none !important;
   }
 
@@ -1722,50 +1717,56 @@ html[data-portal-motion="reduced"] .portal-loading:not(.portal-navigation-drawer
   .portal-navigation-backdrop {
     position: absolute;
     inset: 0;
+    z-index: 0;
     display: block;
     background: transparent;
     pointer-events: none;
   }
 
-  .portal-navigation-backdrop > * {
+  .portal-navigation-drawer.portal-loading > :not(.portal-navigation-backdrop) {
+    position: relative;
+    z-index: 1;
+  }
+
+  .portal-navigation-backdrop .portal-loading-aurora,
+  .portal-navigation-backdrop .portal-loading-aurora::before,
+  .portal-navigation-backdrop .portal-loading-aurora::after,
+  .portal-navigation-backdrop .portal-loading-ribbon,
+  .portal-navigation-backdrop .portal-loading-ribbon-orb,
+  .portal-navigation-backdrop .portal-loading-rays,
+  .portal-navigation-backdrop .portal-loading-rays::before,
+  .portal-navigation-backdrop .portal-loading-rays::after,
+  .portal-navigation-backdrop .portal-loading-atom::before,
+  .portal-navigation-backdrop .portal-loading-atom::after,
+  .portal-navigation-backdrop .portal-loading-orbit-glints,
+  .portal-navigation-backdrop .portal-loading-stars,
+  .portal-navigation-backdrop .portal-loading-dust,
+  .portal-navigation-backdrop .portal-loading-dust::before,
+  .portal-navigation-backdrop .portal-loading-dust::after,
+  .portal-navigation-backdrop .portal-loading-mote {
+    animation: none !important;
+    will-change: auto;
+  }
+
+  .portal-navigation-backdrop .portal-loading-aurora,
+  .portal-navigation-backdrop .portal-loading-rays {
+    filter: none !important;
+    mix-blend-mode: normal !important;
+  }
+
+  .portal-navigation-backdrop .portal-loading-ribbon-orb {
+    filter: blur(16px) !important;
+  }
+
+  .portal-navigation-backdrop .portal-loading-comets {
     display: none !important;
-    animation: none !important;
+  }
+
+  .portal-navigation-backdrop .portal-loading-object {
     filter: none !important;
     mix-blend-mode: normal !important;
-  }
-
-  .portal-navigation-backdrop::before,
-  .portal-navigation-backdrop::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    animation: none !important;
-    filter: none !important;
-    mix-blend-mode: normal !important;
-  }
-
-  .portal-navigation-backdrop::before {
-    z-index: 0;
-    background-image:
-      radial-gradient(2px 2px at 8% 18%, rgba(255, 255, 255, .86) 50%, transparent 100%),
-      radial-gradient(2px 2px at 23% 73%, rgba(100, 231, 255, .82) 50%, transparent 100%),
-      radial-gradient(2px 2px at 42% 29%, rgba(255, 215, 113, .88) 50%, transparent 100%),
-      radial-gradient(2px 2px at 64% 82%, rgba(206, 156, 255, .8) 50%, transparent 100%),
-      radial-gradient(2px 2px at 86% 24%, rgba(106, 239, 206, .84) 50%, transparent 100%),
-      radial-gradient(2px 2px at 94% 68%, rgba(255, 255, 255, .76) 50%, transparent 100%);
-    opacity: .62;
-  }
-
-  .portal-navigation-backdrop::after {
-    z-index: 0;
-    background-image:
-      linear-gradient(rgba(255, 255, 255, .045) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255, 255, 255, .045) 1px, transparent 1px);
-    background-size: 46px 46px;
-    opacity: .2;
-    mask-image: radial-gradient(ellipse at center, #000, transparent 72%);
-    -webkit-mask-image: radial-gradient(ellipse at center, #000, transparent 72%);
+    animation-name: portal-loading-object-orbit;
+    will-change: transform, opacity;
   }
 }
 
@@ -1881,87 +1882,41 @@ html[data-portal-motion="reduced"] .welcome-hero::after,
 html[data-portal-motion="reduced"] .welcome-login-panel::after { animation: none !important; will-change: auto; }
 
 
-/* Match the opening/refresh cosmic backdrop on Overview; keep the wallpaper static in Chrome. */
-.portal-animated-background[data-portal-section="home"] {
-  background-color: #050916;
+/* Give the dashboard the refresh screen's dark, glowy sky and grid without its moving paints. */
+.portal-animated-background[data-portal-section="home"] .portal-page-content {
+  background-color: rgba(244, 240, 230, .58);
+}
+.portal-animated-background[data-portal-section="home"] .portal-page-content::before {
+  background-image:
+    radial-gradient(circle at 50% 42%, rgba(49, 112, 255, .27), transparent 25%),
+    radial-gradient(circle at 14% 84%, rgba(255, 63, 190, .16), transparent 24%),
+    radial-gradient(circle at 84% 12%, rgba(255, 214, 107, .13), transparent 22%),
+    radial-gradient(1.5px 1.5px at 12% 20%, rgba(255,255,255,.72) 50%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 31% 76%, rgba(117,226,255,.7) 50%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 53% 32%, rgba(255,222,161,.7) 50%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 79% 61%, rgba(219,161,255,.66) 50%, transparent 100%);
   background-size: 100% 100%;
   background-position: center;
+  background-repeat: no-repeat;
   animation: none !important;
-}
-.portal-animated-background[data-portal-section="home"] .portal-page-content {
-  background: transparent;
-}
-.portal-animated-background[data-portal-section="home"] .portal-page-content::before,
-.portal-animated-background[data-portal-section="home"] .portal-page-content::after {
-  display: none;
-  animation: none !important;
+  transform: none;
   will-change: auto;
 }
-.portal-dashboard-shell {
-  background-size: 100% 100%;
+.portal-animated-background[data-portal-section="home"] .portal-page-content::after {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, .05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, .05) 1px, transparent 1px),
+    radial-gradient(ellipse 49% 30% at 48% 48%, transparent 94.8%, rgba(83,219,255,.32) 95.1%, transparent 95.5%),
+    radial-gradient(ellipse 35% 53% at 55% 50%, transparent 95%, rgba(232,139,255,.26) 95.3%, transparent 95.7%);
+  background-size: 46px 46px, 46px 46px, 100% 100%, 100% 100%;
   background-position: center;
+  background-repeat: repeat, repeat, no-repeat, no-repeat;
+  opacity: .2;
+  mask-image: radial-gradient(ellipse at center, #000, transparent 68%);
+  -webkit-mask-image: radial-gradient(ellipse at center, #000, transparent 68%);
   animation: none !important;
-}
-.portal-dashboard-shell > .portal-dashboard-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  overflow: hidden;
-  pointer-events: none;
-}
-.portal-dashboard-backdrop,
-.portal-dashboard-backdrop *,
-.portal-dashboard-backdrop *::before,
-.portal-dashboard-backdrop *::after {
-  animation: none !important;
-  transition: none !important;
-  filter: none !important;
-  mix-blend-mode: normal !important;
-  will-change: auto !important;
-}
-.portal-dashboard-backdrop .portal-loading-ribbon {
-  background-size: 100% 100%;
-  background-position: center;
-  box-shadow: 0 0 14px rgba(139, 213, 255, .12);
-}
-.portal-dashboard-backdrop .portal-loading-ribbon-one { transform: rotate(-8deg) skewX(-6deg); }
-.portal-dashboard-backdrop .portal-loading-ribbon-two { transform: rotate(6deg) skewX(7deg); }
-.portal-dashboard-backdrop .portal-loading-ribbon-three { transform: rotate(-5deg) skewX(5deg); }
-.portal-dashboard-backdrop .portal-loading-ribbon-four { transform: rotate(2deg) skewX(-5deg); }
-.portal-dashboard-backdrop .portal-loading-rays { background-size: 100% 100%; }
-.portal-dashboard-backdrop .portal-loading-rays::before { transform: rotate(-7deg); }
-.portal-dashboard-backdrop .portal-loading-rays::after { transform: rotate(9deg); }
-.portal-dashboard-backdrop .portal-loading-atom::before { transform: rotate(-18deg) scaleY(.56); }
-.portal-dashboard-backdrop .portal-loading-atom::after { transform: rotate(63deg) scaleY(.68); }
-.portal-dashboard-backdrop .portal-loading-orbit-glints { transform: translate(-50%, -50%) scaleY(.56); }
-.portal-dashboard-backdrop .portal-loading-aurora { background-size: 100% 100%; }
-.portal-dashboard-backdrop .portal-loading-stars,
-.portal-dashboard-backdrop .portal-loading-dust { background-size: 100% 100%; }
-.portal-dashboard-backdrop .portal-loading-comets { display: none; }
-.portal-dashboard-backdrop .portal-loading-object {
-  box-shadow: 0 0 8px currentColor;
   transform: none;
-  transform-style: flat;
-}
-.portal-dashboard-backdrop .portal-loading-object::after { box-shadow: 0 0 5px currentColor; }
-.portal-dashboard-backdrop .portal-loading-object-ring { box-shadow: 0 0 8px currentColor, inset 0 0 4px currentColor; }
-.portal-animated-background[data-portal-section="home"] .portal-page-content .dashboard-home-view {
-  color: #edf4ff;
-}
-.portal-animated-background[data-portal-section="home"] .portal-page-content .dashboard-home-view :is(.text-navy, .text-muted, .text-info, .text-ink) {
-  color: #edf4ff !important;
-}
-.portal-animated-background[data-portal-section="home"] .portal-page-content .dashboard-home-view :is([class*="bg-card"], [class*="bg-paper"], [class*="bg-white"], [class*="from-card"], [class*="bg-gradient-to-br"]) {
-  color: var(--color-ink);
-}
-.portal-animated-background[data-portal-section="home"] .portal-page-content .dashboard-home-view :is([class*="bg-card"], [class*="bg-paper"], [class*="bg-white"], [class*="from-card"], [class*="bg-gradient-to-br"]) :is(.text-navy, .text-ink) {
-  color: #102b49 !important;
-}
-.portal-animated-background[data-portal-section="home"] .portal-page-content .dashboard-home-view :is([class*="bg-card"], [class*="bg-paper"], [class*="bg-white"], [class*="from-card"], [class*="bg-gradient-to-br"]) .text-muted {
-  color: #625b53 !important;
-}
-.portal-animated-background[data-portal-section="home"] .portal-page-content .dashboard-home-view :is([class*="bg-card"], [class*="bg-paper"], [class*="bg-white"], [class*="from-card"], [class*="bg-gradient-to-br"]) .text-info {
-  color: #1d4e89 !important;
+  will-change: auto;
 }
 html[data-portal-background-mode="original"] .portal-animated-background[data-portal-section="home"] .portal-page-content::before,
 html[data-portal-background-mode="original"] .portal-animated-background[data-portal-section="home"] .portal-page-content::after {
