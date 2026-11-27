@@ -81,16 +81,16 @@ function PortalLoadingIdentity({ className = "", status = false, decorative = fa
 function NatureBackdropVideo({ scene, visible, motionEnabled }: { scene: number; visible: boolean; motionEnabled: boolean }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const source = NATURE_BACKDROP_SCENES[scene]?.src ?? NATURE_BACKDROP_SCENES[0].src;
+  const shouldLoad = visible && motionEnabled && typeof window !== "undefined" && !window.matchMedia("(max-width: 1023px)").matches;
 
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
     video.pause();
-    if (!visible) return;
+    if (!shouldLoad) return;
     video.load();
-    if (!motionEnabled) return;
     const playWhenReady = () => {
-      if (visible && motionEnabled) void video.play().catch(() => undefined);
+      if (shouldLoad) void video.play().catch(() => undefined);
     };
     if (video.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) playWhenReady();
     else video.addEventListener("canplay", playWhenReady, { once: true });
@@ -98,10 +98,10 @@ function NatureBackdropVideo({ scene, visible, motionEnabled }: { scene: number;
       video.removeEventListener("canplay", playWhenReady);
       video.pause();
     };
-  }, [source, visible, motionEnabled]);
+  }, [source, shouldLoad]);
 
   return <div className="portal-nature-scene" data-active={visible} aria-hidden="true">
-    <video ref={videoRef} className="portal-nature-video" src={visible ? source : undefined} muted loop playsInline preload={visible ? "auto" : "none"} />
+    <video ref={videoRef} className="portal-nature-video" src={shouldLoad ? source : undefined} muted loop playsInline preload={shouldLoad ? "auto" : "none"} />
   </div>;
 }
 
