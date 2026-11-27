@@ -121,6 +121,7 @@ function PortalPage() {
   const [systemReducedMotion, setSystemReducedMotion] = useState(false);
   const [activityMessage, setActivityMessage] = useState("");
   const displayControlsRef = useRef<HTMLDivElement>(null);
+  const navigationDrawerRef = useRef<HTMLElement | null>(null);
   const previousViewRef = useRef(view);
   const activityTokenRef = useRef(0);
   const activityTimerRef = useRef<number | null>(null);
@@ -218,6 +219,10 @@ function PortalPage() {
     return () => window.cancelAnimationFrame(frame);
   }, [view, showActivity, ws?.me.role]);
 
+  useEffect(() => {
+    if (open && navigationDrawerRef.current) navigationDrawerRef.current.scrollTop = 0;
+  }, [open]);
+
   useEffect(() => () => {
     if (activityTimerRef.current !== null) window.clearTimeout(activityTimerRef.current);
     if (noticeTimerRef.current !== null) window.clearTimeout(noticeTimerRef.current);
@@ -291,7 +296,7 @@ function PortalPage() {
   return (
     <div className="portal-animated-background min-h-screen w-full min-w-0 max-w-none overflow-x-clip bg-paper lg:grid lg:grid-cols-[16rem_minmax(0,1fr)]" data-portal-section={current}>
       <InstallAppPrompt />
-      <aside id="portal-navigation" aria-label="Main navigation" className={`portal-navigation-drawer flex min-h-screen flex-col overflow-y-auto ${open ? "portal-loading fixed inset-0 z-20" : "hidden"} bg-navy text-paper lg:sticky lg:top-0 lg:block lg:h-screen`}>
+      <aside ref={navigationDrawerRef} id="portal-navigation" aria-label="Main navigation" className={`portal-navigation-drawer flex min-h-screen flex-col overflow-y-auto ${open ? "portal-loading fixed inset-0 z-20" : "hidden"} bg-navy text-paper lg:sticky lg:top-0 lg:block lg:h-screen`}>
         {open ? <PortalLoadingBackdrop className="portal-navigation-backdrop" objectDensity="full" /> : null}
         {open ? <PortalLoadingIdentity className="portal-navigation-refresh-card" decorative /> : null}
         <div className="flex items-center justify-between border-b border-white/10 px-5 py-5 lg:border-b-0">
