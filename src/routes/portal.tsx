@@ -63,9 +63,9 @@ export const Route = createFileRoute("/portal")({
   component: PortalPage,
 });
 
-function PortalLoadingIdentity({ className = "", status = false }: { className?: string; status?: boolean }) {
+function PortalLoadingIdentity({ className = "", status = false, decorative = false }: { className?: string; status?: boolean; decorative?: boolean }) {
   return (
-    <div className={`portal-loading-card text-center ${className}`} role={status ? "status" : undefined} aria-live={status ? "polite" : undefined}>
+    <div className={`portal-loading-card text-center ${className}`} role={status ? "status" : undefined} aria-live={status ? "polite" : undefined} aria-hidden={decorative || undefined}>
       <p className="portal-loading-monogram" aria-label="Mukuyu Junior School initials"><span>MKJ</span></p>
       <p className="portal-loading-kicker portal-loading-box portal-loading-box-kicker">MUKUYU JUNIOR SCHOOL · LEARNING PORTAL</p>
       <span className="portal-loading-orbit" aria-hidden="true"><SchoolLogo className="size-[6.5rem]" /></span>
@@ -293,12 +293,20 @@ function PortalPage() {
       <InstallAppPrompt />
       <aside id="portal-navigation" aria-label="Main navigation" className={`portal-navigation-drawer flex min-h-screen flex-col overflow-y-auto ${open ? "portal-loading fixed inset-0 z-20" : "hidden"} bg-navy text-paper lg:sticky lg:top-0 lg:block lg:h-screen`}>
         {open ? <PortalLoadingBackdrop className="portal-navigation-backdrop" objectDensity="full" /> : null}
-        <div className="flex justify-end px-5 pt-3">
+        {open ? <PortalLoadingIdentity className="portal-navigation-refresh-card" decorative /> : null}
+        <div className="flex items-center justify-between border-b border-white/10 px-5 py-5 lg:border-b-0">
+          <div className="flex items-center gap-2">
+            <SchoolLogo className="size-12" />
+            <div>
+              <span className="portal-nav-monogram" aria-label="Mukuyu Junior School initials">MKJ</span>
+              <p className="font-serif text-xl leading-tight">Mukuyu JSS</p>
+              <p className="text-base text-brass-soft">Exam portal</p>
+            </div>
+          </div>
           <button className="lg:hidden" type="button" onClick={() => setOpen(false)} aria-label="Close menu">
             <X />
           </button>
         </div>
-        {open ? <PortalLoadingIdentity className="portal-navigation-refresh-card" /> : null}
         <nav className="space-y-2 px-4 py-4">
           {views.map((item) => (
             <button

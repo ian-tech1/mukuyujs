@@ -1713,16 +1713,22 @@ html[data-portal-motion="reduced"] .portal-loading:not(.portal-navigation-drawer
     pointer-events: none;
   }
 
-  .portal-navigation-drawer.portal-loading > :not(.portal-navigation-backdrop) {
+  .portal-navigation-drawer.portal-loading > :not(.portal-navigation-backdrop):not(.portal-navigation-refresh-card) {
     position: relative;
-    z-index: 1;
+    z-index: 2;
   }
 
   .portal-navigation-refresh-card {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    z-index: 1;
     width: min(34rem, calc(100% - 1.5rem));
-    flex: 0 0 auto;
-    margin: -.25rem auto .25rem;
+    margin: 0;
     padding: .65rem .85rem .9rem;
+    opacity: .2;
+    pointer-events: none;
+    transform: translate(-50%, -50%);
   }
 
   .portal-navigation-refresh-card .portal-loading-monogram {
