@@ -1733,6 +1733,35 @@ html[data-portal-motion="reduced"] .portal-loading-opening .portal-loading-detai
 .portal-loading-action-feedback .portal-loading-track span,
 .portal-loading-tab-opening .portal-loading-track span { display: block; width: 28%; height: 100%; animation: mukuyu-feedback-progress 1.3s ease-in-out infinite alternate; }
 .portal-tab-opening-feedback { pointer-events: none; }
+/* Keep tab-opening feedback responsive on Chrome mobile: the full loader has many
+   simultaneous blur, blend and particle animations that can delay the first paint. */
+.portal-loading-tab-opening,
+.portal-loading-tab-opening::before,
+.portal-loading-tab-opening::after,
+.portal-loading-tab-opening .portal-loading-backdrop,
+.portal-loading-tab-opening .portal-loading-backdrop *,
+.portal-loading-tab-opening .portal-loading-card,
+.portal-loading-tab-opening .portal-loading-card::before,
+.portal-loading-tab-opening .portal-loading-card::after {
+  animation: none !important;
+  transition: none !important;
+}
+.portal-loading-tab-opening .portal-loading-backdrop {
+  contain: strict;
+  transform: translateZ(0);
+}
+.portal-loading-tab-opening .portal-loading-ribbon-field,
+.portal-loading-tab-opening .portal-loading-rays,
+.portal-loading-tab-opening .portal-loading-dust,
+.portal-loading-tab-opening .portal-loading-comets,
+.portal-loading-tab-opening .portal-loading-orbiting-objects {
+  display: none !important;
+}
+.portal-loading-tab-opening .portal-loading-aurora,
+.portal-loading-tab-opening .portal-loading-stars,
+.portal-loading-tab-opening .portal-loading-motes {
+  opacity: .72;
+}
 @keyframes mukuyu-feedback-progress {
   from { transform: translateX(0); }
   to { transform: translateX(250%); }
