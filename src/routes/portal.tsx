@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import { Menu, Palette, SlidersHorizontal } from "lucide-react";
 import { SchoolLogo } from "@/components/school/logo";
 import { PortalLoadingBackdrop } from "@/components/school/portal-loading-backdrop";
@@ -305,6 +306,9 @@ function PortalPage() {
   const current = views.includes(requestedView) ? requestedView : views[0];
   function navigateToView(item: string) {
     if (item === current) return;
+    if (MAIN_TAB_OPENING_VIEWS.has(item)) {
+      flushSync(() => setTabOpeningView(item));
+    }
     setOpen(false);
     setDisplaySettingsOpen(false);
     window.scrollTo(0, 0);
@@ -315,7 +319,6 @@ function PortalPage() {
       return;
     }
     if (tabOpeningTimerRef.current !== null) window.clearTimeout(tabOpeningTimerRef.current);
-    setTabOpeningView(item);
     tabOpeningTimerRef.current = window.setTimeout(() => {
       setPendingView(item);
       previousViewRef.current = item;
