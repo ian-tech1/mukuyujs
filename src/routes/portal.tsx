@@ -213,7 +213,7 @@ function PortalPage() {
     if (previousViewRef.current !== view) {
       previousViewRef.current = view;
       const label = view === "settings" && ws?.me.role === "super_admin" ? "Welcome Page" : LABELS[view] ?? view;
-      showActivity(`Opening ${label}…`, 900);
+      showActivity(`Opening ${label}…`, 1400);
     }
     return () => window.cancelAnimationFrame(frame);
   }, [view, showActivity, ws?.me.role]);
@@ -278,7 +278,7 @@ function PortalPage() {
   const current = views.includes(view) ? view : views[0];
   function navigateToView(item: string) {
     const label = item === "settings" && ws?.me.role === "super_admin" ? "Welcome Page" : LABELS[item] ?? item;
-    showActivity(`Opening ${label}…`, 900);
+    showActivity(`Opening ${label}…`, 1400);
     previousViewRef.current = item;
     setOpen(false);
     setDisplaySettingsOpen(false);
