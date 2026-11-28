@@ -140,7 +140,6 @@ function PortalPage() {
   const [displaySettingsOpen, setDisplaySettingsOpen] = useState(false);
   const [backdropScene, setBackdropScene] = useState(0);
   const [backdropTheme, setBackdropTheme] = useState("auto-sections");
-  const [portalBackgroundDurationSeconds, setPortalBackgroundDurationSeconds] = useState(30);
   const [tabOpeningBackgroundsEnabled, setTabOpeningBackgroundsEnabled] = useState(true);
   const [systemReducedMotion, setSystemReducedMotion] = useState(false);
   const [activityMessage, setActivityMessage] = useState("");
@@ -190,7 +189,6 @@ function PortalPage() {
     getWelcomePage().then((settings) => {
       const music = parseMusicSetting(settings.musicUrl || "");
       setDashboardPanelColorsEnabled(normalizeWelcomeDisplay(settings.display).dashboardPanelColorsEnabled);
-      setPortalBackgroundDurationSeconds(Math.max(5, Math.min(60, Number(settings.portalBackgroundDurationSeconds) || 30)));
       setBackdropTheme(settings.appearance.backdropTheme || "auto-sections");
       setTabOpeningBackgroundsEnabled(settings.appearance.tabOpeningBackgrounds !== false);
       setStaffMusic({ enabled: Boolean(settings.musicEnabled), url: settings.musicUrl || "", options: music.options });
@@ -217,13 +215,13 @@ function PortalPage() {
   }, []);
 
   useEffect(() => {
-    if (!display.motion || display.backgroundMode !== "animated" || systemReducedMotion || window.matchMedia("(max-width: 1023px)").matches) return;
+    if (!display.motion || display.backgroundMode !== "animated" || systemReducedMotion) return;
     const timer = window.setInterval(() => {
       const count = document.documentElement.dataset.portalBackdropTheme === "nature-cycle" ? NATURE_BACKDROP_SCENE_LABELS.length : 18;
       setBackdropScene((scene) => (scene + 1) % count);
-    }, portalBackgroundDurationSeconds * 1000);
+    }, 30_000);
     return () => window.clearInterval(timer);
-  }, [display.backgroundMode, display.motion, portalBackgroundDurationSeconds, systemReducedMotion]);
+  }, [display.backgroundMode, display.motion, systemReducedMotion]);
 
   useEffect(() => {
     const resetScene = () => {
