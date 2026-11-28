@@ -857,6 +857,15 @@ html:not([data-portal-text-contrast="off"]):not([data-portal-text-cycle="off"]) 
     radial-gradient(ellipse 63% 44% at 50% 47%, transparent 97%, rgba(120,235,238,.32) 97.2%, transparent 97.6%);
   animation: mukuyu-orbit-drift 78s ease-in-out infinite alternate;
 }
+/* Keep the school-wide canvas above the inner-page surface but below every
+   foreground view, card, table, form and control. */
+.portal-page-content > :is(.portal-background-scene, .portal-nature-scene) {
+  z-index: 0;
+}
+.portal-page-content > :not(.portal-background-scene):not(.portal-nature-scene) {
+  position: relative;
+  z-index: 1;
+}
 html[data-portal-backdrop-theme="auto-sections"] .portal-background-scene { display: block; }
 html[data-portal-backdrop-theme="starfall"] .portal-background-scene { display: none; }
 html[data-portal-backdrop-theme="nature-cycle"] .portal-background-scene { display: none; }
