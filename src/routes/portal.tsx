@@ -53,9 +53,11 @@ const MAIN_TAB_OPENING_VIEWS = new Set([
   "analysis",
   "reports",
   "marklists",
+  "students-progress",
   "staff",
   "mail",
   "settings",
+  "results",
 ]);
 
 const ACTIVITY_NOTES: Record<string, string> = {
