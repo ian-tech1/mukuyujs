@@ -177,7 +177,7 @@ html[data-portal-motion="reduced"] .music-playing-pulse { animation: none !impor
   .music-dock-mini-anchor { right: .75rem; }
 }
 
-/* Keep the mobile navigation immediate and still: Chrome should only paint the menu. */
+/* Keep mobile navigation immediate and still without hiding the school-wide canvas. */
 @media (max-width: 1023px) {
   .portal-animated-background,
   .portal-page-content,
@@ -188,10 +188,6 @@ html[data-portal-motion="reduced"] .music-playing-pulse { animation: none !impor
   .portal-panel-color-motion {
     animation: none !important;
     transition: none !important;
-  }
-  .portal-background-scene,
-  .portal-nature-scene {
-    display: none !important;
   }
   .portal-mobile-drawer {
     align-items: flex-start;
@@ -2076,7 +2072,18 @@ html[data-portal-background-mode="original"] .portal-animated-background[data-po
   will-change: auto;
   transform: none;
 }
-
+/* Let school-wide moving canvases remain clearly visible through the large
+   inner-page surface; cards, tables, forms, controls and reports retain their
+   own opaque foreground surfaces. */
+html[data-portal-backdrop-theme="auto-sections"] .portal-page-content {
+  background: rgba(244, 240, 230, .42);
+}
+html[data-portal-backdrop-theme="nature-cycle"] .portal-page-content {
+  background: rgba(244, 240, 230, .22);
+}
+html[data-portal-backdrop-theme="nature-cycle"] .portal-nature-scene[data-active="true"] {
+  opacity: .8;
+}
 /* Keep the historical per-line hue cycle visible even when panel styles set inherited text colours. */
 .welcome-copy-line {
   color: var(--welcome-line-colour, #f7f8ff) !important;
