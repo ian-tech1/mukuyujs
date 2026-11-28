@@ -1972,25 +1972,41 @@ html[data-portal-motion="reduced"] .portal-opening-link .portal-loading-card::af
 }
 
 /* Reuse the loader's look on tab changes and tint its glow to the selected task. */
-.portal-loading-action-feedback .portal-loading-backdrop::before {
+.portal-loading-action-feedback .portal-loading-backdrop::before,
+.portal-loading-tab-opening .portal-loading-backdrop::before {
   background:
     radial-gradient(circle at 50% 42%, var(--activity-glow-a, rgba(49, 112, 255, .27)), transparent 25%),
     radial-gradient(circle at 14% 84%, var(--activity-glow-b, rgba(255, 63, 190, .16)), transparent 24%),
     radial-gradient(circle at 84% 12%, var(--activity-glow-c, rgba(255, 214, 107, .13)), transparent 22%);
 }
-.portal-loading-action-feedback[data-activity-view="home"] { --activity-glow-a: rgba(40, 196, 231, .32); --activity-glow-b: rgba(106, 91, 220, .19); --activity-glow-c: rgba(255, 202, 91, .17); }
+.portal-loading-action-feedback[data-activity-view="home"],
+.portal-loading-tab-opening[data-activity-view="home"] { --activity-glow-a: rgba(40, 196, 231, .32); --activity-glow-b: rgba(106, 91, 220, .19); --activity-glow-c: rgba(255, 202, 91, .17); }
 .portal-loading-action-feedback[data-activity-view="learners"],
+.portal-loading-tab-opening[data-activity-view="learners"],
 .portal-loading-action-feedback[data-activity-view="marklists"],
-.portal-loading-action-feedback[data-activity-view="timetable"] { --activity-glow-a: rgba(35, 202, 156, .32); --activity-glow-b: rgba(40, 155, 219, .19); --activity-glow-c: rgba(239, 202, 75, .17); }
+.portal-loading-tab-opening[data-activity-view="marklists"],
+.portal-loading-action-feedback[data-activity-view="timetable"],
+.portal-loading-tab-opening[data-activity-view="timetable"] { --activity-glow-a: rgba(35, 202, 156, .32); --activity-glow-b: rgba(40, 155, 219, .19); --activity-glow-c: rgba(239, 202, 75, .17); }
 .portal-loading-action-feedback[data-activity-view="marks"],
+.portal-loading-tab-opening[data-activity-view="marks"],
 .portal-loading-action-feedback[data-activity-view="reports"],
-.portal-loading-action-feedback[data-activity-view="results"] { --activity-glow-a: rgba(30, 190, 230, .32); --activity-glow-b: rgba(88, 110, 229, .19); --activity-glow-c: rgba(248, 184, 75, .17); }
-.portal-loading-action-feedback[data-activity-view="analysis"] { --activity-glow-a: rgba(106, 111, 235, .3); --activity-glow-b: rgba(213, 82, 192, .2); --activity-glow-c: rgba(242, 184, 77, .16); }
+.portal-loading-tab-opening[data-activity-view="reports"],
+.portal-loading-action-feedback[data-activity-view="results"],
+.portal-loading-tab-opening[data-activity-view="results"] { --activity-glow-a: rgba(30, 190, 230, .32); --activity-glow-b: rgba(88, 110, 229, .19); --activity-glow-c: rgba(248, 184, 75, .17); }
+.portal-loading-action-feedback[data-activity-view="analysis"],
+.portal-loading-tab-opening[data-activity-view="analysis"] { --activity-glow-a: rgba(106, 111, 235, .3); --activity-glow-b: rgba(213, 82, 192, .2); --activity-glow-c: rgba(242, 184, 77, .16); }
 .portal-loading-action-feedback[data-activity-view="staff"],
+.portal-loading-tab-opening[data-activity-view="staff"],
 .portal-loading-action-feedback[data-activity-view="mail"],
-.portal-loading-action-feedback[data-activity-view="parent-feedback"] { --activity-glow-a: rgba(38, 180, 221, .3); --activity-glow-b: rgba(218, 80, 165, .2); --activity-glow-c: rgba(124, 105, 226, .17); }
+.portal-loading-tab-opening[data-activity-view="mail"],
+.portal-loading-action-feedback[data-activity-view="parent-feedback"],
+.portal-loading-tab-opening[data-activity-view="parent-feedback"] { --activity-glow-a: rgba(38, 180, 221, .3); --activity-glow-b: rgba(218, 80, 165, .2); --activity-glow-c: rgba(124, 105, 226, .17); }
 .portal-loading-action-feedback[data-activity-view="services"],
-.portal-loading-action-feedback[data-activity-view="settings"] { --activity-glow-a: rgba(35, 193, 158, .3); --activity-glow-b: rgba(93, 110, 224, .2); --activity-glow-c: rgba(220, 119, 203, .17); }
+.portal-loading-tab-opening[data-activity-view="services"],
+.portal-loading-action-feedback[data-activity-view="settings"],
+.portal-loading-tab-opening[data-activity-view="settings"],
+.portal-loading-action-feedback[data-activity-view="students-progress"],
+.portal-loading-tab-opening[data-activity-view="students-progress"] { --activity-glow-a: rgba(35, 193, 158, .3); --activity-glow-b: rgba(93, 110, 224, .2); --activity-glow-c: rgba(220, 119, 203, .17); }
 
 @media (prefers-reduced-motion: reduce) {
   .welcome-hero::before,
