@@ -3,6 +3,7 @@ import type { Gate } from "@/components/school/gate";
 import { inputClass } from "@/components/school/gate";
 import { btnDownload } from "@/components/school/download-button";
 import { buildBoards, isAdmin, learnersForYear, type Exam, type Learner, type Mark } from "@/lib/school/model";
+import { logoDataUrl } from "@/lib/school/brand";
 
 export function StudentsProgressView({ ws: sourceWs, flash }: Gate) {
   const defaultYear = sourceWs.profile.activeYearId || sourceWs.years[0]?.id || "";
@@ -72,6 +73,7 @@ export function StudentsProgressView({ ws: sourceWs, flash }: Gate) {
     try {
       const { jsPDF } = await import("jspdf");
       const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+      const logo = await logoDataUrl(sourceWs.profile.logoData);
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
       const margin = 10;
@@ -88,16 +90,37 @@ export function StudentsProgressView({ ws: sourceWs, flash }: Gate) {
         const change = recorded.length > 1 ? recorded.at(-1)! - recorded[0]! : null;
         return [learner.fullName, `${sourceWs.grades.find((grade) => grade.id === learner.gradeId)?.name ?? "—"} / ${sourceWs.streams.find((stream) => stream.id === learner.streamId)?.name ?? "—"}`, ...values, change];
       });
-      let y = 30;
+      let y = 40;
       let page = 1;
       const drawHeader = () => {
+        const logoSize = 18;
+        try {
+          doc.addImage(logo, "PNG", margin, 4, logoSize, logoSize);
+          doc.addImage(logo, "PNG", pageWidth - margin - logoSize, 4, logoSize, logoSize);
+        } catch {
+          try {
+            doc.addImage(logo, "JPEG", margin, 4, logoSize, logoSize);
+            doc.addImage(logo, "JPEG", pageWidth - margin - logoSize, 4, logoSize, logoSize);
+          } catch {
+            /* A broken custom upload should not stop the progress download. */
+          }
+        }
+        doc.setTextColor(14, 42, 74);
         doc.setFont("helvetica", "bold");
         doc.setFontSize(13);
-        doc.text(title, margin, 12);
+        doc.text(sourceWs.profile.name, pageWidth / 2, 8, { align: "center" });
         doc.setFont("helvetica", "normal");
         doc.setFontSize(8);
-        doc.text(subtitle, margin, 18);
-        doc.text(`Generated ${new Date().toLocaleString()}`, pageWidth - margin, 18, { align: "right" });
+        doc.text(`P.O. BOX ${sourceWs.profile.poBox} · ${sourceWs.profile.location}`, pageWidth / 2, 13, { align: "center" });
+        doc.setFontSize(7);
+        doc.text(`MOTTO: ${sourceWs.profile.motto}`, pageWidth / 2, 18, { align: "center" });
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(9);
+        doc.text(title, pageWidth / 2, 24, { align: "center" });
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8);
+        doc.text(subtitle, margin, 29);
+        doc.text(`Generated ${new Date().toLocaleString()}`, pageWidth - margin, 29, { align: "right" });
         doc.setFontSize(6);
         let x = margin;
         headers.forEach((header, index) => { const width = index === 0 ? firstWidth : index === 1 ? secondWidth : index === headers.length - 1 ? changeWidth : examWidth; doc.setFillColor(232, 241, 237); doc.rect(x, y - 5, width, 9, "F"); doc.text(shorten(header, width < 20 ? 16 : 30), x + 1, y, { angle: width < 20 ? 90 : 0 }); x += width; });
@@ -105,7 +128,7 @@ export function StudentsProgressView({ ws: sourceWs, flash }: Gate) {
       };
       drawHeader();
       for (const row of rows) {
-        if (y > pageHeight - 12) { doc.setFontSize(7); doc.text(`Page ${page}`, pageWidth - margin, pageHeight - 5, { align: "right" }); doc.addPage(); page += 1; y = 18; drawHeader(); }
+        if (y > pageHeight - 12) { doc.setFontSize(7); doc.text(`Page ${page}`, pageWidth - margin, pageHeight - 5, { align: "right" }); doc.addPage(); page += 1; y = 40; drawHeader(); }
         let x = margin;
         row.forEach((value, index) => { const width = index === 0 ? firstWidth : index === 1 ? secondWidth : index === row.length - 1 ? changeWidth : examWidth; doc.setDrawColor(220, 220, 220); doc.rect(x, y - 5, width, 7); doc.setFont("helvetica", index === 0 ? "bold" : "normal"); doc.setFontSize(6); const text = typeof value === "number" ? value.toFixed(1) : value == null ? "—" : String(value); doc.text(shorten(text, width < 20 ? 12 : Math.max(12, Math.floor(width * 2.2))), index > 1 ? x + width - 1 : x + 1, y, { align: index > 1 ? "right" : "left" }); x += width; });
         y += 7;
