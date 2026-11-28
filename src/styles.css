@@ -864,8 +864,6 @@ html[data-portal-backdrop-theme="nature-cycle"] .portal-page-content::before,
 html[data-portal-backdrop-theme="nature-cycle"] .portal-page-content::after { background: none !important; animation: none !important; }
 html[data-portal-backdrop-theme="nature-cycle"] .portal-nature-scene { display: block; }
 html:not([data-portal-backdrop-theme="nature-cycle"]) .portal-nature-scene { display: none; }
-html[data-portal-background-mode="original"] .portal-background-scene { display: none !important; }
-html[data-portal-background-mode="original"] .portal-nature-scene { display: none !important; }
 .portal-animated-background[data-portal-section="home"] .portal-page-content::after { background-image: radial-gradient(ellipse at 50% 50%, transparent 38%, color-mix(in srgb, var(--portal-beam-a) 24%, transparent) 39%, transparent 40%), radial-gradient(ellipse at 50% 50%, transparent 58%, color-mix(in srgb, var(--portal-beam-b) 20%, transparent) 59%, transparent 60%), radial-gradient(circle at 50% 50%, var(--portal-glow-d), transparent 72%); }
 .portal-animated-background[data-portal-section="learners"] .portal-page-content::after { background-image: radial-gradient(ellipse at 20% 22%, transparent 26%, color-mix(in srgb, var(--portal-beam-a) 25%, transparent) 27%, transparent 29%), radial-gradient(ellipse at 75% 72%, transparent 31%, color-mix(in srgb, var(--portal-beam-b) 23%, transparent) 32%, transparent 34%), radial-gradient(ellipse at 42% 56%, var(--portal-glow-c), transparent 46%); }
 .portal-animated-background[data-portal-section="marks"] .portal-page-content::after { background-image: repeating-linear-gradient(0deg, transparent 0 48px, color-mix(in srgb, var(--portal-beam-a) 17%, transparent) 49px 51px, transparent 52px 96px), repeating-linear-gradient(90deg, transparent 0 68px, color-mix(in srgb, var(--portal-beam-b) 14%, transparent) 69px 71px, transparent 72px 136px); }
@@ -980,6 +978,15 @@ html[data-portal-background-mode="original"] .welcome-hero,
 html[data-portal-background-mode="original"] .welcome-login-panel {
   animation: none !important;
   background-size: 100% 100% !important;
+}
+/* The Super Admin portal backdrop is school-wide; a device-local static preference
+   must not hide the selected automatic or nature canvas. */
+html[data-portal-backdrop-theme="auto-sections"][data-portal-background-mode="original"] .portal-page-content::before,
+html[data-portal-backdrop-theme="auto-sections"][data-portal-background-mode="original"] .portal-page-content::after {
+  display: block !important;
+}
+html[data-portal-backdrop-theme="nature-cycle"][data-portal-background-mode="original"] .portal-nature-scene {
+  display: block !important;
 }
 /* The branded opening loader keeps its own colour and orbit regardless of portal canvas mode. */
 @media (max-width: 640px) {

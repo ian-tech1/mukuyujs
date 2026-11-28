@@ -453,7 +453,7 @@ function PortalPage() {
         </header>
         <div className={`portal-page-content w-full min-w-0 max-w-none px-4 py-6 lg:px-8 ${dashboardPanelColorsEnabled && display.motion && display.accentMotion ? "portal-panel-color-motion" : ""}`}>
           {Array.from({ length: 18 }, (_, scene) => <span key={scene} className="portal-background-scene" data-background-scene={scene} data-active={backdropScene === scene} aria-hidden="true" />)}
-          <NatureBackdropVideo scene={backdropScene % NATURE_BACKDROP_SCENES.length} visible={backdropTheme === "nature-cycle" && display.backgroundMode === "animated"} motionEnabled={display.motion && !systemReducedMotion && !tabOpeningView} />
+          <NatureBackdropVideo scene={backdropScene % NATURE_BACKDROP_SCENES.length} visible={backdropTheme === "nature-cycle"} motionEnabled={display.motion && !systemReducedMotion && !tabOpeningView} />
           {error ? <p className="mb-4 rounded-md border border-bad/30 bg-card px-3 py-2 text-sm text-bad">{error}</p> : null}
           {notice ? <p className="mb-4 rounded-md border border-good/30 bg-card px-3 py-2 text-sm text-good">{notice}</p> : null}
           {current === "home" ? <DashboardView {...gate} /> : null}
