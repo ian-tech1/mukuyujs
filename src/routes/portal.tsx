@@ -216,12 +216,14 @@ function PortalPage() {
 
   useEffect(() => {
     if (!display.motion || display.backgroundMode !== "animated" || systemReducedMotion) return;
+    const isNatureMotion = backdropTheme === "nature-cycle";
+    const sceneCount = isNatureMotion ? NATURE_BACKDROP_SCENE_LABELS.length : 18;
+    const intervalMs = isNatureMotion ? 4_000 : 2_000;
     const timer = window.setInterval(() => {
-      const count = document.documentElement.dataset.portalBackdropTheme === "nature-cycle" ? NATURE_BACKDROP_SCENE_LABELS.length : 18;
-      setBackdropScene((scene) => (scene + 1) % count);
-    }, 30_000);
+      setBackdropScene((scene) => (scene + 1) % sceneCount);
+    }, intervalMs);
     return () => window.clearInterval(timer);
-  }, [display.backgroundMode, display.motion, systemReducedMotion]);
+  }, [backdropTheme, display.backgroundMode, display.motion, systemReducedMotion]);
 
   useEffect(() => {
     const resetScene = () => {
