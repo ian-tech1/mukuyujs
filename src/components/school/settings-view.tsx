@@ -513,15 +513,25 @@ function AppearanceColorsCard({ flash }: Pick<Gate, "flash">) {
   }
 
   async function saveColors() {
+    const previous = document.documentElement.dataset.schoolAppearance;
     try {
       await saveAppearance({ data: { appearance: colors } });
       flash("Backdrop colours saved for the whole school. Cards, tables, controls and report cards keep their readable colours.");
     } catch (error) {
+      try {
+        const restored = previous ? JSON.parse(previous) as AppearancePalette : DEFAULT_APPEARANCE;
+        setColors(restored);
+        applyAppearance(restored);
+      } catch {
+        setColors(DEFAULT_APPEARANCE);
+        applyAppearance(DEFAULT_APPEARANCE);
+      }
       flash(errText(error), true);
     }
   }
 
   async function choosePreset(preset: AppearancePalette) {
+    const previous = colors;
     const next = { ...preset, autoTextContrast: colors.autoTextContrast ?? true, textColorCycle: colors.textColorCycle ?? true, tabOpeningBackgrounds: colors.tabOpeningBackgrounds !== false, backdropTheme: preset.backdropTheme ?? colors.backdropTheme ?? "auto-sections" };
     setColors(next);
     applyAppearance(next);
@@ -529,6 +539,8 @@ function AppearanceColorsCard({ flash }: Pick<Gate, "flash">) {
       await saveAppearance({ data: { appearance: next } });
       flash("Backdrop colour preset applied and saved. Content surfaces and text colours remain unchanged.");
     } catch (error) {
+      setColors(previous);
+      applyAppearance(previous);
       flash(errText(error), true);
     }
   }

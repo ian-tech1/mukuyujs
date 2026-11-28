@@ -24,7 +24,7 @@ import { getWorkspace, getWelcomePage, logout } from "@/lib/school/api";
 import { visibleViews, type Workspace } from "@/lib/school/model";
 import { parseMusicSetting, type MusicOptions } from "@/lib/school/music";
 import { normalizeWelcomeDisplay } from "@/lib/school/welcome-display";
-import { applyDisplayPreferences, DEFAULT_DISPLAY_PREFERENCES, DISPLAY_PALETTES, NATURE_BACKDROP_SCENES, NATURE_BACKDROP_SCENE_LABELS, readDisplayPreferences, saveDisplayPreferences, type LocalDisplayPreferences } from "@/lib/school/display";
+import { applyDisplayPreferences, applyPortalBackdropColors, DEFAULT_DISPLAY_PREFERENCES, DISPLAY_PALETTES, NATURE_BACKDROP_SCENES, NATURE_BACKDROP_SCENE_LABELS, readDisplayPreferences, saveDisplayPreferences, type LocalDisplayPreferences } from "@/lib/school/display";
 
 const LABELS: Record<string, string> = {
   home: "Overview",
@@ -201,6 +201,7 @@ function PortalPage() {
       document.documentElement.dataset.portalTextContrast = settings.appearance.autoTextContrast === false ? "off" : "on";
       document.documentElement.dataset.portalTextCycle = settings.appearance.textColorCycle === false ? "off" : "on";
       applyDisplayPreferences(readDisplayPreferences());
+      applyPortalBackdropColors(settings.appearance);
     }).catch(() => undefined);
   }, [refresh, navigate]);
 
